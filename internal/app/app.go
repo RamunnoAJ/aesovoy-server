@@ -13,6 +13,7 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/services"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 	"github.com/RamunnoAJ/aesovoy-server/migrations"
+	"gopkg.in/natefinch/lumberjack.v2"
 )
 
 type Application struct {
@@ -34,12 +35,6 @@ type Application struct {
 
 func NewApplication() (*Application, error) {
 	LOG_FILE := os.Getenv("LOG_FILE")
-	file, err := os.OpenFile(LOG_FILE, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
-	if err != nil {
-		return nil, err
-	}
-
-	defer file.Close()
 
 	pgDB, err := store.Open()
 	if err != nil {
@@ -51,11 +46,20 @@ func NewApplication() (*Application, error) {
 		panic(err)
 	}
 
-	w := io.MultiWriter(os.Stderr, file)
-	handlerOpts := &slog.HandlerOptions{
-		AddSource: true,
+	logRotator := &lumberjack.Logger{
+		Filename:   LOG_FILE,
+		MaxSize:    100,
+		MaxBackups: 5,
+		MaxAge:     30,
+		Compress:   true,
 	}
-	logger := slog.New(slog.NewTextHandler(w, handlerOpts))
+
+	w := io.MultiWriter(os.Stdout, logRotator)
+	handlerOpts := &slog.HandlerOptions{
+		Level: slog.LevelInfo,
+	}
+	logger := slog.New(slog.NewJSONHandler(w, handlerOpts))
+	slog.SetDefault(logger)
 
 	// our stores will go here
 	userStore := store.NewPostgresUserStore(pgDB)
