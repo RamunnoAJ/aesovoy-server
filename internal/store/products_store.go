@@ -1,0 +1,328 @@
+package store
+
+import (
+	"database/sql"
+	"time"
+
+	"github.com/lib/pq"
+)
+
+type PostgresProductStore struct {
+	db *sql.DB
+}
+
+func NewPostgresProductStore(db *sql.DB) *PostgresProductStore {
+	return &PostgresProductStore{
+		db: db,
+	}
+}
+
+type Product struct {
+	ID                int64                `json:"id"`
+	CategoryID        int64                `json:"category_id"`
+	CategoryName      string               `json:"category_name"`
+	Name              string               `json:"name"`
+	Description       string               `json:"description,omitempty"`
+	UnitPrice         float64              `json:"unit_price"`
+	DistributionPrice float64              `json:"distribution_price"`
+	CreatedAt         time.Time            `json:"created_at"`
+	Recipe            []*ProductIngredient `json:"recipe,omitempty"`
+}
+
+type ProductIngredient struct {
+	ID           int64     `json:"id"`
+	IngredientID int64     `json:"ingredient_id"`
+	Name         string    `json:"name"`
+	Quantity     float64   `json:"quantity"`
+	Unit         string    `json:"unit"`
+	CreatedAt    time.Time `json:"created_at"`
+	UpdatedAt    time.Time `json:"updated_at"`
+}
+
+type ProductStore interface {
+	CreateProduct(*Product) error
+	GetProductByID(id int64) (*Product, error)
+	UpdateProduct(*Product) error
+	DeleteProduct(id int64) error
+	GetAllProduct() ([]*Product, error)
+	GetProductsByCategoryID(categoryID int64) ([]*Product, error)
+	AddIngredientToProduct(productID int64, ingredientID int64, quantity float64, unit string) (*ProductIngredient, error)
+	UpdateProductIngredient(productID, ingredientID int64, quantity float64, unit string) (*ProductIngredient, error)
+	RemoveIngredientFromProduct(productID, ingredientID int64) error
+	GetProductsByIDs(ids []int64) (map[int64]*Product, error)
+}
+
+func (s *PostgresProductStore) CreateProduct(product *Product) error {
+	query := `
+	INSERT INTO products (category_id, name, description, unit_price, distribution_price)
+	VALUES ($1, $2, $3, $4, $5)
+	RETURNING id, created_at 
+	`
+
+	err := s.db.QueryRow(
+		query,
+		product.CategoryID,
+		product.Name,
+		product.Description,
+		product.UnitPrice,
+		product.DistributionPrice,
+	).Scan(
+		&product.ID,
+		&product.CreatedAt,
+	)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *PostgresProductStore) GetProductByID(id int64) (*Product, error) {
+	const q = `
+	SELECT p.id, p.category_id, c.name AS category_name,
+	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+	FROM products p
+	JOIN categories c ON c.id = p.category_id
+	WHERE p.id = $1`
+	pr := &Product{}
+	err := s.db.QueryRow(q, id).Scan(
+		&pr.ID, &pr.CategoryID, &pr.CategoryName,
+		&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
+	)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	const qi = `
+	SELECT pi.id, pi.ingredient_id, i.name, pi.quantity, pi.unit, pi.created_at, pi.updated_at
+	FROM product_ingredients pi
+	JOIN ingredients i ON i.id = pi.ingredient_id
+	WHERE pi.product_id = $1
+	ORDER BY i.name
+	`
+	rows, err := s.db.Query(qi, id)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		pi := &ProductIngredient{}
+		if err := rows.Scan(&pi.ID, &pi.IngredientID, &pi.Name, &pi.Quantity, &pi.Unit, &pi.CreatedAt, &pi.UpdatedAt); err != nil {
+			return nil, err
+		}
+		pr.Recipe = append(pr.Recipe, pi)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return pr, nil
+}
+
+func (s *PostgresProductStore) UpdateProduct(product *Product) error {
+	query := `
+	UPDATE products
+	SET category_id = $1, name = $2, description = $3, unit_price = $4, distribution_price = $5
+	WHERE id = $6
+	`
+
+	result, err := s.db.Exec(
+		query,
+		product.CategoryID,
+		product.Name,
+		product.Description,
+		product.UnitPrice,
+		product.DistributionPrice,
+		product.ID,
+	)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
+func (s *PostgresProductStore) DeleteProduct(id int64) error {
+	query := `
+	DELETE FROM products
+	WHERE id = $1
+	`
+
+	result, err := s.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+
+	return nil
+}
+
+func (s *PostgresProductStore) GetAllProduct() ([]*Product, error) {
+	const q = `
+	SELECT p.id, p.category_id, c.name AS category_name,
+	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+	FROM products p
+	JOIN categories c ON c.id = p.category_id
+	ORDER BY p.name`
+	rows, err := s.db.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []*Product
+	for rows.Next() {
+		pr := &Product{}
+		if err := rows.Scan(
+			&pr.ID, &pr.CategoryID, &pr.CategoryName,
+			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		products = append(products, pr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
+func (s *PostgresProductStore) GetProductsByCategoryID(categoryID int64) ([]*Product, error) {
+	const query = `
+    SELECT p.id, p.category_id, c.name AS category_name,
+           p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+    FROM products p
+    JOIN categories c ON c.id = p.category_id
+    WHERE p.category_id = $1
+    ORDER BY p.name`
+	rows, err := s.db.Query(query, categoryID)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []*Product
+	for rows.Next() {
+		pr := &Product{}
+		if err := rows.Scan(
+			&pr.ID, &pr.CategoryID, &pr.CategoryName,
+			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		products = append(products, pr)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return products, nil
+}
+
+func (s *PostgresProductStore) AddIngredientToProduct(productID int64, ingredientID int64, quantity float64, unit string) (*ProductIngredient, error) {
+	pi := &ProductIngredient{}
+	query := `
+	INSERT INTO product_ingredients (product_id, ingredient_id, quantity, unit)
+	VALUES ($1, $2, $3, $4)
+	RETURNING id, created_at, updated_at
+	`
+	err := s.db.QueryRow(query, productID, ingredientID, quantity, unit).Scan(&pi.ID, &pi.CreatedAt, &pi.UpdatedAt)
+	if err != nil {
+		return nil, err
+	}
+	pi.IngredientID = ingredientID
+	pi.Quantity = quantity
+	pi.Unit = unit
+	return pi, nil
+}
+
+func (s *PostgresProductStore) UpdateProductIngredient(productID, ingredientID int64, quantity float64, unit string) (*ProductIngredient, error) {
+	pi := &ProductIngredient{}
+	query := `
+	UPDATE product_ingredients
+	SET quantity = $1, unit = $2, updated_at = NOW()
+	WHERE product_id = $3 AND id = $4
+	RETURNING created_at, updated_at
+	`
+	err := s.db.QueryRow(query, quantity, unit, productID, ingredientID).Scan(&pi.CreatedAt, &pi.UpdatedAt)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			return nil, sql.ErrNoRows
+		}
+		return nil, err
+	}
+	pi.ID = ingredientID
+	pi.Quantity = quantity
+	pi.Unit = unit
+	return pi, nil
+}
+
+func (s *PostgresProductStore) RemoveIngredientFromProduct(productID, ingredientID int64) error {
+	query := `
+	DELETE FROM product_ingredients
+	WHERE product_id = $1 AND id = $2
+	`
+	result, err := s.db.Exec(query, productID, ingredientID)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func (s *PostgresProductStore) GetProductsByIDs(ids []int64) (map[int64]*Product, error) {
+	const q = `
+	SELECT p.id, p.category_id, c.name AS category_name,
+	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+	FROM products p
+	JOIN categories c ON c.id = p.category_id
+	WHERE p.id = ANY($1)`
+
+	rows, err := s.db.Query(q, pq.Array(ids))
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	products := make(map[int64]*Product)
+	for rows.Next() {
+		pr := &Product{}
+		if err := rows.Scan(
+			&pr.ID, &pr.CategoryID, &pr.CategoryName,
+			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		products[pr.ID] = pr
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return products, nil
+}

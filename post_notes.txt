@@ -1,0 +1,71 @@
+# Crear una categoría
+curl -X POST http://localhost:8080/categories \
+	 -H "Authorization: Bearer TOKEN" \
+	 -H "Content-Type: application/json" \
+	 -d '{"name": "Panes", "description": "Harinas"}'
+
+# Obtener una categoría
+curl -X GET http://localhost:8080/categories/1 \
+	 -H "Authorization: Bearer TOKEN" 
+
+# Obtener todas las categorías
+curl -X GET http://localhost:8080/categories \
+	 -H "Authorization: Bearer TOKEN" 
+
+# Actualizar una categoría
+curl -X PATCH http://localhost:8080/categories/1 \
+	 -H "Authorization: Bearer TOKEN" \
+	 -H "Content-Type: application/json" \
+	 -d '{"name": "Nuevo nombre", "description": "Nueva descripción"}'
+
+# Eliminar una categoría
+curl -X DELETE http://localhost:8080/categories/1 \
+	 -H "Authorization: Bearer TOKEN" 
+
+# Logear
+curl -X POST http://localhost:8080/tokens/authentication \
+     -H "Content-Type: application/json" \
+     -d '{
+    "username": "me",
+    "password": "me"
+}'
+
+# Crear ingrediente
+curl -X POST http://localhost:8080/ingredients \
+	-H "Authorization: Bearer TOKEN" \
+	-d '{"name": "harina"}'
+
+# Obtener ingredientes
+curl http://localhost:8080/ingredients \
+	-H "Authorization: Bearer TOKEN" \
+
+# Obtener ingrediente por ID
+curl http://localhost:8080/ingredients/1 \
+	-H "Authorization: Bearer TOKEN"
+
+# Actualizar ingrediente
+curl -X PATCH http://localhost:8080/ingredients/1 \
+	-H "Authorization: Bearer TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"name": "harina 0000"}'
+
+# Eliminar ingrediente
+curl -X DELETE http://localhost:8080/ingredients/1 \
+	-H "Authorization: Bearer TOKEN"
+
+# Agregar ingrediente a un producto (crear receta)
+curl -X POST http://localhost:8080/products/1/ingredients \
+	-H "Authorization: Bearer TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"ingredient_id": 1, "quantity": 100, "unit": "grams"}'
+
+# Actualizar ingrediente de un producto
+curl -X PATCH http://localhost:8080/products/1/ingredients/1 \
+	-H "Authorization: Bearer TOKEN" \
+	-H "Content-Type: application/json" \
+	-d '{"quantity": 150.5, "unit": "grams"}'
+
+# Eliminar ingrediente de un producto
+curl -X DELETE http://localhost:8080/products/1/ingredients/1 \
+	-H "Authorization: Bearer TOKEN"
+
