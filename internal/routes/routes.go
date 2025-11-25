@@ -2,8 +2,10 @@ package routes
 
 import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/app"
+	mymw "github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	_ "github.com/RamunnoAJ/aesovoy-server/swagger"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
@@ -11,6 +13,9 @@ import (
 func SetupRoutes(app *app.Application) *chi.Mux {
 	r := chi.NewRouter()
 
+	r.Use(middleware.RequestID)
+	r.Use(middleware.Recoverer)
+	r.Use(mymw.Logging(app.Logger))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
