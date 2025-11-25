@@ -4,11 +4,21 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/app"
 	_ "github.com/RamunnoAJ/aesovoy-server/swagger"
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func SetupRoutes(app *app.Application) *chi.Mux {
 	r := chi.NewRouter()
+
+	r.Use(cors.Handler(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3000"},
+		AllowedMethods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type", "X-CSRF-Token"},
+		ExposedHeaders:   []string{"Link"},
+		AllowCredentials: true,
+		MaxAge:           300,
+	}))
 
 	r.Group(func(r chi.Router) {
 		r.Use(app.Middleware.Authenticate)
