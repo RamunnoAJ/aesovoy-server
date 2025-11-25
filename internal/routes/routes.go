@@ -2,7 +2,9 @@ package routes
 
 import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/app"
+	_ "github.com/RamunnoAJ/aesovoy-server/swagger"
 	"github.com/go-chi/chi/v5"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 func SetupRoutes(app *app.Application) *chi.Mux {
@@ -61,8 +63,16 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 			r.Post("/", app.OrderHandler.HandleRegisterOrder)
 			r.Patch("/{id}/state", app.OrderHandler.HandleUpdateOrderState)
 		})
+
+		r.Route("/payment_methods", func(r chi.Router) {
+			r.Get("/", app.PaymentMethodHandler.HandleGetPaymentMethods)
+			r.Get("/{id}", app.PaymentMethodHandler.HandleGetPaymentMethodByID)
+			r.Post("/", app.PaymentMethodHandler.HandleCreatePaymentMethod)
+			r.Delete("/{id}", app.PaymentMethodHandler.HandleDeletePaymentMethod)
+		})
 	})
 
+	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("http://localhost:8080/swagger/doc.json")))
 	r.Get("/health", app.HealthCheck)
 	r.Post("/users", app.UserHandler.HandleRegisterUser)
 	r.Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)

@@ -34,6 +34,18 @@ func (h *IngredientHandler) validateRequest(req *ingredientRequest) error {
 	return nil
 }
 
+// HandleCreateIngredient godoc
+// @Summary      Creates an ingredient
+// @Description  Creates a new ingredient with a name
+// @Tags         ingredients
+// @Accept       json
+// @Produce      json
+// @Param        body  body      ingredientRequest  true  "Ingredient data"
+// @Success      201   {object}  IngredientResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /ingredients [post]
 func (h *IngredientHandler) HandleCreateIngredient(w http.ResponseWriter, r *http.Request) {
 	var req ingredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -60,6 +72,20 @@ func (h *IngredientHandler) HandleCreateIngredient(w http.ResponseWriter, r *htt
 	utils.OK(w, http.StatusCreated, utils.Envelope{"ingredient": ingredient}, "", nil)
 }
 
+// HandleUpdateIngredient godoc
+// @Summary      Updates an ingredient
+// @Description  Updates an ingredient's name
+// @Tags         ingredients
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                true  "Ingredient ID"
+// @Param        body  body      ingredientRequest  true  "Ingredient data"
+// @Success      200   {object}  IngredientResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      404   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /ingredients/{id} [patch]
 func (h *IngredientHandler) HandleUpdateIngredient(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -101,6 +127,18 @@ func (h *IngredientHandler) HandleUpdateIngredient(w http.ResponseWriter, r *htt
 	utils.OK(w, http.StatusOK, utils.Envelope{"ingredient": ingredient}, "", nil)
 }
 
+// HandleGetIngredientByID godoc
+// @Summary      Gets an ingredient
+// @Description  Responds with a single ingredient with a given ID
+// @Tags         ingredients
+// @Produce      json
+// @Param        id   path      int      true  "Ingredient ID"
+// @Success      200  {object}  IngredientResponse
+// @Failure      400  {object}  utils.HTTPError
+// @Failure      404  {object}  utils.HTTPError
+// @Failure      500  {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /ingredients/{id} [get]
 func (h *IngredientHandler) HandleGetIngredientByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -123,6 +161,15 @@ func (h *IngredientHandler) HandleGetIngredientByID(w http.ResponseWriter, r *ht
 	utils.OK(w, http.StatusOK, utils.Envelope{"ingredient": ingredient}, "", nil)
 }
 
+// HandleGetAllIngredients godoc
+// @Summary      Gets all ingredients
+// @Description  Responds with a list of all ingredients
+// @Tags         ingredients
+// @Produce      json
+// @Success      200  {object}  IngredientsResponse
+// @Failure      500  {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /ingredients [get]
 func (h *IngredientHandler) HandleGetAllIngredients(w http.ResponseWriter, r *http.Request) {
 	ingredients, err := h.ingredientStore.GetAllIngredients()
 	if err != nil {
@@ -134,6 +181,17 @@ func (h *IngredientHandler) HandleGetAllIngredients(w http.ResponseWriter, r *ht
 	utils.OK(w, http.StatusOK, utils.Envelope{"ingredients": ingredients}, "", nil)
 }
 
+// HandleDeleteIngredient godoc
+// @Summary      Deletes an ingredient
+// @Description  Deletes an ingredient with a given ID
+// @Tags         ingredients
+// @Param        id   path      int  true  "Ingredient ID"
+// @Success      204
+// @Failure      400  {object}  utils.HTTPError
+// @Failure      404  {object}  utils.HTTPError
+// @Failure      500  {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /ingredients/{id} [delete]
 func (h *IngredientHandler) HandleDeleteIngredient(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {

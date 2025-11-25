@@ -58,6 +58,18 @@ func (h *OrderHandler) validateCreate(req *RegisterOrderRequest) []utils.FieldEr
 	return errs
 }
 
+// HandleRegisterOrder godoc
+// @Summary      Creates an order
+// @Description  Creates a new order for a client with a list of items
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Param        body  body      RegisterOrderRequest  true  "Order data"
+// @Success      201   {object}  OrderResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /orders [post]
 func (h *OrderHandler) HandleRegisterOrder(w http.ResponseWriter, r *http.Request) {
 	var req RegisterOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -117,6 +129,20 @@ func (h *OrderHandler) HandleRegisterOrder(w http.ResponseWriter, r *http.Reques
 	utils.OK(w, http.StatusCreated, utils.Envelope{"order": o}, "", nil)
 }
 
+// HandleUpdateOrderState godoc
+// @Summary      Updates an order's state
+// @Description  Updates the state of an order (e.g., "todo", "in_progress", "done")
+// @Tags         orders
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int     true  "Order ID"
+// @Param        body  body      object{state=store.OrderState}  true  "New state"
+// @Success      200   {object}  UpdateOrderStateResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      404   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /orders/{id}/state [patch]
 func (h *OrderHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -146,6 +172,18 @@ func (h *OrderHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Req
 	utils.OK(w, http.StatusOK, utils.Envelope{"id": id, "state": req.State}, "", nil)
 }
 
+// HandleGetOrderByID godoc
+// @Summary      Gets an order
+// @Description  Responds with a single order with a given ID
+// @Tags         orders
+// @Produce      json
+// @Param        id   path      int      true  "Order ID"
+// @Success      200  {object}  OrderResponse
+// @Failure      400  {object}  utils.HTTPError
+// @Failure      404  {object}  utils.HTTPError
+// @Failure      500  {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /orders/{id} [get]
 func (h *OrderHandler) HandleGetOrderByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -164,6 +202,19 @@ func (h *OrderHandler) HandleGetOrderByID(w http.ResponseWriter, r *http.Request
 	utils.OK(w, http.StatusOK, utils.Envelope{"order": o}, "", nil)
 }
 
+// HandleListOrders godoc
+// @Summary      Lists orders
+// @Description  Responds with a list of orders, with optional filters
+// @Tags         orders
+// @Produce      json
+// @Param        client_id  query     int           false "Filter by client ID"
+// @Param        state      query     string        false "Filter by order state"
+// @Param        limit      query     int           false "Results-per-page limit"
+// @Param        offset     query     int           false "Page offset for pagination"
+// @Success      200        {object}  OrdersResponse
+// @Failure      500        {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /orders [get]
 func (h *OrderHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 	var (
 		clientID *int64

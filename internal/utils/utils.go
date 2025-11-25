@@ -33,6 +33,12 @@ type APIResponse struct {
 	Meta       *Meta        `json:"meta,omitempty"`
 }
 
+type HTTPError struct {
+	Error      bool   `json:"error" example:"true"`
+	Message    string `json:"message" example:"An error occurred"`
+	StatusCode int    `json:"statusCode" example:"500"`
+}
+
 func ReadIDParam(r *http.Request) (int64, error) {
 	idParam := chi.URLParam(r, "id")
 	if idParam == "" {

@@ -59,6 +59,18 @@ func (h *ClientHandler) validateRegisterRequest(req *registerClientRequest) erro
 	return nil
 }
 
+// HandleRegisterClient godoc
+// @Summary      Creates a client
+// @Description  Creates a new client
+// @Tags         clients
+// @Accept       json
+// @Produce      json
+// @Param        body  body      registerClientRequest  true  "Client data"
+// @Success      201   {object}  ClientResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /clients [post]
 func (h *ClientHandler) HandleRegisterClient(w http.ResponseWriter, r *http.Request) {
 	var req registerClientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -90,6 +102,20 @@ func (h *ClientHandler) HandleRegisterClient(w http.ResponseWriter, r *http.Requ
 	utils.OK(w, http.StatusCreated, utils.Envelope{"client": c}, "", nil)
 }
 
+// HandleUpdateClient godoc
+// @Summary      Updates a client
+// @Description  Updates a client's details
+// @Tags         clients
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                    true  "Client ID"
+// @Param        body  body      registerClientRequest  true  "Client data"
+// @Success      200   {object}  ClientResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      404   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /clients/{id} [patch]
 func (h *ClientHandler) HandleUpdateClient(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -154,6 +180,18 @@ func (h *ClientHandler) HandleUpdateClient(w http.ResponseWriter, r *http.Reques
 	utils.OK(w, http.StatusOK, utils.Envelope{"client": cl}, "", nil)
 }
 
+// HandleGetClientByID godoc
+// @Summary      Gets a client
+// @Description  Responds with a single client with a given ID
+// @Tags         clients
+// @Produce      json
+// @Param        id   path      int      true  "Client ID"
+// @Success      200  {object}  ClientResponse
+// @Failure      400  {object}  utils.HTTPError
+// @Failure      404  {object}  utils.HTTPError
+// @Failure      500  {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /clients/{id} [get]
 func (h *ClientHandler) HandleGetClientByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -172,6 +210,20 @@ func (h *ClientHandler) HandleGetClientByID(w http.ResponseWriter, r *http.Reque
 	utils.OK(w, http.StatusOK, utils.Envelope{"client": cl}, "", nil)
 }
 
+// HandleGetClients godoc
+// @Summary      Gets all clients, or searches them
+// @Description  Responds with a list of all clients. Can be filtered using a
+// @Description  full-text search query, and paginated using limit and offset.
+// @Tags         clients
+// @Accept       json
+// @Produce      json
+// @Param        q      query     string        false "Full-text search query"
+// @Param        limit  query     int           false "Results-per-page limit"
+// @Param        offset query     int           false "Page offset for pagination"
+// @Success      200    {object}  ClientsResponse
+// @Failure      500    {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /clients [get]
 func (h *ClientHandler) HandleGetClients(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	limit := parseIntDefault(r.URL.Query().Get("limit"), 50)

@@ -46,6 +46,18 @@ func (h *ProviderHandler) validateRegister(req *registerProviderRequest) error {
 	return nil
 }
 
+// HandleRegisterProvider godoc
+// @Summary      Creates a provider
+// @Description  Creates a new provider
+// @Tags         providers
+// @Accept       json
+// @Produce      json
+// @Param        body  body      registerProviderRequest  true  "Provider data"
+// @Success      201   {object}  ProviderResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /providers [post]
 func (h *ProviderHandler) HandleRegisterProvider(w http.ResponseWriter, r *http.Request) {
 	var req registerProviderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -65,13 +77,27 @@ func (h *ProviderHandler) HandleRegisterProvider(w http.ResponseWriter, r *http.
 		Reference: req.Reference, Email: req.Email, CUIT: req.CUIT,
 	}
 	if err := h.providerStore.CreateProvider(p); err != nil {
-		h.logger.Error("creating provider: %v", err)
+		h.logger.Error("creating provider", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 	utils.OK(w, http.StatusCreated, utils.Envelope{"provider": p}, "", nil)
 }
 
+// HandleUpdateProvider godoc
+// @Summary      Updates a provider
+// @Description  Updates a provider's details
+// @Tags         providers
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                      true  "Provider ID"
+// @Param        body  body      registerProviderRequest  true  "Provider data"
+// @Success      200   {object}  ProviderResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      404   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /providers/{id} [patch]
 func (h *ProviderHandler) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -120,13 +146,25 @@ func (h *ProviderHandler) HandleUpdateProvider(w http.ResponseWriter, r *http.Re
 			utils.Error(w, http.StatusNotFound, "provider not found")
 			return
 		}
-		h.logger.Error("updating provider: %v", err)
+		h.logger.Error("updating provider", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 	utils.OK(w, http.StatusOK, utils.Envelope{"provider": p}, "", nil)
 }
 
+// HandleGetProviderByID godoc
+// @Summary      Gets a provider
+// @Description  Responds with a single provider with a given ID
+// @Tags         providers
+// @Produce      json
+// @Param        id   path      int      true  "Provider ID"
+// @Success      200  {object}  ProviderResponse
+// @Failure      400  {object}  utils.HTTPError
+// @Failure      404  {object}  utils.HTTPError
+// @Failure      500  {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /providers/{id} [get]
 func (h *ProviderHandler) HandleGetProviderByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -145,6 +183,20 @@ func (h *ProviderHandler) HandleGetProviderByID(w http.ResponseWriter, r *http.R
 	utils.OK(w, http.StatusOK, utils.Envelope{"provider": p}, "", nil)
 }
 
+// HandleGetProviders godoc
+// @Summary      Gets all providers, or searches them
+// @Description  Responds with a list of all providers. Can be filtered using a
+// @Description  full-text search query, and paginated using limit and offset.
+// @Tags         providers
+// @Accept       json
+// @Produce      json
+// @Param        q      query     string        false "Full-text search query"
+// @Param        limit  query     int           false "Results-per-page limit"
+// @Param        offset query     int           false "Page offset for pagination"
+// @Success      200    {object}  ProvidersResponse
+// @Failure      500    {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /providers [get]
 func (h *ProviderHandler) HandleGetProviders(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	limit := parseIntDefault(r.URL.Query().Get("limit"), 50)
@@ -160,7 +212,7 @@ func (h *ProviderHandler) HandleGetProviders(w http.ResponseWriter, r *http.Requ
 		list, err = h.providerStore.SearchProvidersFTS(q, limit, offset)
 	}
 	if err != nil {
-		h.logger.Error("list/search providers: %v", err)
+		h.logger.Error("list/search providers", "error", err)
 		utils.Error(w, 500, "internal server error")
 		return
 	}

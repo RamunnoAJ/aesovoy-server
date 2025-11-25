@@ -54,6 +54,17 @@ func (h *UserHandler) validateRegisterRequest(req *registerUserRequest) error {
 	return nil
 }
 
+// HandleRegisterUser godoc
+// @Summary      Creates a user
+// @Description  Creates a new user with a username, email, and password
+// @Tags         users
+// @Accept       json
+// @Produce      json
+// @Param        body  body      registerUserRequest  true  "User data"
+// @Success      201   {object}  UserResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Router       /users [post]
 func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req registerUserRequest
 

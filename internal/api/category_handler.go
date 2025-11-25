@@ -36,6 +36,18 @@ func (h *CategoryHandler) validateRegisterRequest(req *registerCategoryRequest) 
 	return nil
 }
 
+// HandleRegisterCategory godoc
+// @Summary      Creates a category
+// @Description  Creates a new category with a name and a description
+// @Tags         categories
+// @Accept       json
+// @Produce      json
+// @Param        body  body      registerCategoryRequest  true  "Category data"
+// @Success      201   {object}  CategoryResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /categories [post]
 func (h *CategoryHandler) HandleRegisterCategory(w http.ResponseWriter, r *http.Request) {
 	var req registerCategoryRequest
 
@@ -67,6 +79,19 @@ func (h *CategoryHandler) HandleRegisterCategory(w http.ResponseWriter, r *http.
 	utils.OK(w, http.StatusCreated, utils.Envelope{"category": category}, "", nil)
 }
 
+// HandleUpdateCategory godoc
+// @Summary      Updates a category
+// @Description  Updates a category's name or description
+// @Tags         categories
+// @Accept       json
+// @Produce      json
+// @Param        id    path      int                      true  "Category ID"
+// @Param        body  body      registerCategoryRequest  true  "Category data"
+// @Success      200   {object}  CategoryResponse
+// @Failure      400   {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /categories/{id} [patch]
 func (h *CategoryHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -110,6 +135,17 @@ func (h *CategoryHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Re
 	utils.OK(w, http.StatusOK, utils.Envelope{"category": category}, "", nil)
 }
 
+// HandleGetCategoryByID godoc
+// @Summary      Gets a category
+// @Description  Responds with a single category with a given ID
+// @Tags         categories
+// @Produce      json
+// @Param        id   path      int      true  "Category ID"
+// @Success      200  {object}  CategoryResponse
+// @Failure      400  {object}  utils.HTTPError
+// @Failure      500   {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /categories/{id} [get]
 func (h *CategoryHandler) HandleGetCategoryByID(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -128,6 +164,15 @@ func (h *CategoryHandler) HandleGetCategoryByID(w http.ResponseWriter, r *http.R
 	utils.OK(w, http.StatusOK, utils.Envelope{"category": category}, "", nil)
 }
 
+// HandleGetCategories godoc
+// @Summary      Gets all categories
+// @Description  Responds with a list of all categories
+// @Tags         categories
+// @Produce      json
+// @Success      200  {object}  CategoriesResponse
+// @Failure      500  {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /categories [get]
 func (h *CategoryHandler) HandleGetCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.categoryStore.GetAllCategories()
 	if err != nil {
@@ -139,6 +184,17 @@ func (h *CategoryHandler) HandleGetCategories(w http.ResponseWriter, r *http.Req
 	utils.OK(w, http.StatusOK, utils.Envelope{"categories": categories}, "", nil)
 }
 
+// HandleDeleteCategory godoc
+// @Summary      Deletes a category
+// @Description  Deletes a category with a given ID
+// @Tags         categories
+// @Param        id   path      int  true  "Category ID"
+// @Success      204
+// @Failure      400  {object}  utils.HTTPError
+// @Failure      404  {object}  utils.HTTPError
+// @Failure      500  {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /categories/{id} [delete]
 func (h *CategoryHandler) HandleDeleteCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {

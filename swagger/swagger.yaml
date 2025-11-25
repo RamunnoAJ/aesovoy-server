@@ -1,0 +1,1634 @@
+basePath: /
+definitions:
+  api.CategoriesResponse:
+    properties:
+      categories:
+        items:
+          $ref: '#/definitions/store.Category'
+        type: array
+    type: object
+  api.CategoryResponse:
+    properties:
+      category:
+        $ref: '#/definitions/store.Category'
+    type: object
+  api.ClientResponse:
+    properties:
+      client:
+        $ref: '#/definitions/store.Client'
+    type: object
+  api.ClientsResponse:
+    properties:
+      clients:
+        items:
+          $ref: '#/definitions/store.Client'
+        type: array
+      meta:
+        $ref: '#/definitions/utils.Meta'
+    type: object
+  api.IngredientResponse:
+    properties:
+      ingredient:
+        $ref: '#/definitions/store.Ingredient'
+    type: object
+  api.IngredientsResponse:
+    properties:
+      ingredients:
+        items:
+          $ref: '#/definitions/store.Ingredient'
+        type: array
+    type: object
+  api.OrderItemReq:
+    properties:
+      price:
+        type: string
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  api.OrderResponse:
+    properties:
+      order:
+        $ref: '#/definitions/store.Order'
+    type: object
+  api.OrdersResponse:
+    properties:
+      meta:
+        $ref: '#/definitions/utils.Meta'
+      orders:
+        items:
+          $ref: '#/definitions/store.Order'
+        type: array
+    type: object
+  api.PaymentMethodResponse:
+    properties:
+      payment_method:
+        $ref: '#/definitions/store.PaymentMethod'
+    type: object
+  api.PaymentMethodsResponse:
+    properties:
+      payment_methods:
+        items:
+          $ref: '#/definitions/store.PaymentMethod'
+        type: array
+    type: object
+  api.ProductIngredientResponse:
+    properties:
+      product_ingredient:
+        $ref: '#/definitions/store.ProductIngredient'
+    type: object
+  api.ProductResponse:
+    properties:
+      product:
+        $ref: '#/definitions/store.Product'
+    type: object
+  api.ProductsResponse:
+    properties:
+      products:
+        items:
+          $ref: '#/definitions/store.Product'
+        type: array
+    type: object
+  api.ProviderResponse:
+    properties:
+      provider:
+        $ref: '#/definitions/store.Provider'
+    type: object
+  api.ProvidersResponse:
+    properties:
+      meta:
+        $ref: '#/definitions/utils.Meta'
+      providers:
+        items:
+          $ref: '#/definitions/store.Provider'
+        type: array
+    type: object
+  api.RegisterOrderRequest:
+    properties:
+      client_id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/api.OrderItemReq'
+        type: array
+      state:
+        $ref: '#/definitions/store.OrderState'
+    type: object
+  api.TokenResponse:
+    properties:
+      auth_token:
+        type: string
+    type: object
+  api.UpdateOrderStateResponse:
+    properties:
+      id:
+        type: integer
+      state:
+        $ref: '#/definitions/store.OrderState'
+    type: object
+  api.UserResponse:
+    properties:
+      user:
+        $ref: '#/definitions/store.User'
+    type: object
+  api.createTokenRequest:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  api.ingredientRequest:
+    properties:
+      name:
+        type: string
+    type: object
+  api.productIngredientRequest:
+    properties:
+      ingredient_id:
+        type: integer
+      quantity:
+        type: number
+      unit:
+        type: string
+    type: object
+  api.registerCategoryRequest:
+    properties:
+      description:
+        type: string
+      name:
+        type: string
+    type: object
+  api.registerClientRequest:
+    properties:
+      address:
+        type: string
+      cuit:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      reference:
+        type: string
+      type:
+        $ref: '#/definitions/store.ClientType'
+    type: object
+  api.registerPaymentMethodRequest:
+    properties:
+      owner:
+        type: string
+      reference:
+        type: string
+    type: object
+  api.registerProductRequest:
+    properties:
+      category_id:
+        type: integer
+      description:
+        type: string
+      distribution_price:
+        type: number
+      name:
+        type: string
+      unit_price:
+        type: number
+    type: object
+  api.registerProviderRequest:
+    properties:
+      address:
+        type: string
+      cuit:
+        type: string
+      email:
+        type: string
+      name:
+        type: string
+      phone:
+        type: string
+      reference:
+        type: string
+    type: object
+  api.registerUserRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+      username:
+        type: string
+    type: object
+  store.Category:
+    properties:
+      created_at:
+        type: string
+      description:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  store.Client:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      cuit:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      reference:
+        type: string
+      type:
+        $ref: '#/definitions/store.ClientType'
+    type: object
+  store.ClientType:
+    enum:
+    - distributer
+    - individual
+    type: string
+    x-enum-varnames:
+    - ClientTypeDistributer
+    - ClientTypeIndividual
+  store.Ingredient:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  store.Order:
+    properties:
+      client_id:
+        type: integer
+      created_at:
+        type: string
+      date:
+        type: string
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/store.OrderItem'
+        type: array
+      state:
+        $ref: '#/definitions/store.OrderState'
+      total:
+        type: string
+    type: object
+  store.OrderItem:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      order_id:
+        type: integer
+      price:
+        type: string
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    type: object
+  store.OrderState:
+    enum:
+    - todo
+    - done
+    - cancelled
+    - delivered
+    type: string
+    x-enum-varnames:
+    - OrderTodo
+    - OrderDone
+    - OrderCancelled
+    - OrderDelivered
+  store.PaymentMethod:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      owner:
+        type: string
+      reference:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  store.Product:
+    properties:
+      category_id:
+        type: integer
+      category_name:
+        type: string
+      created_at:
+        type: string
+      description:
+        type: string
+      distribution_price:
+        type: number
+      id:
+        type: integer
+      name:
+        type: string
+      recipe:
+        items:
+          $ref: '#/definitions/store.ProductIngredient'
+        type: array
+      unit_price:
+        type: number
+    type: object
+  store.ProductIngredient:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      ingredient_id:
+        type: integer
+      name:
+        type: string
+      quantity:
+        type: number
+      unit:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  store.Provider:
+    properties:
+      address:
+        type: string
+      created_at:
+        type: string
+      cuit:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      name:
+        type: string
+      phone:
+        type: string
+      reference:
+        type: string
+    type: object
+  store.User:
+    properties:
+      created_at:
+        type: string
+      email:
+        type: string
+      id:
+        type: integer
+      username:
+        type: string
+    type: object
+  utils.HTTPError:
+    properties:
+      error:
+        example: true
+        type: boolean
+      message:
+        example: An error occurred
+        type: string
+      statusCode:
+        example: 500
+        type: integer
+    type: object
+  utils.Meta:
+    properties:
+      limit:
+        type: integer
+      offset:
+        type: integer
+      total:
+        type: integer
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: This is the API for the A Eso Voy application.
+  title: A Eso Voy API
+  version: "1.0"
+paths:
+  /categories:
+    get:
+      description: Responds with a list of all categories
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CategoriesResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets all categories
+      tags:
+      - categories
+    post:
+      consumes:
+      - application/json
+      description: Creates a new category with a name and a description
+      parameters:
+      - description: Category data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.registerCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.CategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Creates a category
+      tags:
+      - categories
+  /categories/{id}:
+    delete:
+      description: Deletes a category with a given ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Deletes a category
+      tags:
+      - categories
+    get:
+      description: Responds with a single category with a given ID
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets a category
+      tags:
+      - categories
+    patch:
+      consumes:
+      - application/json
+      description: Updates a category's name or description
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Category data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.registerCategoryRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.CategoryResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Updates a category
+      tags:
+      - categories
+  /categories/{id}/products:
+    get:
+      description: Responds with a list of all products that belong to a given category
+      parameters:
+      - description: Category ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ProductsResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets all products from a category
+      tags:
+      - categories
+  /clients:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Responds with a list of all clients. Can be filtered using a
+        full-text search query, and paginated using limit and offset.
+      parameters:
+      - description: Full-text search query
+        in: query
+        name: q
+        type: string
+      - description: Results-per-page limit
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset for pagination
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ClientsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets all clients, or searches them
+      tags:
+      - clients
+    post:
+      consumes:
+      - application/json
+      description: Creates a new client
+      parameters:
+      - description: Client data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.registerClientRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Creates a client
+      tags:
+      - clients
+  /clients/{id}:
+    get:
+      description: Responds with a single client with a given ID
+      parameters:
+      - description: Client ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets a client
+      tags:
+      - clients
+    patch:
+      consumes:
+      - application/json
+      description: Updates a client's details
+      parameters:
+      - description: Client ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Client data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.registerClientRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ClientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Updates a client
+      tags:
+      - clients
+  /ingredients:
+    get:
+      description: Responds with a list of all ingredients
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.IngredientsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets all ingredients
+      tags:
+      - ingredients
+    post:
+      consumes:
+      - application/json
+      description: Creates a new ingredient with a name
+      parameters:
+      - description: Ingredient data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.ingredientRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.IngredientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Creates an ingredient
+      tags:
+      - ingredients
+  /ingredients/{id}:
+    delete:
+      description: Deletes an ingredient with a given ID
+      parameters:
+      - description: Ingredient ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Deletes an ingredient
+      tags:
+      - ingredients
+    get:
+      description: Responds with a single ingredient with a given ID
+      parameters:
+      - description: Ingredient ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.IngredientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets an ingredient
+      tags:
+      - ingredients
+    patch:
+      consumes:
+      - application/json
+      description: Updates an ingredient's name
+      parameters:
+      - description: Ingredient ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Ingredient data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.ingredientRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.IngredientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Updates an ingredient
+      tags:
+      - ingredients
+  /orders:
+    get:
+      description: Responds with a list of orders, with optional filters
+      parameters:
+      - description: Filter by client ID
+        in: query
+        name: client_id
+        type: integer
+      - description: Filter by order state
+        in: query
+        name: state
+        type: string
+      - description: Results-per-page limit
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset for pagination
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.OrdersResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Lists orders
+      tags:
+      - orders
+    post:
+      consumes:
+      - application/json
+      description: Creates a new order for a client with a list of items
+      parameters:
+      - description: Order data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.RegisterOrderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Creates an order
+      tags:
+      - orders
+  /orders/{id}:
+    get:
+      description: Responds with a single order with a given ID
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.OrderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets an order
+      tags:
+      - orders
+  /orders/{id}/state:
+    patch:
+      consumes:
+      - application/json
+      description: Updates the state of an order (e.g., "todo", "in_progress", "done")
+      parameters:
+      - description: Order ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: New state
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            state:
+              $ref: '#/definitions/store.OrderState'
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.UpdateOrderStateResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Updates an order's state
+      tags:
+      - orders
+  /payment_methods:
+    get:
+      description: Responds with a list of all payment methods
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.PaymentMethodsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets all payment methods
+      tags:
+      - payment_methods
+    post:
+      consumes:
+      - application/json
+      description: Creates a new payment method
+      parameters:
+      - description: Payment Method data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.registerPaymentMethodRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.PaymentMethodResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Creates a payment method
+      tags:
+      - payment_methods
+  /payment_methods/{id}:
+    delete:
+      description: Deletes a payment method with a given ID
+      parameters:
+      - description: Payment Method ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Deletes a payment method
+      tags:
+      - payment_methods
+    get:
+      description: Responds with a single payment method with a given ID
+      parameters:
+      - description: Payment Method ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.PaymentMethodResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets a payment method
+      tags:
+      - payment_methods
+  /products:
+    get:
+      description: Responds with a list of all products
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ProductsResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets all products
+      tags:
+      - products
+    post:
+      consumes:
+      - application/json
+      description: Creates a new product with a name, a description, a category, and
+        prices
+      parameters:
+      - description: Product data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.registerProductRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.ProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Creates a product
+      tags:
+      - products
+  /products/{id}:
+    delete:
+      description: Deletes a product with a given ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Deletes a product
+      tags:
+      - products
+    get:
+      description: Responds with a single product with a given ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets a product
+      tags:
+      - products
+    patch:
+      consumes:
+      - application/json
+      description: Updates a product's details
+      parameters:
+      - description: Product ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Product data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.registerProductRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ProductResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Updates a product
+      tags:
+      - products
+  /products/{productID}/ingredients:
+    post:
+      consumes:
+      - application/json
+      description: Adds a new ingredient to a product's recipe
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: integer
+      - description: Ingredient data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.productIngredientRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.ProductIngredientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Adds an ingredient to a product
+      tags:
+      - products
+  /products/{productID}/ingredients/{ingredientID}:
+    delete:
+      description: Removes an ingredient from a product's recipe
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: integer
+      - description: Ingredient ID
+        in: path
+        name: ingredientID
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Removes an ingredient from a product
+      tags:
+      - products
+    patch:
+      consumes:
+      - application/json
+      description: Updates an ingredient's quantity or unit in a product's recipe
+      parameters:
+      - description: Product ID
+        in: path
+        name: productID
+        required: true
+        type: integer
+      - description: Ingredient ID
+        in: path
+        name: ingredientID
+        required: true
+        type: integer
+      - description: Ingredient data
+        in: body
+        name: body
+        required: true
+        schema:
+          properties:
+            quantity:
+              format: float64
+              type: number
+            unit:
+              type: string
+          type: object
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ProductIngredientResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Updates a product's ingredient
+      tags:
+      - products
+  /providers:
+    get:
+      consumes:
+      - application/json
+      description: |-
+        Responds with a list of all providers. Can be filtered using a
+        full-text search query, and paginated using limit and offset.
+      parameters:
+      - description: Full-text search query
+        in: query
+        name: q
+        type: string
+      - description: Results-per-page limit
+        in: query
+        name: limit
+        type: integer
+      - description: Page offset for pagination
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ProvidersResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets all providers, or searches them
+      tags:
+      - providers
+    post:
+      consumes:
+      - application/json
+      description: Creates a new provider
+      parameters:
+      - description: Provider data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.registerProviderRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.ProviderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Creates a provider
+      tags:
+      - providers
+  /providers/{id}:
+    get:
+      description: Responds with a single provider with a given ID
+      parameters:
+      - description: Provider ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ProviderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets a provider
+      tags:
+      - providers
+    patch:
+      consumes:
+      - application/json
+      description: Updates a provider's details
+      parameters:
+      - description: Provider ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      - description: Provider data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.registerProviderRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.ProviderResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Updates a provider
+      tags:
+      - providers
+  /tokens/authentication:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new authentication token for a user
+      parameters:
+      - description: User credentials
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.createTokenRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.TokenResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      summary: Creates an authentication token
+      tags:
+      - tokens
+  /users:
+    post:
+      consumes:
+      - application/json
+      description: Creates a new user with a username, email, and password
+      parameters:
+      - description: User data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.registerUserRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.UserResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      summary: Creates a user
+      tags:
+      - users
+securityDefinitions:
+  BearerAuth:
+    description: '"Type ''Bearer'' followed by a space and then your token."'
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"

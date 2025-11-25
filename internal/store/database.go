@@ -43,7 +43,6 @@ func Open() (*sql.DB, error) {
 		return nil, fmt.Errorf("db: open %w", err)
 	}
 
-	fmt.Println("connected to db")
 	return db, nil
 }
 

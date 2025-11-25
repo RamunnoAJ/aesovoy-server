@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"io"
-	"log"
 	"log/slog"
 	"net/http"
 	"os"
@@ -16,17 +15,18 @@ import (
 )
 
 type Application struct {
-	Logger            *log.Logger
-	UserHandler       *api.UserHandler
-	TokenHandler      *api.TokenHandler
-	CategoryHandler   *api.CategoryHandler
-	ProductHandler    *api.ProductHandler
-	ClientHandler     *api.ClientHandler
-	ProviderHandler   *api.ProviderHandler
-	OrderHandler      *api.OrderHandler
-	IngredientHandler *api.IngredientHandler
-	Middleware        middleware.UserMiddleware
-	DB                *sql.DB
+	Logger               *slog.Logger
+	UserHandler          *api.UserHandler
+	TokenHandler         *api.TokenHandler
+	CategoryHandler      *api.CategoryHandler
+	ProductHandler       *api.ProductHandler
+	ClientHandler        *api.ClientHandler
+	ProviderHandler      *api.ProviderHandler
+	OrderHandler         *api.OrderHandler
+	IngredientHandler    *api.IngredientHandler
+	PaymentMethodHandler *api.PaymentMethodHandler
+	Middleware           middleware.UserMiddleware
+	DB                   *sql.DB
 }
 
 func NewApplication() (*Application, error) {
@@ -63,6 +63,7 @@ func NewApplication() (*Application, error) {
 	providerStore := store.NewPostgresProviderStore(pgDB)
 	orderStore := store.NewPostgresOrderStore(pgDB)
 	ingredientStore := store.NewPostgresIngredientStore(pgDB)
+	paymentMethodStore := store.NewPostgresPaymentMethodStore(pgDB)
 
 	// our handlers will go here
 	userHandler := api.NewUserHandler(userStore, logger)
@@ -74,19 +75,21 @@ func NewApplication() (*Application, error) {
 	providerHandler := api.NewProviderHandler(providerStore, logger)
 	orderHandler := api.NewOrderHandler(orderStore, clientStore, productStore, logger)
 	ingredientHandler := api.NewIngredientHandler(ingredientStore, logger)
+	paymentMethodHandler := api.NewPaymentMethodHandler(paymentMethodStore, logger)
 
 	app := &Application{
-		Logger:            logger,
-		UserHandler:       userHandler,
-		TokenHandler:      tokenHandler,
-		Middleware:        middlewareHandler,
-		CategoryHandler:   categoryHandler,
-		ProductHandler:    productHandler,
-		ClientHandler:     clientHandler,
-		ProviderHandler:   providerHandler,
-		OrderHandler:      orderHandler,
-		IngredientHandler: ingredientHandler,
-		DB:                pgDB,
+		Logger:               logger,
+		UserHandler:          userHandler,
+		TokenHandler:         tokenHandler,
+		Middleware:           middlewareHandler,
+		CategoryHandler:      categoryHandler,
+		ProductHandler:       productHandler,
+		ClientHandler:        clientHandler,
+		ProviderHandler:      providerHandler,
+		OrderHandler:         orderHandler,
+		IngredientHandler:    ingredientHandler,
+		PaymentMethodHandler: paymentMethodHandler,
+		DB:                   pgDB,
 	}
 
 	return app, nil

@@ -1,4 +1,5 @@
 *.env
 ./database
 database
-logs/*
+logs/*.txt
+facturas/*.xlsx
