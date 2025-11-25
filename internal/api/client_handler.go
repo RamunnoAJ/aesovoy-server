@@ -3,7 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"regexp"
 	"strconv"
@@ -25,10 +25,10 @@ type registerClientRequest struct {
 
 type ClientHandler struct {
 	clientStore store.ClientStore
-	logger      *log.Logger
+	logger      *slog.Logger
 }
 
-func NewClientHandler(clientStore store.ClientStore, logger *log.Logger) *ClientHandler {
+func NewClientHandler(clientStore store.ClientStore, logger *slog.Logger) *ClientHandler {
 	return &ClientHandler{clientStore: clientStore, logger: logger}
 }
 
@@ -83,7 +83,7 @@ func (h *ClientHandler) HandleRegisterClient(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := h.clientStore.CreateClient(c); err != nil {
-		h.logger.Printf("ERROR: creating client: %v", err)
+		h.logger.Error("creating client", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -147,7 +147,7 @@ func (h *ClientHandler) HandleUpdateClient(w http.ResponseWriter, r *http.Reques
 			utils.Error(w, http.StatusNotFound, "client not found")
 			return
 		}
-		h.logger.Printf("ERROR: updating client: %v", err)
+		h.logger.Error("updating client", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -187,7 +187,7 @@ func (h *ClientHandler) HandleGetClients(w http.ResponseWriter, r *http.Request)
 		list, err = h.clientStore.SearchClientsFTS(q, limit, offset)
 	}
 	if err != nil {
-		h.logger.Printf("ERROR: list/search clients: %v", err)
+		h.logger.Error("list/search clients", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}

@@ -2,7 +2,7 @@ package api
 
 import (
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"time"
 
@@ -14,7 +14,7 @@ import (
 type TokenHandler struct {
 	tokenStore store.TokenStore
 	userStore  store.UserStore
-	logger     *log.Logger
+	logger     *slog.Logger
 }
 
 type createTokenRequest struct {
@@ -22,7 +22,7 @@ type createTokenRequest struct {
 	Password string `json:"password"`
 }
 
-func NewTokenHandler(tokenStore store.TokenStore, userStore store.UserStore, logger *log.Logger) *TokenHandler {
+func NewTokenHandler(tokenStore store.TokenStore, userStore store.UserStore, logger *slog.Logger) *TokenHandler {
 	return &TokenHandler{
 		tokenStore: tokenStore,
 		userStore:  userStore,
@@ -35,7 +35,7 @@ func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request)
 	err := json.NewDecoder(r.Body).Decode(&req)
 
 	if err != nil {
-		h.logger.Printf("ERROR: createTokenRequest: %v", err)
+		h.logger.Error("createTokenRequest: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
@@ -43,14 +43,14 @@ func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request)
 	// lets get the user
 	user, err := h.userStore.GetUserByUsername(req.Username)
 	if err != nil || user == nil {
-		h.logger.Printf("ERROR: GetUserByUsername: %v", err)
+		h.logger.Error("GetUserByUsername: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	passwordsDoMatch, err := user.PasswordHash.Matches(req.Password)
 	if err != nil {
-		h.logger.Printf("ERORR: PasswordHash.Mathes %v", err)
+		h.logger.Error("PasswordHash.Mathes %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -62,7 +62,7 @@ func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request)
 
 	token, err := h.tokenStore.CreateNewToken(user.ID, 24*time.Hour, tokens.ScopeAuth)
 	if err != nil {
-		h.logger.Printf("ERORR: Creating Token %v", err)
+		h.logger.Error("Creating Token %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 

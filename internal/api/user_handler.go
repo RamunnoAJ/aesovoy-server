@@ -3,7 +3,7 @@ package api
 import (
 	"encoding/json"
 	"errors"
-	"log"
+	"log/slog"
 	"net/http"
 	"regexp"
 
@@ -19,10 +19,10 @@ type registerUserRequest struct {
 
 type UserHandler struct {
 	userStore store.UserStore
-	logger    *log.Logger
+	logger    *slog.Logger
 }
 
-func NewUserHandler(userStore store.UserStore, logger *log.Logger) *UserHandler {
+func NewUserHandler(userStore store.UserStore, logger *slog.Logger) *UserHandler {
 	return &UserHandler{
 		userStore: userStore,
 		logger:    logger,
@@ -59,7 +59,7 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		h.logger.Printf("ERROR: decoding register request: %v", err)
+		h.logger.Error("decoding register request:", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
@@ -78,14 +78,14 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 	// how do we deal with their passwords
 	err = user.PasswordHash.Set(req.Password)
 	if err != nil {
-		h.logger.Printf("ERROR: hashing password %v", err)
+		h.logger.Error("hashing password", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
 
 	err = h.userStore.CreateUser(user)
 	if err != nil {
-		h.logger.Printf("ERROR: registering user %v", err)
+		h.logger.Error("registering user", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}

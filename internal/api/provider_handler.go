@@ -3,7 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"strings"
 
@@ -22,10 +22,10 @@ type registerProviderRequest struct {
 
 type ProviderHandler struct {
 	providerStore store.ProviderStore
-	logger        *log.Logger
+	logger        *slog.Logger
 }
 
-func NewProviderHandler(s store.ProviderStore, l *log.Logger) *ProviderHandler {
+func NewProviderHandler(s store.ProviderStore, l *slog.Logger) *ProviderHandler {
 	return &ProviderHandler{providerStore: s, logger: l}
 }
 
@@ -65,7 +65,7 @@ func (h *ProviderHandler) HandleRegisterProvider(w http.ResponseWriter, r *http.
 		Reference: req.Reference, Email: req.Email, CUIT: req.CUIT,
 	}
 	if err := h.providerStore.CreateProvider(p); err != nil {
-		h.logger.Printf("ERROR: creating provider: %v", err)
+		h.logger.Error("creating provider: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -120,7 +120,7 @@ func (h *ProviderHandler) HandleUpdateProvider(w http.ResponseWriter, r *http.Re
 			utils.Error(w, http.StatusNotFound, "provider not found")
 			return
 		}
-		h.logger.Printf("ERROR: updating provider: %v", err)
+		h.logger.Error("updating provider: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -160,7 +160,7 @@ func (h *ProviderHandler) HandleGetProviders(w http.ResponseWriter, r *http.Requ
 		list, err = h.providerStore.SearchProvidersFTS(q, limit, offset)
 	}
 	if err != nil {
-		h.logger.Printf("ERROR: list/search providers: %v", err)
+		h.logger.Error("list/search providers: %v", err)
 		utils.Error(w, 500, "internal server error")
 		return
 	}

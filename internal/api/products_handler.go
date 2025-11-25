@@ -3,7 +3,7 @@ package api
 import (
 	"database/sql"
 	"encoding/json"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -23,10 +23,10 @@ type registerProductRequest struct {
 
 type ProductHandler struct {
 	productStore store.ProductStore
-	logger       *log.Logger
+	logger       *slog.Logger
 }
 
-func NewProductHandler(productStore store.ProductStore, logger *log.Logger) *ProductHandler {
+func NewProductHandler(productStore store.ProductStore, logger *slog.Logger) *ProductHandler {
 	return &ProductHandler{
 		productStore: productStore,
 		logger:       logger,
@@ -57,7 +57,7 @@ func (h *ProductHandler) validateRegisterRequest(req *registerProductRequest) er
 func (h *ProductHandler) HandleRegisterProduct(w http.ResponseWriter, r *http.Request) {
 	var req registerProductRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Printf("ERROR: decoding register product: %v", err)
+		h.logger.Error("decoding register product: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
@@ -79,7 +79,7 @@ func (h *ProductHandler) HandleRegisterProduct(w http.ResponseWriter, r *http.Re
 	}
 
 	if err := h.productStore.CreateProduct(pr); err != nil {
-		h.logger.Printf("ERROR: creating product: %v", err)
+		h.logger.Error("creating product: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -89,14 +89,14 @@ func (h *ProductHandler) HandleRegisterProduct(w http.ResponseWriter, r *http.Re
 func (h *ProductHandler) HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
 	productID, err := utils.ReadIDParam(r)
 	if err != nil {
-		h.logger.Printf("ERROR: readIDParam: %v", err)
+		h.logger.Error("readIDParam: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid product id")
 		return
 	}
 
 	pr, err := h.productStore.GetProductByID(productID)
 	if err != nil {
-		h.logger.Printf("ERROR: getProductByID: %v", err)
+		h.logger.Error("getProductByID: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -113,7 +113,7 @@ func (h *ProductHandler) HandleUpdateProduct(w http.ResponseWriter, r *http.Requ
 		DistributionPrice *float64 `json:"distribution_price"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Printf("ERROR: decoding update product: %v", err)
+		h.logger.Error("decoding update product: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
@@ -135,7 +135,7 @@ func (h *ProductHandler) HandleUpdateProduct(w http.ResponseWriter, r *http.Requ
 	}
 
 	if err := h.productStore.UpdateProduct(pr); err != nil {
-		h.logger.Printf("ERROR: updating product: %v", err)
+		h.logger.Error("updating product: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -145,14 +145,14 @@ func (h *ProductHandler) HandleUpdateProduct(w http.ResponseWriter, r *http.Requ
 func (h *ProductHandler) HandleGetProductByID(w http.ResponseWriter, r *http.Request) {
 	productID, err := utils.ReadIDParam(r)
 	if err != nil {
-		h.logger.Printf("ERROR: readIDParam: %v", err)
+		h.logger.Error("readIDParam: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid product id")
 		return
 	}
 
 	pr, err := h.productStore.GetProductByID(productID)
 	if err != nil {
-		h.logger.Printf("ERROR: getProductByID: %v", err)
+		h.logger.Error("getProductByID: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -167,7 +167,7 @@ func (h *ProductHandler) HandleGetProductByID(w http.ResponseWriter, r *http.Req
 func (h *ProductHandler) HandleGetProducts(w http.ResponseWriter, r *http.Request) {
 	prs, err := h.productStore.GetAllProduct()
 	if err != nil {
-		h.logger.Printf("ERROR: getAllProducts: %v", err)
+		h.logger.Error("getAllProducts: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -177,13 +177,13 @@ func (h *ProductHandler) HandleGetProducts(w http.ResponseWriter, r *http.Reques
 func (h *ProductHandler) HandleGetProductsByCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {
-		h.logger.Printf("ERROR: readIDParam: %v", err)
+		h.logger.Error("readIDParam: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid category id")
 		return
 	}
 	prs, err := h.productStore.GetProductsByCategoryID(categoryID)
 	if err != nil {
-		h.logger.Printf("ERROR: getProductsByCategoryID: %v", err)
+		h.logger.Error("getProductsByCategoryID: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -193,7 +193,7 @@ func (h *ProductHandler) HandleGetProductsByCategory(w http.ResponseWriter, r *h
 func (h *ProductHandler) HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 	productID, err := utils.ReadIDParam(r)
 	if err != nil {
-		h.logger.Printf("ERROR: readIDParam: %v", err)
+		h.logger.Error("readIDParam: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid product id")
 		return
 	}
@@ -204,7 +204,7 @@ func (h *ProductHandler) HandleDeleteProduct(w http.ResponseWriter, r *http.Requ
 		return
 	}
 	if err != nil {
-		h.logger.Printf("ERROR: deleting product: %v", err)
+		h.logger.Error("deleting product: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -220,21 +220,21 @@ type productIngredientRequest struct {
 func (h *ProductHandler) HandleAddIngredientToProduct(w http.ResponseWriter, r *http.Request) {
 	productID, err := strconv.ParseInt(chi.URLParam(r, "productID"), 10, 64)
 	if err != nil {
-		h.logger.Printf("ERROR: reading product id param: %v", err)
+		h.logger.Error("reading product id param: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid product id")
 		return
 	}
 
 	var req productIngredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Printf("ERROR: decoding add ingredient request: %v", err)
+		h.logger.Error("decoding add ingredient request: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
 
 	pi, err := h.productStore.AddIngredientToProduct(productID, req.IngredientID, req.Quantity, req.Unit)
 	if err != nil {
-		h.logger.Printf("ERROR: adding ingredient to product: %v", err)
+		h.logger.Error("adding ingredient to product: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -245,13 +245,13 @@ func (h *ProductHandler) HandleAddIngredientToProduct(w http.ResponseWriter, r *
 func (h *ProductHandler) HandleUpdateProductIngredient(w http.ResponseWriter, r *http.Request) {
 	productID, err := strconv.ParseInt(chi.URLParam(r, "productID"), 10, 64)
 	if err != nil {
-		h.logger.Printf("ERROR: reading product id param: %v", err)
+		h.logger.Error("reading product id param: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid product id")
 		return
 	}
 	ingredientID, err := strconv.ParseInt(chi.URLParam(r, "ingredientID"), 10, 64)
 	if err != nil {
-		h.logger.Printf("ERROR: reading ingredient id param: %v", err)
+		h.logger.Error("reading ingredient id param: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid ingredient id")
 		return
 	}
@@ -261,7 +261,7 @@ func (h *ProductHandler) HandleUpdateProductIngredient(w http.ResponseWriter, r 
 		Unit     string  `json:"unit"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Printf("ERROR: decoding update ingredient request: %v", err)
+		h.logger.Error("decoding update ingredient request: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
@@ -272,7 +272,7 @@ func (h *ProductHandler) HandleUpdateProductIngredient(w http.ResponseWriter, r 
 			utils.Error(w, http.StatusNotFound, "product ingredient not found")
 			return
 		}
-		h.logger.Printf("ERROR: updating product ingredient: %v", err)
+		h.logger.Error("updating product ingredient: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -283,13 +283,13 @@ func (h *ProductHandler) HandleUpdateProductIngredient(w http.ResponseWriter, r 
 func (h *ProductHandler) HandleRemoveIngredientFromProduct(w http.ResponseWriter, r *http.Request) {
 	productID, err := strconv.ParseInt(chi.URLParam(r, "productID"), 10, 64)
 	if err != nil {
-		h.logger.Printf("ERROR: reading product id param: %v", err)
+		h.logger.Error("reading product id param: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid product id")
 		return
 	}
 	ingredientID, err := strconv.ParseInt(chi.URLParam(r, "ingredientID"), 10, 64)
 	if err != nil {
-		h.logger.Printf("ERROR: reading ingredient id param: %v", err)
+		h.logger.Error("reading ingredient id param: %v", err)
 		utils.Error(w, http.StatusBadRequest, "invalid ingredient id")
 		return
 	}
@@ -300,7 +300,7 @@ func (h *ProductHandler) HandleRemoveIngredientFromProduct(w http.ResponseWriter
 			utils.Error(w, http.StatusNotFound, "product ingredient not found")
 			return
 		}
-		h.logger.Printf("ERROR: removing product ingredient: %v", err)
+		h.logger.Error("removing product ingredient: %v", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}

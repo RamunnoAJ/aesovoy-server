@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
@@ -17,10 +17,10 @@ type ingredientRequest struct {
 
 type IngredientHandler struct {
 	ingredientStore store.IngredientStore
-	logger          *log.Logger
+	logger          *slog.Logger
 }
 
-func NewIngredientHandler(ingredientStore store.IngredientStore, logger *log.Logger) *IngredientHandler {
+func NewIngredientHandler(ingredientStore store.IngredientStore, logger *slog.Logger) *IngredientHandler {
 	return &IngredientHandler{
 		ingredientStore: ingredientStore,
 		logger:          logger,
@@ -37,7 +37,7 @@ func (h *IngredientHandler) validateRequest(req *ingredientRequest) error {
 func (h *IngredientHandler) HandleCreateIngredient(w http.ResponseWriter, r *http.Request) {
 	var req ingredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Printf("ERROR: decoding create ingredient request: %v", err)
+		h.logger.Error("decoding create ingredient request", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
@@ -52,7 +52,7 @@ func (h *IngredientHandler) HandleCreateIngredient(w http.ResponseWriter, r *htt
 	}
 
 	if err := h.ingredientStore.CreateIngredient(ingredient); err != nil {
-		h.logger.Printf("ERROR: creating ingredient: %v", err)
+		h.logger.Error("creating ingredient", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -63,14 +63,14 @@ func (h *IngredientHandler) HandleCreateIngredient(w http.ResponseWriter, r *htt
 func (h *IngredientHandler) HandleUpdateIngredient(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
-		h.logger.Printf("ERROR: reading id param: %v", err)
+		h.logger.Error("reading id param", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid ingredient id")
 		return
 	}
 
 	ingredient, err := h.ingredientStore.GetIngredientByID(id)
 	if err != nil {
-		h.logger.Printf("ERROR: getting ingredient by id: %v", err)
+		h.logger.Error("getting ingredient by id", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -81,7 +81,7 @@ func (h *IngredientHandler) HandleUpdateIngredient(w http.ResponseWriter, r *htt
 
 	var req ingredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		h.logger.Printf("ERROR: decoding update ingredient request: %v", err)
+		h.logger.Error("decoding update ingredient request", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
@@ -93,7 +93,7 @@ func (h *IngredientHandler) HandleUpdateIngredient(w http.ResponseWriter, r *htt
 
 	ingredient.Name = req.Name
 	if err := h.ingredientStore.UpdateIngredient(ingredient); err != nil {
-		h.logger.Printf("ERROR: updating ingredient: %v", err)
+		h.logger.Error("updating ingredient", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -104,14 +104,14 @@ func (h *IngredientHandler) HandleUpdateIngredient(w http.ResponseWriter, r *htt
 func (h *IngredientHandler) HandleGetIngredientByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
-		h.logger.Printf("ERROR: reading id param: %v", err)
+		h.logger.Error("reading id param", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid ingredient id")
 		return
 	}
 
 	ingredient, err := h.ingredientStore.GetIngredientByID(id)
 	if err != nil {
-		h.logger.Printf("ERROR: getting ingredient by id: %v", err)
+		h.logger.Error("getting ingredient by id", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -126,7 +126,7 @@ func (h *IngredientHandler) HandleGetIngredientByID(w http.ResponseWriter, r *ht
 func (h *IngredientHandler) HandleGetAllIngredients(w http.ResponseWriter, r *http.Request) {
 	ingredients, err := h.ingredientStore.GetAllIngredients()
 	if err != nil {
-		h.logger.Printf("ERROR: getting all ingredients: %v", err)
+		h.logger.Error("getting all ingredients", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -137,7 +137,7 @@ func (h *IngredientHandler) HandleGetAllIngredients(w http.ResponseWriter, r *ht
 func (h *IngredientHandler) HandleDeleteIngredient(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
-		h.logger.Printf("ERROR: reading id param: %v", err)
+		h.logger.Error("reading id param", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid ingredient id")
 		return
 	}
@@ -148,7 +148,7 @@ func (h *IngredientHandler) HandleDeleteIngredient(w http.ResponseWriter, r *htt
 		return
 	}
 	if err != nil {
-		h.logger.Printf("ERROR: deleting ingredient: %v", err)
+		h.logger.Error("deleting ingredient", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}

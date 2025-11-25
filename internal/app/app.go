@@ -3,7 +3,9 @@ package app
 import (
 	"database/sql"
 	"fmt"
+	"io"
 	"log"
+	"log/slog"
 	"net/http"
 	"os"
 
@@ -28,6 +30,14 @@ type Application struct {
 }
 
 func NewApplication() (*Application, error) {
+	LOG_FILE := os.Getenv("LOG_FILE")
+	file, err := os.OpenFile(LOG_FILE, os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		return nil, err
+	}
+
+	defer file.Close()
+
 	pgDB, err := store.Open()
 	if err != nil {
 		return nil, err
@@ -38,7 +48,11 @@ func NewApplication() (*Application, error) {
 		panic(err)
 	}
 
-	logger := log.New(os.Stdout, "", log.Ldate|log.Ltime)
+	w := io.MultiWriter(os.Stderr, file)
+	handlerOpts := &slog.HandlerOptions{
+		AddSource: true,
+	}
+	logger := slog.New(slog.NewTextHandler(w, handlerOpts))
 
 	// our stores will go here
 	userStore := store.NewPostgresUserStore(pgDB)

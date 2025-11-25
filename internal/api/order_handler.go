@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -29,10 +29,10 @@ type OrderHandler struct {
 	orders   store.OrderStore
 	clients  store.ClientStore
 	products store.ProductStore
-	logger   *log.Logger
+	logger   *slog.Logger
 }
 
-func NewOrderHandler(os store.OrderStore, cs store.ClientStore, ps store.ProductStore, l *log.Logger) *OrderHandler {
+func NewOrderHandler(os store.OrderStore, cs store.ClientStore, ps store.ProductStore, l *slog.Logger) *OrderHandler {
 	return &OrderHandler{orders: os, clients: cs, products: ps, logger: l}
 }
 
@@ -85,7 +85,7 @@ func (h *OrderHandler) HandleRegisterOrder(w http.ResponseWriter, r *http.Reques
 		productIDs[i] = it.ProductID
 	}
 	if err := h.orders.CreateOrder(o, items); err != nil {
-		h.logger.Printf("ERROR: create order: %v", err)
+		h.logger.Error("create order", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -94,23 +94,23 @@ func (h *OrderHandler) HandleRegisterOrder(w http.ResponseWriter, r *http.Reques
 	go func() {
 		client, err := h.clients.GetClientByID(o.ClientID)
 		if err != nil {
-			h.logger.Printf("ERROR: generating invoice: could not get client %d: %v", o.ClientID, err)
+			h.logger.Error("generating invoice: could not get client", "clientID", o.ClientID, "error", err)
 			return
 		}
 		if client == nil {
-			h.logger.Printf("ERROR: generating invoice: client %d not found", o.ClientID)
+			h.logger.Error("generating invoice: client not found", "clientID", o.ClientID)
 			return
 		}
 
 		products, err := h.products.GetProductsByIDs(productIDs)
 		if err != nil {
-			h.logger.Printf("ERROR: generating invoice: could not get products: %v", err)
+			h.logger.Error("generating invoice: could not get products", "error", err)
 			return
 		}
 
 		// The order object 'o' from CreateOrder has the final items list.
 		if err := billing.GenerateInvoice(o, client, products); err != nil {
-			h.logger.Printf("ERROR: generating invoice for order %d: %v", o.ID, err)
+			h.logger.Error("generating invoice for order", "orderID", o.ID, "error", err)
 		}
 	}()
 
@@ -139,7 +139,7 @@ func (h *OrderHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Req
 			utils.Error(w, http.StatusNotFound, "order not found")
 			return
 		}
-		h.logger.Printf("ERROR: update order state: %v", err)
+		h.logger.Error("update order state", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}

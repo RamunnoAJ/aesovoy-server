@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"log"
+	"log/slog"
 	"net/http"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
@@ -18,10 +18,10 @@ type registerCategoryRequest struct {
 
 type CategoryHandler struct {
 	categoryStore store.CategoryStore
-	logger        *log.Logger
+	logger        *slog.Logger
 }
 
-func NewCategoryHandler(categoryStore store.CategoryStore, logger *log.Logger) *CategoryHandler {
+func NewCategoryHandler(categoryStore store.CategoryStore, logger *slog.Logger) *CategoryHandler {
 	return &CategoryHandler{
 		categoryStore: categoryStore,
 		logger:        logger,
@@ -41,7 +41,7 @@ func (h *CategoryHandler) HandleRegisterCategory(w http.ResponseWriter, r *http.
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		h.logger.Printf("ERROR: decoding register request: %v", err)
+		h.logger.Error("decoding register request", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
@@ -59,7 +59,7 @@ func (h *CategoryHandler) HandleRegisterCategory(w http.ResponseWriter, r *http.
 
 	err = h.categoryStore.CreateCategory(category)
 	if err != nil {
-		h.logger.Printf("ERROR: registering category %v", err)
+		h.logger.Error("registering category", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -70,14 +70,14 @@ func (h *CategoryHandler) HandleRegisterCategory(w http.ResponseWriter, r *http.
 func (h *CategoryHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {
-		h.logger.Printf("ERROR: readIDParam: %v", err)
+		h.logger.Error("readIDParam", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid category id")
 		return
 	}
 
 	category, err := h.categoryStore.GetCategoryByID(categoryID)
 	if err != nil {
-		h.logger.Printf("ERROR: getCategoryByID: %v", err)
+		h.logger.Error("getCategoryByID", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -89,7 +89,7 @@ func (h *CategoryHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Re
 
 	err = json.NewDecoder(r.Body).Decode(&updateCategoryRequest)
 	if err != nil {
-		h.logger.Printf("ERROR: decodingUpdateRequest: %v", err)
+		h.logger.Error("decodingUpdateRequest", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
 		return
 	}
@@ -102,7 +102,7 @@ func (h *CategoryHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Re
 
 	err = h.categoryStore.UpdateCategory(category)
 	if err != nil {
-		h.logger.Printf("ERROR: updatingCategory: %v", err)
+		h.logger.Error("updatingCategory", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -113,14 +113,14 @@ func (h *CategoryHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Re
 func (h *CategoryHandler) HandleGetCategoryByID(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {
-		h.logger.Printf("ERROR: readIDParam: %v", err)
+		h.logger.Error("readIDParam:", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid category id")
 		return
 	}
 
 	category, err := h.categoryStore.GetCategoryByID(categoryID)
 	if err != nil {
-		h.logger.Printf("ERROR: getCategoryByID: %v", err)
+		h.logger.Error("getCategoryByID", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -131,7 +131,7 @@ func (h *CategoryHandler) HandleGetCategoryByID(w http.ResponseWriter, r *http.R
 func (h *CategoryHandler) HandleGetCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.categoryStore.GetAllCategories()
 	if err != nil {
-		h.logger.Printf("ERROR: getAllCategories: %v", err)
+		h.logger.Error("getAllCategories", "error", err)
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return
 	}
@@ -142,7 +142,7 @@ func (h *CategoryHandler) HandleGetCategories(w http.ResponseWriter, r *http.Req
 func (h *CategoryHandler) HandleDeleteCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {
-		h.logger.Printf("ERROR: readIDParam: %v", err)
+		h.logger.Error("readIDParam", "error", err)
 		utils.Error(w, http.StatusBadRequest, "invalid category id")
 		return
 	}
