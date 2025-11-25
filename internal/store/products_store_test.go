@@ -1,169 +1,210 @@
 package store
 
 import (
+	"database/sql"
+	"fmt"
 	"testing"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
-func TestCreateAndGetProduct(t *testing.T) {
-	db := setupTestDB(t)
-	defer db.Close()
-
+func setupCategory(t *testing.T, db *sql.DB) *Category {
+	t.Helper()
 	categoryStore := NewPostgresCategoryStore(db)
-	productStore := NewPostgresProductStore(db)
-	ingredientStore := NewPostgresIngredientStore(db)
-
-	// 1. Create dependencies
-	category := &Category{Name: "Panaderia"}
+	name := fmt.Sprintf("Test Category %d", time.Now().UnixNano())
+	category := &Category{Name: name}
 	require.NoError(t, categoryStore.CreateCategory(category))
-
-	ingredient1 := &Ingredient{Name: "Harina"}
-	require.NoError(t, ingredientStore.CreateIngredient(ingredient1))
-
-	ingredient2 := &Ingredient{Name: "Agua"}
-	require.NoError(t, ingredientStore.CreateIngredient(ingredient2))
-
-	// 2. Create Product
-	product := &Product{
-		CategoryID:        category.ID,
-		Name:              "Pan",
-		Description:       "Pan casero",
-		UnitPrice:         1.5,
-		DistributionPrice: 1.0,
-	}
-	require.NoError(t, productStore.CreateProduct(product))
-	assert.NotZero(t, product.ID)
-
-	// 3. Add ingredients to recipe
-	_, err := productStore.AddIngredientToProduct(product.ID, ingredient1.ID, 500, "grams")
-	require.NoError(t, err)
-	_, err = productStore.AddIngredientToProduct(product.ID, ingredient2.ID, 300, "ml")
-	require.NoError(t, err)
-
-	// 4. Get Product and verify
-	gotProduct, err := productStore.GetProductByID(product.ID)
-	require.NoError(t, err)
-	require.NotNil(t, gotProduct)
-
-	assert.Equal(t, product.Name, gotProduct.Name)
-	assert.Equal(t, category.Name, gotProduct.CategoryName)
-	require.Len(t, gotProduct.Recipe, 2)
-	assert.Equal(t, "Agua", gotProduct.Recipe[0].Name)
-	assert.Equal(t, 300.0, gotProduct.Recipe[0].Quantity)
-	assert.Equal(t, "ml", gotProduct.Recipe[0].Unit)
-	assert.Equal(t, "Harina", gotProduct.Recipe[1].Name)
-	assert.Equal(t, 500.0, gotProduct.Recipe[1].Quantity)
-	assert.Equal(t, "grams", gotProduct.Recipe[1].Unit)
+	return category
 }
 
-func TestUpdateProduct(t *testing.T) {
+func TestProductStore_Create(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
+	s := NewPostgresProductStore(db)
+	category := setupCategory(t, db)
 
-	categoryStore := NewPostgresCategoryStore(db)
-	productStore := NewPostgresProductStore(db)
+	tests := []struct {
+		name    string
+		product *Product
+		wantErr bool
+	}{
+		{
+			name: "create valid product",
+			product: &Product{
+				CategoryID:        category.ID,
+				Name:              "Pan",
+				Description:       "Pan casero",
+				UnitPrice:         1.5,
+				DistributionPrice: 1.0,
+			},
+			wantErr: false,
+		},
+		{
+			name:    "create with invalid category",
+			product: &Product{CategoryID: 999, Name: "Invalid"},
+			wantErr: true,
+		},
+	}
 
-	category := &Category{Name: "Pasteleria"}
-	require.NoError(t, categoryStore.CreateCategory(category))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := s.CreateProduct(tt.product)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.NotZero(t, tt.product.ID)
+			}
+		})
+	}
+}
+
+func TestProductStore_Get(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	s := NewPostgresProductStore(db)
+	category := setupCategory(t, db)
 
 	product := &Product{
 		CategoryID: category.ID,
-		Name:       "Torta",
+		Name:       "Test Product",
+		UnitPrice:  10,
+	}
+	require.NoError(t, s.CreateProduct(product))
+
+	// Get and verify
+	got, err := s.GetProductByID(product.ID)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	assert.Equal(t, product.Name, got.Name)
+	assert.Equal(t, category.Name, got.CategoryName)
+
+	// Get non-existent
+	got, err = s.GetProductByID(9999)
+	require.NoError(t, err)
+	assert.Nil(t, got)
+}
+
+func TestProductStore_Update(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	s := NewPostgresProductStore(db)
+	category := setupCategory(t, db)
+
+	product := &Product{
+		CategoryID: category.ID,
+		Name:       "Original Name",
 		UnitPrice:  10.0,
 	}
-	require.NoError(t, productStore.CreateProduct(product))
+	require.NoError(t, s.CreateProduct(product))
 
-	product.Name = "Torta de Chocolate"
-	product.UnitPrice = 12.5
-	require.NoError(t, productStore.UpdateProduct(product))
-
-	updatedProduct, err := productStore.GetProductByID(product.ID)
+	// Update fields
+	product.Name = "Updated Name"
+	product.Description = "Updated Desc"
+	product.UnitPrice = 15.5
+	err := s.UpdateProduct(product)
 	require.NoError(t, err)
-	assert.Equal(t, "Torta de Chocolate", updatedProduct.Name)
-	assert.Equal(t, 12.5, updatedProduct.UnitPrice)
+
+	// Get and verify
+	updated, err := s.GetProductByID(product.ID)
+	require.NoError(t, err)
+	require.NotNil(t, updated)
+	assert.Equal(t, "Updated Name", updated.Name)
+	assert.Equal(t, "Updated Desc", updated.Description)
+	assert.Equal(t, 15.5, updated.UnitPrice)
 }
 
-func TestDeleteProduct(t *testing.T) {
+func TestProductStore_Delete(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
+	s := NewPostgresProductStore(db)
+	category := setupCategory(t, db)
 
-	productStore := NewPostgresProductStore(db)
-	categoryStore := NewPostgresCategoryStore(db)
-	category := &Category{Name: "Bebidas"}
-	require.NoError(t, categoryStore.CreateCategory(category))
+	product := &Product{CategoryID: category.ID, Name: "To Delete", UnitPrice: 1}
+	require.NoError(t, s.CreateProduct(product))
 
-	product := &Product{CategoryID: category.ID, Name: "Jugo"}
-	require.NoError(t, productStore.CreateProduct(product))
-
-	require.NoError(t, productStore.DeleteProduct(product.ID))
-
-	deletedProduct, err := productStore.GetProductByID(product.ID)
+	// Delete
+	err := s.DeleteProduct(product.ID)
 	require.NoError(t, err)
-	assert.Nil(t, deletedProduct)
+
+	// Verify gone
+	got, err := s.GetProductByID(product.ID)
+	require.NoError(t, err)
+	assert.Nil(t, got)
+
+	// Delete non-existent should error
+	err = s.DeleteProduct(9999)
+	assert.ErrorIs(t, err, sql.ErrNoRows)
 }
 
-func TestGetAllAndByCategoryProduct(t *testing.T) {
+func TestProductStore_List(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
+	s := NewPostgresProductStore(db)
+	cat1 := setupCategory(t, db)
+	cat2 := setupCategory(t, db)
 
-	productStore := NewPostgresProductStore(db)
-	categoryStore := NewPostgresCategoryStore(db)
+	// Create products
+	p1 := &Product{CategoryID: cat1.ID, Name: "A Product"}
+	require.NoError(t, s.CreateProduct(p1))
+	p2 := &Product{CategoryID: cat1.ID, Name: "B Product"}
+	require.NoError(t, s.CreateProduct(p2))
+	p3 := &Product{CategoryID: cat2.ID, Name: "C Product"}
+	require.NoError(t, s.CreateProduct(p3))
 
-	cat1 := &Category{Name: "Carnes"}
-	require.NoError(t, categoryStore.CreateCategory(cat1))
-	cat2 := &Category{Name: "Verduras"}
-	require.NoError(t, categoryStore.CreateCategory(cat2))
-
-	p1 := &Product{CategoryID: cat1.ID, Name: "Lomo"}
-	require.NoError(t, productStore.CreateProduct(p1))
-	p2 := &Product{CategoryID: cat1.ID, Name: "Pollo"}
-	require.NoError(t, productStore.CreateProduct(p2))
-	p3 := &Product{CategoryID: cat2.ID, Name: "Tomate"}
-	require.NoError(t, productStore.CreateProduct(p3))
-
-	allProducts, err := productStore.GetAllProduct()
+	// Test GetAll
+	all, err := s.GetAllProduct()
 	require.NoError(t, err)
-	assert.Len(t, allProducts, 3)
+	assert.Len(t, all, 3)
 
-	cat1Products, err := productStore.GetProductsByCategoryID(cat1.ID)
+	// Test GetByCategoryID
+	cat1Products, err := s.GetProductsByCategoryID(cat1.ID)
 	require.NoError(t, err)
 	assert.Len(t, cat1Products, 2)
 }
 
-func TestUpdateAndRemoveProductIngredient(t *testing.T) {
+func TestProductStore_Ingredients(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
+	s := NewPostgresProductStore(db)
+	category := setupCategory(t, db)
 
-	productStore := NewPostgresProductStore(db)
-	categoryStore := NewPostgresCategoryStore(db)
 	ingredientStore := NewPostgresIngredientStore(db)
+	ing1 := &Ingredient{Name: "Ing 1"}
+	require.NoError(t, ingredientStore.CreateIngredient(ing1))
+	ing2 := &Ingredient{Name: "Ing 2"}
+	require.NoError(t, ingredientStore.CreateIngredient(ing2))
 
-	cat := &Category{Name: "Salsas"}
-	require.NoError(t, categoryStore.CreateCategory(cat))
-	ing := &Ingredient{Name: "Tomate"}
-	require.NoError(t, ingredientStore.CreateIngredient(ing))
-	prod := &Product{CategoryID: cat.ID, Name: "Salsa de Tomate"}
-	require.NoError(t, productStore.CreateProduct(prod))
+	product := &Product{CategoryID: category.ID, Name: "Prod With Ingredients"}
+	require.NoError(t, s.CreateProduct(product))
 
-	pi, err := productStore.AddIngredientToProduct(prod.ID, ing.ID, 5, "unidades")
+	// 1. Add
+	pi, err := s.AddIngredientToProduct(product.ID, ing1.ID, 10, "g")
 	require.NoError(t, err)
 
-	// Update
-	_, err = productStore.UpdateProductIngredient(prod.ID, pi.ID, 7, "unidades")
+	got, err := s.GetProductByID(product.ID)
+	require.NoError(t, err)
+	require.Len(t, got.Recipe, 1)
+	assert.Equal(t, "Ing 1", got.Recipe[0].Name)
+
+	// 2. Update
+	_, err = s.UpdateProductIngredient(product.ID, pi.ID, 20, "kg")
 	require.NoError(t, err)
 
-	updatedProd, err := productStore.GetProductByID(prod.ID)
+	got, err = s.GetProductByID(product.ID)
 	require.NoError(t, err)
-	require.Len(t, updatedProd.Recipe, 1)
-	assert.Equal(t, 7.0, updatedProd.Recipe[0].Quantity)
+	require.Len(t, got.Recipe, 1)
+	assert.Equal(t, 20.0, got.Recipe[0].Quantity)
+	assert.Equal(t, "kg", got.Recipe[0].Unit)
 
-	// Remove
-	require.NoError(t, productStore.RemoveIngredientFromProduct(prod.ID, pi.ID))
-
-	finalProd, err := productStore.GetProductByID(prod.ID)
+	// 3. Remove
+	err = s.RemoveIngredientFromProduct(product.ID, pi.ID)
 	require.NoError(t, err)
-	assert.Len(t, finalProd.Recipe, 0)
+
+	got, err = s.GetProductByID(product.ID)
+	require.NoError(t, err)
+	assert.Empty(t, got.Recipe)
 }

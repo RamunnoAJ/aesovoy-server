@@ -736,6 +736,334 @@
                 }
             }
         },
+        "/local_sales": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Responds with a list of all local sales.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "local_sales"
+                ],
+                "summary": "List all local sales",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LocalSalesResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates a new sale, validates stock, and adjusts it transactionally.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "local_sales"
+                ],
+                "summary": "Create a new local sale",
+                "parameters": [
+                    {
+                        "description": "Local Sale data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateLocalSaleRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.LocalSaleResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input, insufficient stock, etc.",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Resource not found (e.g., product, payment method)",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/local_sales/{id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Retrieves the details of a single local sale by its ID.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "local_sales"
+                ],
+                "summary": "Get a single local sale",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Sale ID",
+                        "name": "id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LocalSaleResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/local_stock": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Responds with a list of all local stock records",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "local_stock"
+                ],
+                "summary": "List all local stock",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LocalStocksResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Creates the first stock record for a product. Fails if a record already exists.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "local_stock"
+                ],
+                "summary": "Create initial stock for a product",
+                "parameters": [
+                    {
+                        "description": "Initial stock data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.CreateInitialStockRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/api.LocalStockResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "404": {
+                        "description": "Product not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "409": {
+                        "description": "Stock record already exists",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/local_stock/{product_id}": {
+            "get": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Responds with the local stock quantity for a given product ID",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "local_stock"
+                ],
+                "summary": "Get stock for a single product",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LocalStockResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Stock record not found",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
+        "/local_stock/{product_id}/adjust": {
+            "patch": {
+                "security": [
+                    {
+                        "BearerAuth": []
+                    }
+                ],
+                "description": "Adjusts a product's stock quantity by a delta (can be positive or negative).",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "local_stock"
+                ],
+                "summary": "Adjust stock for a product",
+                "parameters": [
+                    {
+                        "type": "integer",
+                        "description": "Product ID",
+                        "name": "product_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "description": "Adjustment data",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/api.AdjustStockRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/api.LocalStockResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid input or insufficient stock",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/utils.HTTPError"
+                        }
+                    }
+                }
+            }
+        },
         "/orders": {
             "get": {
                 "security": [
@@ -1883,6 +2211,14 @@
         }
     },
     "definitions": {
+        "api.AdjustStockRequest": {
+            "type": "object",
+            "properties": {
+                "delta": {
+                    "type": "integer"
+                }
+            }
+        },
         "api.CategoriesResponse": {
             "type": "object",
             "properties": {
@@ -1924,6 +2260,31 @@
                 }
             }
         },
+        "api.CreateInitialStockRequest": {
+            "type": "object",
+            "properties": {
+                "initial_quantity": {
+                    "type": "integer"
+                },
+                "product_id": {
+                    "type": "integer"
+                }
+            }
+        },
+        "api.CreateLocalSaleRequest": {
+            "type": "object",
+            "properties": {
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/services.CreateLocalSaleItem"
+                    }
+                },
+                "payment_method_id": {
+                    "type": "integer"
+                }
+            }
+        },
         "api.IngredientResponse": {
             "type": "object",
             "properties": {
@@ -1939,6 +2300,44 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/store.Ingredient"
+                    }
+                }
+            }
+        },
+        "api.LocalSaleResponse": {
+            "type": "object",
+            "properties": {
+                "local_sale": {
+                    "$ref": "#/definitions/store.LocalSale"
+                }
+            }
+        },
+        "api.LocalSalesResponse": {
+            "type": "object",
+            "properties": {
+                "local_sales": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/store.LocalSale"
+                    }
+                }
+            }
+        },
+        "api.LocalStockResponse": {
+            "type": "object",
+            "properties": {
+                "local_stock": {
+                    "$ref": "#/definitions/store.LocalStock"
+                }
+            }
+        },
+        "api.LocalStocksResponse": {
+            "type": "object",
+            "properties": {
+                "local_stock": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/store.LocalStock"
                     }
                 }
             }
@@ -2229,6 +2628,17 @@
                 }
             }
         },
+        "services.CreateLocalSaleItem": {
+            "type": "object",
+            "properties": {
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                }
+            }
+        },
         "store.Category": {
             "type": "object",
             "properties": {
@@ -2300,6 +2710,78 @@
                 },
                 "name": {
                     "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "store.LocalSale": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "items": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/store.LocalSaleItem"
+                    }
+                },
+                "payment_method_id": {
+                    "type": "integer"
+                },
+                "subtotal": {
+                    "type": "string"
+                },
+                "total": {
+                    "type": "string"
+                },
+                "updated_at": {
+                    "type": "string"
+                }
+            }
+        },
+        "store.LocalSaleItem": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "line_subtotal": {
+                    "type": "string"
+                },
+                "local_sale_id": {
+                    "type": "integer"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
+                },
+                "unit_price": {
+                    "type": "string"
+                }
+            }
+        },
+        "store.LocalStock": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "integer"
+                },
+                "product_id": {
+                    "type": "integer"
+                },
+                "quantity": {
+                    "type": "integer"
                 },
                 "updated_at": {
                     "type": "string"

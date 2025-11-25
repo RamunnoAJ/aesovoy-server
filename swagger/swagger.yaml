@@ -1,5 +1,10 @@
 basePath: /
 definitions:
+  api.AdjustStockRequest:
+    properties:
+      delta:
+        type: integer
+    type: object
   api.CategoriesResponse:
     properties:
       categories:
@@ -26,6 +31,22 @@ definitions:
       meta:
         $ref: '#/definitions/utils.Meta'
     type: object
+  api.CreateInitialStockRequest:
+    properties:
+      initial_quantity:
+        type: integer
+      product_id:
+        type: integer
+    type: object
+  api.CreateLocalSaleRequest:
+    properties:
+      items:
+        items:
+          $ref: '#/definitions/services.CreateLocalSaleItem'
+        type: array
+      payment_method_id:
+        type: integer
+    type: object
   api.IngredientResponse:
     properties:
       ingredient:
@@ -36,6 +57,30 @@ definitions:
       ingredients:
         items:
           $ref: '#/definitions/store.Ingredient'
+        type: array
+    type: object
+  api.LocalSaleResponse:
+    properties:
+      local_sale:
+        $ref: '#/definitions/store.LocalSale'
+    type: object
+  api.LocalSalesResponse:
+    properties:
+      local_sales:
+        items:
+          $ref: '#/definitions/store.LocalSale'
+        type: array
+    type: object
+  api.LocalStockResponse:
+    properties:
+      local_stock:
+        $ref: '#/definitions/store.LocalStock'
+    type: object
+  api.LocalStocksResponse:
+    properties:
+      local_stock:
+        items:
+          $ref: '#/definitions/store.LocalStock'
         type: array
     type: object
   api.OrderItemReq:
@@ -221,6 +266,13 @@ definitions:
       username:
         type: string
     type: object
+  services.CreateLocalSaleItem:
+    properties:
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+    type: object
   store.Category:
     properties:
       created_at:
@@ -269,6 +321,53 @@ definitions:
         type: integer
       name:
         type: string
+      updated_at:
+        type: string
+    type: object
+  store.LocalSale:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      items:
+        items:
+          $ref: '#/definitions/store.LocalSaleItem'
+        type: array
+      payment_method_id:
+        type: integer
+      subtotal:
+        type: string
+      total:
+        type: string
+      updated_at:
+        type: string
+    type: object
+  store.LocalSaleItem:
+    properties:
+      id:
+        type: integer
+      line_subtotal:
+        type: string
+      local_sale_id:
+        type: integer
+      product_id:
+        type: integer
+      quantity:
+        type: integer
+      unit_price:
+        type: string
+    type: object
+  store.LocalStock:
+    properties:
+      created_at:
+        type: string
+      id:
+        type: integer
+      product_id:
+        type: integer
+      quantity:
+        type: integer
       updated_at:
         type: string
     type: object
@@ -892,6 +991,215 @@ paths:
       summary: Updates an ingredient
       tags:
       - ingredients
+  /local_sales:
+    get:
+      description: Responds with a list of all local sales.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.LocalSalesResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: List all local sales
+      tags:
+      - local_sales
+    post:
+      consumes:
+      - application/json
+      description: Creates a new sale, validates stock, and adjusts it transactionally.
+      parameters:
+      - description: Local Sale data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateLocalSaleRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.LocalSaleResponse'
+        "400":
+          description: Invalid input, insufficient stock, etc.
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Resource not found (e.g., product, payment method)
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Create a new local sale
+      tags:
+      - local_sales
+  /local_sales/{id}:
+    get:
+      description: Retrieves the details of a single local sale by its ID.
+      parameters:
+      - description: Sale ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.LocalSaleResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get a single local sale
+      tags:
+      - local_sales
+  /local_stock:
+    get:
+      description: Responds with a list of all local stock records
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.LocalStocksResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: List all local stock
+      tags:
+      - local_stock
+    post:
+      consumes:
+      - application/json
+      description: Creates the first stock record for a product. Fails if a record
+        already exists.
+      parameters:
+      - description: Initial stock data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.CreateInitialStockRequest'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/api.LocalStockResponse'
+        "400":
+          description: Invalid input
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Product not found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "409":
+          description: Stock record already exists
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Create initial stock for a product
+      tags:
+      - local_stock
+  /local_stock/{product_id}:
+    get:
+      description: Responds with the local stock quantity for a given product ID
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.LocalStockResponse'
+        "404":
+          description: Stock record not found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Get stock for a single product
+      tags:
+      - local_stock
+  /local_stock/{product_id}/adjust:
+    patch:
+      consumes:
+      - application/json
+      description: Adjusts a product's stock quantity by a delta (can be positive
+        or negative).
+      parameters:
+      - description: Product ID
+        in: path
+        name: product_id
+        required: true
+        type: integer
+      - description: Adjustment data
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/api.AdjustStockRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.LocalStockResponse'
+        "400":
+          description: Invalid input or insufficient stock
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Adjust stock for a product
+      tags:
+      - local_stock
   /orders:
     get:
       description: Responds with a list of orders, with optional filters

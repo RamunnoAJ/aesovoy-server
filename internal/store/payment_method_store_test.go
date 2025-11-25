@@ -179,4 +179,3 @@ func TestDeletePaymentMethod(t *testing.T) {
 		})
 	}
 }
-

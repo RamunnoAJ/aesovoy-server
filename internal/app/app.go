@@ -10,6 +10,7 @@ import (
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/api"
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
+	"github.com/RamunnoAJ/aesovoy-server/internal/services"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 	"github.com/RamunnoAJ/aesovoy-server/migrations"
 )
@@ -25,6 +26,8 @@ type Application struct {
 	OrderHandler         *api.OrderHandler
 	IngredientHandler    *api.IngredientHandler
 	PaymentMethodHandler *api.PaymentMethodHandler
+	LocalStockHandler    *api.LocalStockHandler
+	LocalSaleHandler     *api.LocalSaleHandler
 	Middleware           middleware.UserMiddleware
 	DB                   *sql.DB
 }
@@ -64,6 +67,12 @@ func NewApplication() (*Application, error) {
 	orderStore := store.NewPostgresOrderStore(pgDB)
 	ingredientStore := store.NewPostgresIngredientStore(pgDB)
 	paymentMethodStore := store.NewPostgresPaymentMethodStore(pgDB)
+	localStockStore := store.NewPostgresLocalStockStore(pgDB)
+	localSaleStore := store.NewPostgresLocalSaleStore(pgDB)
+
+	// our services will go here
+	localStockService := services.NewLocalStockService(localStockStore, productStore)
+	localSaleService := services.NewLocalSaleService(pgDB, localSaleStore, localStockStore, paymentMethodStore, productStore)
 
 	// our handlers will go here
 	userHandler := api.NewUserHandler(userStore, logger)
@@ -76,6 +85,8 @@ func NewApplication() (*Application, error) {
 	orderHandler := api.NewOrderHandler(orderStore, clientStore, productStore, logger)
 	ingredientHandler := api.NewIngredientHandler(ingredientStore, logger)
 	paymentMethodHandler := api.NewPaymentMethodHandler(paymentMethodStore, logger)
+	localStockHandler := api.NewLocalStockHandler(localStockService, logger)
+	localSaleHandler := api.NewLocalSaleHandler(localSaleService, logger)
 
 	app := &Application{
 		Logger:               logger,
@@ -89,6 +100,8 @@ func NewApplication() (*Application, error) {
 		OrderHandler:         orderHandler,
 		IngredientHandler:    ingredientHandler,
 		PaymentMethodHandler: paymentMethodHandler,
+		LocalStockHandler:    localStockHandler,
+		LocalSaleHandler:     localSaleHandler,
 		DB:                   pgDB,
 	}
 

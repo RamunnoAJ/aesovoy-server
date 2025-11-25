@@ -24,18 +24,17 @@ func setupTestDB(t *testing.T) *sql.DB {
 	require.NoError(t, err)
 
 	// Run migrations
-	err = store.MigrateFS(db, migrations.FS, ".")
+	err = store.Migrate(db, "../../migrations/")
 	require.NoError(t, err)
 
 	// Truncate all tables to ensure a clean state
-	_, err = db.Exec(`TRUNCATE order_products, orders, product_ingredients, products, categories, providers, clients, tokens, users, ingredients RESTART IDENTITY CASCADE`)
+	_, err = db.Exec(`TRUNCATE order_products, orders, product_ingredients, products, categories, providers, clients, tokens, users, ingredients, payment_methods, local_stock RESTART IDENTITY CASCADE`)
 	require.NoError(t, err)
 
 	return db
 }
 
 func TestGenerateInvoice(t *testing.T) {
-	// --- Setup ---
 	db := setupTestDB(t)
 	defer db.Close()
 
@@ -43,7 +42,7 @@ func TestGenerateInvoice(t *testing.T) {
 	categoryStore := store.NewPostgresCategoryStore(db)
 	productStore := store.NewPostgresProductStore(db)
 
-	// 1. Create a test client
+	// --- Setup ---
 	client := &store.Client{
 		Name:      "Cliente de Prueba Factura",
 		Address:   "Calle Falsa 123",
@@ -53,7 +52,6 @@ func TestGenerateInvoice(t *testing.T) {
 	}
 	require.NoError(t, clientStore.CreateClient(client))
 
-	// 2. Create a test category and products
 	category := &store.Category{Name: "Productos de Prueba"}
 	require.NoError(t, categoryStore.CreateCategory(category))
 
@@ -71,7 +69,6 @@ func TestGenerateInvoice(t *testing.T) {
 	}
 	require.NoError(t, productStore.CreateProduct(product2))
 
-	// 3. Define the order details
 	order := &store.Order{
 		ID:       123,
 		ClientID: client.ID,
@@ -88,23 +85,39 @@ func TestGenerateInvoice(t *testing.T) {
 		product2.ID: product2,
 	}
 
-	// Define the expected file path
 	dateStr := order.Date.Format("2006-01-02")
 	fileName := fmt.Sprintf("remito_produccion-%s.xlsx", dateStr)
 	filePath := filepath.Join(invoiceDir, fileName)
+	os.Remove(filePath) // Clean up before test
 
-	// Clean up any existing file from previous failed runs
-	os.Remove(filePath)
+	tests := []struct {
+		name    string
+		order   *store.Order
+		client  *store.Client
+		products map[int64]*store.Product
+		wantErr bool
+	}{
+		{
+			name: "valid invoice generation",
+			order: order,
+			client: client,
+			products: productsMap,
+			wantErr: false,
+		},
+	}
 
-	// --- Act ---
-	err := GenerateInvoice(order, client, productsMap)
-	require.NoError(t, err)
-
-	// --- Assert ---
-	_, err = os.Stat(filePath)
-	require.NoError(t, err, "El archivo de factura no fue creado")
-
-	// --- Teardown ---
-	// err = os.Remove(filePath)
-	require.NoError(t, err, "No se pudo eliminar el archivo de factura de prueba")
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := GenerateInvoice(tt.order, tt.client, tt.products)
+			if tt.wantErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				_, err := os.Stat(filePath)
+				require.NoError(t, err, "El archivo de factura no fue creado")
+				// Clean up after successful test
+				os.Remove(filePath)
+			}
+		})
+	}
 }

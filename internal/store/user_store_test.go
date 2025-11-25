@@ -2,7 +2,6 @@ package store
 
 import (
 	"crypto/sha256"
-	"database/sql"
 	"testing"
 	"time"
 
@@ -38,90 +37,123 @@ func TestPasswordMatches(t *testing.T) {
 	}
 }
 
-func TestUserStore(t *testing.T) {
+func TestUserStore_Create(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	us := NewPostgresUserStore(db)
+
+	u1 := &User{Username: "test", Email: "test@example.com"}
+	require.NoError(t, u1.PasswordHash.Set("password"))
+
 	tests := []struct {
-		name string
-		run  func(t *testing.T, db *sql.DB)
+		name    string
+		user    *User
+		wantErr bool
 	}{
 		{
-			name: "create_get_update",
-			run: func(t *testing.T, db *sql.DB) {
-				us := NewPostgresUserStore(db)
-
-				u := &User{Username: "me", Email: "me@example.com"}
-				require.NoError(t, u.PasswordHash.Set("securepassword"))
-				require.NoError(t, us.CreateUser(u))
-				assert.NotZero(t, u.ID)
-
-				got, err := us.GetUserByUsername("me")
-				require.NoError(t, err)
-				require.NotNil(t, got)
-
-				ok, err := got.PasswordHash.Matches("securepassword")
-				require.NoError(t, err)
-				assert.True(t, ok)
-
-				got.Email = "new@example.com"
-				require.NoError(t, us.UpdateUser(got))
-
-				got2, err := us.GetUserByUsername("me")
-				require.NoError(t, err)
-				assert.Equal(t, "new@example.com", got2.Email)
-			},
+			name:    "create valid user",
+			user:    u1,
+			wantErr: false,
 		},
 		{
-			name: "duplicate_username",
-			run: func(t *testing.T, db *sql.DB) {
-				us := NewPostgresUserStore(db)
-
-				u1 := &User{Username: "dup", Email: "a@ex.com"}
-				require.NoError(t, u1.PasswordHash.Set("x"))
-				require.NoError(t, us.CreateUser(u1))
-
-				u2 := &User{Username: "dup", Email: "b@ex.com"}
-				require.NoError(t, u2.PasswordHash.Set("y"))
-				err := us.CreateUser(u2)
-				require.Error(t, err)
+			name: "create duplicate user",
+			user: &User{
+				Username: "test", // Duplicate username
+				Email:    "another@example.com",
 			},
-		},
-		{
-			name: "token_valid_and_expired",
-			run: func(t *testing.T, db *sql.DB) {
-				us := NewPostgresUserStore(db)
-
-				u := &User{Username: "tok", Email: "tok@ex.com"}
-				require.NoError(t, u.PasswordHash.Set("p"))
-				require.NoError(t, us.CreateUser(u))
-
-				const scope = "auth"
-				const tokenPlain = "token-abc-123"
-				hash := sha256.Sum256([]byte(tokenPlain))
-				_, err := db.Exec(`INSERT INTO tokens (hash, user_id, expiry, scope) VALUES ($1,$2,$3,$4)`,
-					hash[:], u.ID, time.Now().Add(1*time.Hour), scope)
-				require.NoError(t, err)
-
-				got, err := us.GetUserToken(scope, tokenPlain)
-				require.NoError(t, err)
-				require.NotNil(t, got)
-				assert.Equal(t, u.ID, got.ID)
-
-				expHash := sha256.Sum256([]byte("expired"))
-				_, err = db.Exec(`INSERT INTO tokens (hash, user_id, expiry, scope) VALUES ($1,$2,$3,$4)`,
-					expHash[:], u.ID, time.Now().Add(-1*time.Minute), scope)
-				require.NoError(t, err)
-
-				nilUser, err := us.GetUserToken(scope, "expired")
-				require.NoError(t, err)
-				assert.Nil(t, nilUser)
-			},
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			db := setupTestDB(t)
-			defer db.Close()
-			tt.run(t, db)
+			err := us.CreateUser(tt.user)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				require.NoError(t, err)
+				assert.NotZero(t, tt.user.ID)
+			}
+		})
+	}
+}
+
+func TestUserStore_GetUpdate(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	us := NewPostgresUserStore(db)
+
+	u := &User{Username: "me", Email: "me@example.com"}
+	require.NoError(t, u.PasswordHash.Set("securepassword"))
+	require.NoError(t, us.CreateUser(u))
+
+	// Get and check
+	got, err := us.GetUserByUsername("me")
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	ok, err := got.PasswordHash.Matches("securepassword")
+	require.NoError(t, err)
+	assert.True(t, ok)
+
+	// Update
+	got.Email = "new@example.com"
+	require.NoError(t, us.UpdateUser(got))
+
+	// Get again and check update
+	got2, err := us.GetUserByUsername("me")
+	require.NoError(t, err)
+	assert.Equal(t, "new@example.com", got2.Email)
+}
+
+func TestUserStore_GetUserToken(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	us := NewPostgresUserStore(db)
+
+	u := &User{Username: "tok", Email: "tok@ex.com"}
+	require.NoError(t, u.PasswordHash.Set("p"))
+	require.NoError(t, us.CreateUser(u))
+
+	const scope = "auth"
+	// Valid token
+	const validTokenPlain = "token-abc-123"
+	validHash := sha256.Sum256([]byte(validTokenPlain))
+	_, err := db.Exec(`INSERT INTO tokens (hash, user_id, expiry, scope) VALUES ($1,$2,$3,$4)`,
+		validHash[:], u.ID, time.Now().Add(1*time.Hour), scope)
+	require.NoError(t, err)
+
+	// Expired token
+	const expiredTokenPlain = "expired"
+	expHash := sha256.Sum256([]byte(expiredTokenPlain))
+	_, err = db.Exec(`INSERT INTO tokens (hash, user_id, expiry, scope) VALUES ($1,$2,$3,$4)`,
+		expHash[:], u.ID, time.Now().Add(-1*time.Minute), scope)
+	require.NoError(t, err)
+
+	tests := []struct {
+		name      string
+		token     string
+		wantFound bool
+		wantErr   bool
+	}{
+		{name: "valid token", token: validTokenPlain, wantFound: true, wantErr: false},
+		{name: "expired token", token: expiredTokenPlain, wantFound: false, wantErr: false},
+		{name: "non-existent token", token: "not-real", wantFound: false, wantErr: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			foundUser, err := us.GetUserToken(scope, tt.token)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			if tt.wantFound {
+				require.NotNil(t, foundUser)
+				assert.Equal(t, u.ID, foundUser.ID)
+			} else {
+				assert.Nil(t, foundUser)
+			}
 		})
 	}
 }

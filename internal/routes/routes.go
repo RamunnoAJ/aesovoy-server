@@ -70,6 +70,19 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 			r.Post("/", app.PaymentMethodHandler.HandleCreatePaymentMethod)
 			r.Delete("/{id}", app.PaymentMethodHandler.HandleDeletePaymentMethod)
 		})
+
+		r.Route("/local_stock", func(r chi.Router) {
+			r.Get("/", app.LocalStockHandler.HandleListLocalStock)
+			r.Post("/", app.LocalStockHandler.HandleCreateInitialStock)
+			r.Get("/{product_id}", app.LocalStockHandler.HandleGetLocalStock)
+			r.Patch("/{product_id}/adjust", app.LocalStockHandler.HandleAdjustStock)
+		})
+
+		r.Route("/local_sales", func(r chi.Router) {
+			r.Get("/", app.LocalSaleHandler.HandleListLocalSales)
+			r.Post("/", app.LocalSaleHandler.HandleCreateLocalSale)
+			r.Get("/{id}", app.LocalSaleHandler.HandleGetLocalSale)
+		})
 	})
 
 	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("http://localhost:8080/swagger/doc.json")))

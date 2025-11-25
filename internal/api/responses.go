@@ -62,23 +62,36 @@ type ProductIngredientResponse struct {
 }
 
 type UpdateOrderStateResponse struct {
-	ID    int64           `json:"id"`
+	ID    int64            `json:"id"`
 	State store.OrderState `json:"state"`
 }
 
-// PaymentMethodResponse defines the response structure for a single payment method.
 type PaymentMethodResponse struct {
 	PaymentMethod store.PaymentMethod `json:"payment_method"`
 }
 
-// PaymentMethodsResponse defines the response structure for a list of payment methods.
 type PaymentMethodsResponse struct {
 	PaymentMethods []store.PaymentMethod `json:"payment_methods"`
 }
 
-// ProviderResponse defines the response structure for a single provider.
 type ProviderResponse struct {
 	Provider store.Provider `json:"provider"`
+}
+
+type LocalStockResponse struct {
+	LocalStock store.LocalStock `json:"local_stock"`
+}
+
+type LocalStocksResponse struct {
+	LocalStock []store.LocalStock `json:"local_stock"`
+}
+
+type LocalSaleResponse struct {
+	LocalSale store.LocalSale `json:"local_sale"`
+}
+
+type LocalSalesResponse struct {
+	LocalSales []store.LocalSale `json:"local_sales"`
 }
 
 type ProvidersResponse struct {
