@@ -14,21 +14,21 @@
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Unitario</th>
-                    <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Precio Distrib.</th>
-                    <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Precio Unitario</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Precio Distrib.</th>
+                    <th scope="col" class="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
             </thead>
             <tbody class="bg-white divide-y divide-gray-200">
                 {{range .Products}}
                 <tr class="hover:bg-gray-50">
-                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{.Name}}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{.CategoryName}}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${{.UnitPrice}}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${{.DistributionPrice}}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium relative">
+                    <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{.Name}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.CategoryName}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">${{.UnitPrice}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">${{.DistributionPrice}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium relative">
                          <div class="relative inline-block text-left" x-data="{ open: false }">
                             <div>
                                 <button @click="open = !open" @click.away="open = false" type="button" class="flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
@@ -39,6 +39,7 @@
                             </div>
                             <div x-show="open" style="display: none;" class="origin-top-right absolute right-0 mt-2 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
                                 <div class="py-1">
+                                    <a href="/products/{{.ID}}/recipe" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Receta</a>
                                     <a href="/products/{{.ID}}/edit" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Editar</a>
                                     <button hx-delete="/products/{{.ID}}/delete" hx-confirm="¿Estás seguro?" hx-target="closest tr" hx-swap="outerHTML" class="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50">
                                         Eliminar

@@ -92,7 +92,7 @@ func NewApplication() (*Application, error) {
 	paymentMethodHandler := api.NewPaymentMethodHandler(paymentMethodStore, logger)
 	localStockHandler := api.NewLocalStockHandler(localStockService, logger)
 	localSaleHandler := api.NewLocalSaleHandler(localSaleService, logger)
-	webHandler := api.NewWebHandler(userStore, tokenStore, productStore, categoryStore, logger)
+	webHandler := api.NewWebHandler(userStore, tokenStore, productStore, categoryStore, ingredientStore, logger)
 
 	app := &Application{
 		Logger:               logger,

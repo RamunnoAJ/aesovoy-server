@@ -75,6 +75,11 @@ func (um *UserMiddleware) Authenticate(next http.Handler) http.Handler {
 			return
 		}
 
+		if !user.IsActive {
+			utils.Error(w, http.StatusForbidden, "account disabled")
+			return
+		}
+
 		r = SetUser(r, user)
 		next.ServeHTTP(w, r)
 	})

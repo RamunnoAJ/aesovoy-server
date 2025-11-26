@@ -40,10 +40,11 @@ func (p *Password) Matches(plaintextPassword string) (bool, error) {
 }
 
 type User struct {
-	ID           int       `json:"id"`
+	ID           int64     `json:"id"`
 	Username     string    `json:"username"`
 	Email        string    `json:"email"`
 	Role         string    `json:"role"`
+	IsActive     bool      `json:"is_active"`
 	PasswordHash Password  `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
 }
@@ -67,18 +68,26 @@ func NewPostgresUserStore(db *sql.DB) *PostgresUserStore {
 type UserStore interface {
 	CreateUser(*User) error
 	GetUserByUsername(username string) (*User, error)
+	GetUserByID(id int64) (*User, error)
 	UpdateUser(*User) error
 	GetUserToken(scope, tokenPlainText string) (*User, error)
+	GetAllUsers() ([]*User, error)
+	ToggleUserStatus(id int64) error
 }
 
 func (s *PostgresUserStore) CreateUser(user *User) error {
 	query := `
-	INSERT INTO users (username, email, password_hash, role)
-	VALUES ($1, $2, $3, $4)
+	INSERT INTO users (username, email, password_hash, role, is_active)
+	VALUES ($1, $2, $3, $4, $5)
 	RETURNING id, created_at 
 	`
 
-	err := s.db.QueryRow(query, user.Username, user.Email, user.PasswordHash.hash, user.Role).Scan(
+	// Default IsActive to true if not specified logic handled by DB default, but passing explicitly is safer
+	if !user.IsActive {
+		user.IsActive = true
+	}
+
+	err := s.db.QueryRow(query, user.Username, user.Email, user.PasswordHash.hash, user.Role, user.IsActive).Scan(
 		&user.ID,
 		&user.CreatedAt,
 	)
@@ -95,7 +104,7 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	}
 
 	query := `
-	SELECT id, username, email, password_hash, role, created_at 
+	SELECT id, username, email, password_hash, role, is_active, created_at 
 	FROM users
 	WHERE username = $1
 	`
@@ -106,6 +115,39 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 		&user.Email,
 		&user.PasswordHash.hash,
 		&user.Role,
+		&user.IsActive,
+		&user.CreatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
+func (s *PostgresUserStore) GetUserByID(id int64) (*User, error) {
+	user := &User{
+		PasswordHash: Password{},
+	}
+
+	query := `
+	SELECT id, username, email, password_hash, role, is_active, created_at 
+	FROM users
+	WHERE id = $1
+	`
+
+	err := s.db.QueryRow(query, id).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash.hash,
+		&user.Role,
+		&user.IsActive,
 		&user.CreatedAt,
 	)
 
@@ -123,11 +165,11 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 func (s *PostgresUserStore) UpdateUser(user *User) error {
 	query := `
 	UPDATE users
-	SET username = $1, email = $2, role = $3
-	WHERE id = $4
+	SET username = $1, email = $2, role = $3, is_active = $4
+	WHERE id = $5
 	`
 
-	result, err := s.db.Exec(query, user.Username, user.Email, user.Role, user.ID)
+	result, err := s.db.Exec(query, user.Username, user.Email, user.Role, user.IsActive, user.ID)
 	if err != nil {
 		return err
 	}
@@ -148,7 +190,7 @@ func (s *PostgresUserStore) GetUserToken(scope, plaintextPassword string) (*User
 	tokenHash := sha256.Sum256([]byte(plaintextPassword))
 
 	query := `
-	SELECT u.id, u.username, u.email, u.password_hash, u.role, u.created_at
+	SELECT u.id, u.username, u.email, u.password_hash, u.role, u.is_active, u.created_at
 	FROM users u
 	INNER JOIN tokens t ON t.user_id = u.id
 	WHERE t.hash = $1 AND t.scope = $2 and t.expiry > $3
@@ -164,6 +206,7 @@ func (s *PostgresUserStore) GetUserToken(scope, plaintextPassword string) (*User
 		&user.Email,
 		&user.PasswordHash.hash,
 		&user.Role,
+		&user.IsActive,
 		&user.CreatedAt,
 	)
 
@@ -176,4 +219,53 @@ func (s *PostgresUserStore) GetUserToken(scope, plaintextPassword string) (*User
 	}
 
 	return user, nil
+}
+
+func (s *PostgresUserStore) GetAllUsers() ([]*User, error) {
+	query := `
+	SELECT id, username, email, role, is_active, created_at
+	FROM users
+	ORDER BY username
+	`
+
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var users []*User
+	for rows.Next() {
+		u := &User{}
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Role, &u.IsActive, &u.CreatedAt); err != nil {
+			return nil, err
+		}
+		users = append(users, u)
+	}
+
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return users, nil
+}
+
+func (s *PostgresUserStore) ToggleUserStatus(id int64) error {
+	query := `
+	UPDATE users
+	SET is_active = NOT is_active
+	WHERE id = $1
+	`
+	result, err := s.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
 }

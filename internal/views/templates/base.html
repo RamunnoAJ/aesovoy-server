@@ -42,13 +42,21 @@
                     <a href="/categories" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Categorías
                     </a>
+                    <a href="/ingredients" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Ingredientes
+                    </a>
                     <a href="/providers" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Proveedores
                     </a>
                     <a href="/clients" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Clientes
                     </a>
-                    <!-- Add more links here as needed -->
+                    {{if eq .User.Role "administrator"}}
+                    <div class="border-t border-gray-700 my-2"></div>
+                    <a href="/users" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Usuarios
+                    </a>
+                    {{end}}
                 </nav>
             </div>
         </aside>

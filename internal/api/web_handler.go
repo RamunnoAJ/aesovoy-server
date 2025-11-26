@@ -13,12 +13,13 @@ import (
 )
 
 type WebHandler struct {
-	userStore     store.UserStore
-	tokenStore    store.TokenStore
-	productStore  store.ProductStore
-	categoryStore store.CategoryStore
-	renderer      *views.Renderer
-	logger        *slog.Logger
+	userStore       store.UserStore
+	tokenStore      store.TokenStore
+	productStore    store.ProductStore
+	categoryStore   store.CategoryStore
+	ingredientStore store.IngredientStore
+	renderer        *views.Renderer
+	logger          *slog.Logger
 }
 
 func NewWebHandler(
@@ -26,15 +27,17 @@ func NewWebHandler(
 	tokenStore store.TokenStore,
 	productStore store.ProductStore,
 	categoryStore store.CategoryStore,
+	ingredientStore store.IngredientStore,
 	logger *slog.Logger,
 ) *WebHandler {
 	return &WebHandler{
-		userStore:     userStore,
-		tokenStore:    tokenStore,
-		productStore:  productStore,
-		categoryStore: categoryStore,
-		renderer:      views.NewRenderer(),
-		logger:        logger,
+		userStore:       userStore,
+		tokenStore:      tokenStore,
+		productStore:    productStore,
+		categoryStore:   categoryStore,
+		ingredientStore: ingredientStore,
+		renderer:        views.NewRenderer(),
+		logger:          logger,
 	}
 }
 
@@ -66,7 +69,7 @@ func (h *WebHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
-	
+
 	http.Redirect(w, r, "/login", http.StatusSeeOther)
 }
 
@@ -117,7 +120,7 @@ func (h *WebHandler) HandleWebLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := tokens.GenerateToken(user.ID, 24*time.Hour, tokens.ScopeAuth)
+	token, err := tokens.GenerateToken(int(user.ID), 24*time.Hour, tokens.ScopeAuth)
 	if err != nil {
 		h.logger.Error("generating token", "error", err)
 		h.renderLoginError(w, "Internal server error")
@@ -442,4 +445,297 @@ func (h *WebHandler) HandleDeleteCategory(w http.ResponseWriter, r *http.Request
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+// --- Ingredients ---
+
+func (h *WebHandler) HandleListIngredients(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+	ingredients, err := h.ingredientStore.GetAllIngredients()
+	if err != nil {
+		h.logger.Error("listing ingredients", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	data := map[string]any{
+		"User":        user,
+		"Ingredients": ingredients,
+	}
+
+	if err := h.renderer.Render(w, "ingredients_list.html", data); err != nil {
+		h.logger.Error("rendering ingredients list", "error", err)
+	}
+}
+
+func (h *WebHandler) HandleCreateIngredientView(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+
+	data := map[string]any{
+		"User":       user,
+		"Ingredient": store.Ingredient{},
+	}
+
+	if err := h.renderer.Render(w, "ingredient_form.html", data); err != nil {
+		h.logger.Error("rendering ingredient form", "error", err)
+	}
+}
+
+func (h *WebHandler) HandleCreateIngredient(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	ingredient := &store.Ingredient{
+		Name: r.FormValue("name"),
+	}
+
+	if err := h.ingredientStore.CreateIngredient(ingredient); err != nil {
+		h.logger.Error("creating ingredient", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/ingredients", http.StatusSeeOther)
+}
+
+func (h *WebHandler) HandleEditIngredientView(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+	ingredientID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	ingredient, err := h.ingredientStore.GetIngredientByID(ingredientID)
+	if err != nil {
+		h.logger.Error("getting ingredient", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	if ingredient == nil {
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	data := map[string]any{
+		"User":       user,
+		"Ingredient": ingredient,
+	}
+
+	if err := h.renderer.Render(w, "ingredient_form.html", data); err != nil {
+		h.logger.Error("rendering ingredient form", "error", err)
+	}
+}
+
+func (h *WebHandler) HandleUpdateIngredient(w http.ResponseWriter, r *http.Request) {
+	ingredientID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	ingredient := &store.Ingredient{
+		ID:   ingredientID,
+		Name: r.FormValue("name"),
+	}
+
+	if err := h.ingredientStore.UpdateIngredient(ingredient); err != nil {
+		h.logger.Error("updating ingredient", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/ingredients", http.StatusSeeOther)
+}
+
+func (h *WebHandler) HandleDeleteIngredient(w http.ResponseWriter, r *http.Request) {
+	ingredientID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.ingredientStore.DeleteIngredient(ingredientID); err != nil {
+		h.logger.Error("deleting ingredient", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// --- Recipes ---
+
+func (h *WebHandler) HandleManageRecipeView(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+	productID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	product, err := h.productStore.GetProductByID(productID)
+	if err != nil {
+		h.logger.Error("getting product", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	if product == nil {
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	allIngredients, err := h.ingredientStore.GetAllIngredients()
+	if err != nil {
+		h.logger.Error("getting all ingredients", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	data := map[string]any{
+		"User":           user,
+		"Product":        product,
+		"AllIngredients": allIngredients,
+	}
+
+	if err := h.renderer.Render(w, "product_recipe.html", data); err != nil {
+		h.logger.Error("rendering product recipe", "error", err)
+	}
+}
+
+func (h *WebHandler) HandleAddIngredientToRecipe(w http.ResponseWriter, r *http.Request) {
+	productID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid Product ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	ingredientID, _ := strconv.ParseInt(r.FormValue("ingredient_id"), 10, 64)
+	quantity, _ := strconv.ParseFloat(r.FormValue("quantity"), 64)
+	unit := r.FormValue("unit")
+
+	_, err = h.productStore.AddIngredientToProduct(productID, ingredientID, quantity, unit)
+	if err != nil {
+		h.logger.Error("adding ingredient to recipe", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/products/"+strconv.FormatInt(productID, 10)+"/recipe", http.StatusSeeOther)
+}
+
+func (h *WebHandler) HandleRemoveIngredientFromRecipe(w http.ResponseWriter, r *http.Request) {
+	productID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid Product ID", http.StatusBadRequest)
+		return
+	}
+	// Note: The API route uses "productID" and "ingredientID", but here we are in the context of WebHandler.
+	// The URL param name depends on how we register the route.
+	// Let's assume the route is /products/{id}/ingredients/{ingredient_id}
+
+	// Wait, the ProductStore.RemoveIngredientFromProduct takes the specific ingredient_id (which is actually the PI ID? No, it takes ingredientID).
+	// Let's check ProductStore.RemoveIngredientFromProduct again.
+	// It takes (productID, ingredientID).
+	// BUT, the ProductIngredient struct has ID (the row ID) and IngredientID.
+	// If a product has the same ingredient multiple times (unlikely but possible in some models, though usually unique constraint), we need to be careful.
+	// The API handler uses HandleRemoveIngredientFromProduct which takes ingredientID.
+	// Let's stick to that.
+
+	ingredientID, err := strconv.ParseInt(chi.URLParam(r, "ingredient_id"), 10, 64)
+	if err != nil {
+		// Actually, the template uses {{.ID}} which is the ProductIngredient ID (the row ID in product_ingredients table),
+		// NOT the Ingredient ID (from ingredients table).
+		// Let's check ProductStore.RemoveIngredientFromProduct implementation.
+		// query := DELETE FROM product_ingredients WHERE product_id = $1 AND id = $2
+		// Wait, let me check store again.
+		// File internal/store/products_store.go:
+		// func (s *PostgresProductStore) RemoveIngredientFromProduct(productID, ingredientID int64) error {
+		// 	query := `DELETE FROM product_ingredients WHERE product_id = $1 AND id = $2`
+		//  ...
+		// }
+		// AHA! The second parameter is named `ingredientID` in the function signature, BUT the query uses `id = $2`.
+		// So it expects the `product_ingredients.id` (the primary key of the link table), NOT the `ingredients.id`.
+		// This is slightly confusing naming in the store interface but correct behavior for deleting a specific row.
+		// So from the view, we should pass the ProductIngredient ID.
+
+		http.Error(w, "Invalid Ingredient ID", http.StatusBadRequest)
+		return
+	}
+
+	err = h.productStore.RemoveIngredientFromProduct(productID, ingredientID)
+	if err != nil {
+		h.logger.Error("removing ingredient from recipe", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+
+// --- Users Management (Admin) ---
+
+func (h *WebHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
+	currentUser := middleware.GetUser(r)
+
+	users, err := h.userStore.GetAllUsers()
+	if err != nil {
+		h.logger.Error("listing users", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	data := map[string]any{
+		"User":  currentUser,
+		"Users": users,
+	}
+
+	if err := h.renderer.Render(w, "users_list.html", data); err != nil {
+		h.logger.Error("rendering users list", "error", err)
+	}
+}
+
+func (h *WebHandler) HandleToggleUserStatus(w http.ResponseWriter, r *http.Request) {
+	currentUser := middleware.GetUser(r)
+	targetUserID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	// Prevent self-disable
+	if int64(currentUser.ID) == targetUserID {
+		http.Error(w, "Cannot disable your own account", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.userStore.ToggleUserStatus(targetUserID); err != nil {
+		h.logger.Error("toggling user status", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	// Get updated user to re-render the row
+	updatedUser, err := h.userStore.GetUserByID(targetUserID)
+	if err != nil {
+		h.logger.Error("getting updated user", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	if err := h.renderer.RenderPartial(w, "user_row.html", updatedUser); err != nil {
+		h.logger.Error("rendering user row", "error", err)
+	}
 }

@@ -103,6 +103,10 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 				r.Post("/", app.PaymentMethodHandler.HandleCreatePaymentMethod)
 				r.Delete("/{id}", app.PaymentMethodHandler.HandleDeletePaymentMethod)
 			})
+
+			// Web Users Management
+			r.Get("/users", app.WebHandler.HandleListUsers)
+			r.Patch("/users/{id}/toggle-status", app.WebHandler.HandleToggleUserStatus)
 		})
 	})
 
@@ -137,6 +141,19 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/categories/{id}/edit", app.WebHandler.HandleEditCategoryView)
 		r.Post("/categories/{id}/edit", app.WebHandler.HandleUpdateCategory)
 		r.Delete("/categories/{id}/delete", app.WebHandler.HandleDeleteCategory)
+
+		// Ingredients
+		r.Get("/ingredients", app.WebHandler.HandleListIngredients)
+		r.Get("/ingredients/new", app.WebHandler.HandleCreateIngredientView)
+		r.Post("/ingredients/new", app.WebHandler.HandleCreateIngredient)
+		r.Get("/ingredients/{id}/edit", app.WebHandler.HandleEditIngredientView)
+		r.Post("/ingredients/{id}/edit", app.WebHandler.HandleUpdateIngredient)
+		r.Delete("/ingredients/{id}/delete", app.WebHandler.HandleDeleteIngredient)
+
+		// Recipes
+		r.Get("/products/{id}/recipe", app.WebHandler.HandleManageRecipeView)
+		r.Post("/products/{id}/recipe", app.WebHandler.HandleAddIngredientToRecipe)
+		r.Delete("/products/{id}/ingredients/{ingredient_id}", app.WebHandler.HandleRemoveIngredientFromRecipe)
 	})
 
 	r.Post("/users", app.UserHandler.HandleRegisterUser)
