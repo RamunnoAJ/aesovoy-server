@@ -1,0 +1,6 @@
+.git
+tmp
+dist
+*.log
+database/postgres-data
+database/postgres-test-data
