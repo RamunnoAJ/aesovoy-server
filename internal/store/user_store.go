@@ -43,6 +43,7 @@ type User struct {
 	ID           int       `json:"id"`
 	Username     string    `json:"username"`
 	Email        string    `json:"email"`
+	Role         string    `json:"role"`
 	PasswordHash Password  `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
 }
@@ -72,12 +73,12 @@ type UserStore interface {
 
 func (s *PostgresUserStore) CreateUser(user *User) error {
 	query := `
-	INSERT INTO users (username, email, password_hash)
-	VALUES ($1, $2, $3)
+	INSERT INTO users (username, email, password_hash, role)
+	VALUES ($1, $2, $3, $4)
 	RETURNING id, created_at 
 	`
 
-	err := s.db.QueryRow(query, user.Username, user.Email, user.PasswordHash.hash).Scan(
+	err := s.db.QueryRow(query, user.Username, user.Email, user.PasswordHash.hash, user.Role).Scan(
 		&user.ID,
 		&user.CreatedAt,
 	)
@@ -94,7 +95,7 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	}
 
 	query := `
-	SELECT id, username, email, password_hash, created_at 
+	SELECT id, username, email, password_hash, role, created_at 
 	FROM users
 	WHERE username = $1
 	`
@@ -104,6 +105,7 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 		&user.Username,
 		&user.Email,
 		&user.PasswordHash.hash,
+		&user.Role,
 		&user.CreatedAt,
 	)
 
@@ -121,11 +123,11 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 func (s *PostgresUserStore) UpdateUser(user *User) error {
 	query := `
 	UPDATE users
-	SET username = $1, email = $2 
-	WHERE id = $3
+	SET username = $1, email = $2, role = $3
+	WHERE id = $4
 	`
 
-	result, err := s.db.Exec(query, user.Username, user.Email, user.ID)
+	result, err := s.db.Exec(query, user.Username, user.Email, user.Role, user.ID)
 	if err != nil {
 		return err
 	}
@@ -146,7 +148,7 @@ func (s *PostgresUserStore) GetUserToken(scope, plaintextPassword string) (*User
 	tokenHash := sha256.Sum256([]byte(plaintextPassword))
 
 	query := `
-	SELECT u.id, u.username, u.email, u.password_hash, u.created_at
+	SELECT u.id, u.username, u.email, u.password_hash, u.role, u.created_at
 	FROM users u
 	INNER JOIN tokens t ON t.user_id = u.id
 	WHERE t.hash = $1 AND t.scope = $2 and t.expiry > $3
@@ -161,6 +163,7 @@ func (s *PostgresUserStore) GetUserToken(scope, plaintextPassword string) (*User
 		&user.Username,
 		&user.Email,
 		&user.PasswordHash.hash,
+		&user.Role,
 		&user.CreatedAt,
 	)
 

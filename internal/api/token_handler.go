@@ -68,7 +68,7 @@ func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request)
 	}
 
 	if !passwordsDoMatch {
-		utils.Error(w, http.StatusUnauthorized, "invalid credentials")
+		utils.Error(w, http.StatusUnauthorized, "Credenciales incorrectas")
 		return
 	}
 

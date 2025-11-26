@@ -29,6 +29,7 @@ type Application struct {
 	PaymentMethodHandler *api.PaymentMethodHandler
 	LocalStockHandler    *api.LocalStockHandler
 	LocalSaleHandler     *api.LocalSaleHandler
+	WebHandler           *api.WebHandler
 	Middleware           middleware.UserMiddleware
 	DB                   *sql.DB
 }
@@ -91,6 +92,7 @@ func NewApplication() (*Application, error) {
 	paymentMethodHandler := api.NewPaymentMethodHandler(paymentMethodStore, logger)
 	localStockHandler := api.NewLocalStockHandler(localStockService, logger)
 	localSaleHandler := api.NewLocalSaleHandler(localSaleService, logger)
+	webHandler := api.NewWebHandler(userStore, tokenStore, productStore, categoryStore, logger)
 
 	app := &Application{
 		Logger:               logger,
@@ -106,6 +108,7 @@ func NewApplication() (*Application, error) {
 		PaymentMethodHandler: paymentMethodHandler,
 		LocalStockHandler:    localStockHandler,
 		LocalSaleHandler:     localSaleHandler,
+		WebHandler:           webHandler,
 		DB:                   pgDB,
 	}
 

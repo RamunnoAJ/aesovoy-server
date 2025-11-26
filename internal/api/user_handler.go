@@ -15,6 +15,7 @@ type registerUserRequest struct {
 	Username string `json:"username"`
 	Email    string `json:"email"`
 	Password string `json:"password"`
+	Role     string `json:"role"`
 }
 
 type UserHandler struct {
@@ -51,6 +52,14 @@ func (h *UserHandler) validateRegisterRequest(req *registerUserRequest) error {
 		return errors.New("password is required")
 	}
 
+	if req.Role == "" {
+		req.Role = "employee"
+	}
+
+	if req.Role != "employee" && req.Role != "administrator" {
+		return errors.New("invalid role")
+	}
+
 	return nil
 }
 
@@ -84,6 +93,7 @@ func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request)
 	user := &store.User{
 		Username: req.Username,
 		Email:    req.Email,
+		Role:     req.Role,
 	}
 
 	// how do we deal with their passwords

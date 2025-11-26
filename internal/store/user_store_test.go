@@ -42,7 +42,7 @@ func TestUserStore_Create(t *testing.T) {
 	defer db.Close()
 	us := NewPostgresUserStore(db)
 
-	u1 := &User{Username: "test", Email: "test@example.com"}
+	u1 := &User{Username: "test", Email: "test@example.com", Role: "employee"}
 	require.NoError(t, u1.PasswordHash.Set("password"))
 
 	tests := []struct {
@@ -83,7 +83,7 @@ func TestUserStore_GetUpdate(t *testing.T) {
 	defer db.Close()
 	us := NewPostgresUserStore(db)
 
-	u := &User{Username: "me", Email: "me@example.com"}
+	u := &User{Username: "me", Email: "me@example.com", Role: "administrator"}
 	require.NoError(t, u.PasswordHash.Set("securepassword"))
 	require.NoError(t, us.CreateUser(u))
 
@@ -91,6 +91,7 @@ func TestUserStore_GetUpdate(t *testing.T) {
 	got, err := us.GetUserByUsername("me")
 	require.NoError(t, err)
 	require.NotNil(t, got)
+	assert.Equal(t, "administrator", got.Role)
 	ok, err := got.PasswordHash.Matches("securepassword")
 	require.NoError(t, err)
 	assert.True(t, ok)
@@ -110,7 +111,7 @@ func TestUserStore_GetUserToken(t *testing.T) {
 	defer db.Close()
 	us := NewPostgresUserStore(db)
 
-	u := &User{Username: "tok", Email: "tok@ex.com"}
+	u := &User{Username: "tok", Email: "tok@ex.com", Role: "employee"}
 	require.NoError(t, u.PasswordHash.Set("p"))
 	require.NoError(t, us.CreateUser(u))
 

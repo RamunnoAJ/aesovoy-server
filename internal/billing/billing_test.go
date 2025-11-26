@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
-	"github.com/RamunnoAJ/aesovoy-server/migrations"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
 	_ "golang.org/x/image/webp"
@@ -91,18 +90,18 @@ func TestGenerateInvoice(t *testing.T) {
 	os.Remove(filePath) // Clean up before test
 
 	tests := []struct {
-		name    string
-		order   *store.Order
-		client  *store.Client
+		name     string
+		order    *store.Order
+		client   *store.Client
 		products map[int64]*store.Product
-		wantErr bool
+		wantErr  bool
 	}{
 		{
-			name: "valid invoice generation",
-			order: order,
-			client: client,
+			name:     "valid invoice generation",
+			order:    order,
+			client:   client,
 			products: productsMap,
-			wantErr: false,
+			wantErr:  false,
 		},
 	}
 
@@ -121,3 +120,4 @@ func TestGenerateInvoice(t *testing.T) {
 		})
 	}
 }
+

@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>A Eso Voy</title>
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 font-sans leading-normal tracking-normal flex flex-col min-h-screen">
+    {{if .User}}
+    <nav class="bg-blue-600 p-4 text-white z-10 shadow-md">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center gap-4">
+                <a href="/" class="font-bold text-xl">A Eso Voy</a>
+            </div>
+            <div class="flex items-center gap-4">
+                <div class="text-right hidden sm:block">
+                    <div class="font-bold">{{.User.Username}}</div>
+                    <div class="text-xs uppercase opacity-75">{{.User.Role}}</div>
+                </div>
+                <button hx-post="/logout" class="bg-red-500 hover:bg-red-700 text-white font-bold py-1 px-3 rounded text-sm">
+                    Salir
+                </button>
+            </div>
+        </div>
+    </nav>
+    {{end}}
+
+    <div class="flex flex-1">
+        {{if .User}}
+        <aside class="w-64 bg-gray-800 text-white flex-shrink-0 hidden md:block">
+            <div class="p-4">
+                <h2 class="text-xs uppercase text-gray-400 font-semibold mb-4">Menu</h2>
+                <nav class="space-y-2">
+                    <a href="/" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Dashboard
+                    </a>
+                    <a href="/products" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Productos
+                    </a>
+                    <a href="/categories" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Categorías
+                    </a>
+                    <a href="/providers" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Proveedores
+                    </a>
+                    <a href="/clients" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Clientes
+                    </a>
+                    <!-- Add more links here as needed -->
+                </nav>
+            </div>
+        </aside>
+        {{end}}
+
+        <main class="flex-1 p-6 overflow-y-auto">
+            {{block "content" .}}{{end}}
+        </main>
+    </div>
+</body>
+</html>

@@ -29,63 +29,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Use(app.Middleware.Authenticate)
 		r.Use(app.Middleware.RequireUser)
 
-		r.Route("/categories", func(r chi.Router) {
-			r.Get("/", app.CategoryHandler.HandleGetCategories)
-			r.Get("/{id}", app.CategoryHandler.HandleGetCategoryByID)
-			r.Get("/{id}/products", app.ProductHandler.HandleGetProductsByCategory)
-			r.Post("/", app.CategoryHandler.HandleRegisterCategory)
-			r.Patch("/{id}", app.CategoryHandler.HandleUpdateCategory)
-			r.Delete("/{id}", app.CategoryHandler.HandleDeleteCategory)
-		})
-
-		r.Route("/products", func(r chi.Router) {
-			r.Get("/", app.ProductHandler.HandleGetProducts)
-			r.Get("/{id}", app.ProductHandler.HandleGetProductByID)
-			r.Post("/", app.ProductHandler.HandleRegisterProduct)
-			r.Patch("/{id}", app.ProductHandler.HandleUpdateProduct)
-			r.Delete("/{id}", app.ProductHandler.HandleDeleteProduct)
-
-			r.Post("/{productID}/ingredients", app.ProductHandler.HandleAddIngredientToProduct)
-			r.Patch("/{productID}/ingredients/{ingredientID}", app.ProductHandler.HandleUpdateProductIngredient)
-			r.Delete("/{productID}/ingredients/{ingredientID}", app.ProductHandler.HandleRemoveIngredientFromProduct)
-		})
-
-		r.Route("/ingredients", func(r chi.Router) {
-			r.Get("/", app.IngredientHandler.HandleGetAllIngredients)
-			r.Post("/", app.IngredientHandler.HandleCreateIngredient)
-			r.Get("/{id}", app.IngredientHandler.HandleGetIngredientByID)
-			r.Patch("/{id}", app.IngredientHandler.HandleUpdateIngredient)
-			r.Delete("/{id}", app.IngredientHandler.HandleDeleteIngredient)
-		})
-
-		r.Route("/clients", func(r chi.Router) {
-			r.Get("/", app.ClientHandler.HandleGetClients)
-			r.Get("/{id}", app.ClientHandler.HandleGetClientByID)
-			r.Post("/", app.ClientHandler.HandleRegisterClient)
-			r.Patch("/{id}", app.ClientHandler.HandleUpdateClient)
-		})
-
-		r.Route("/providers", func(r chi.Router) {
-			r.Get("/", app.ProviderHandler.HandleGetProviders)
-			r.Get("/{id}", app.ProviderHandler.HandleGetProviderByID)
-			r.Post("/", app.ProviderHandler.HandleRegisterProvider)
-			r.Patch("/{id}", app.ProviderHandler.HandleUpdateProvider)
-		})
-
-		r.Route("/orders", func(r chi.Router) {
-			r.Get("/", app.OrderHandler.HandleListOrders)
-			r.Get("/{id}", app.OrderHandler.HandleGetOrderByID)
-			r.Post("/", app.OrderHandler.HandleRegisterOrder)
-			r.Patch("/{id}/state", app.OrderHandler.HandleUpdateOrderState)
-		})
-
-		r.Route("/payment_methods", func(r chi.Router) {
-			r.Get("/", app.PaymentMethodHandler.HandleGetPaymentMethods)
-			r.Get("/{id}", app.PaymentMethodHandler.HandleGetPaymentMethodByID)
-			r.Post("/", app.PaymentMethodHandler.HandleCreatePaymentMethod)
-			r.Delete("/{id}", app.PaymentMethodHandler.HandleDeletePaymentMethod)
-		})
-
+		// Local Store (Accessible by Employees and Admins)
 		r.Route("/local_stock", func(r chi.Router) {
 			r.Get("/", app.LocalStockHandler.HandleListLocalStock)
 			r.Post("/", app.LocalStockHandler.HandleCreateInitialStock)
@@ -98,10 +42,103 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 			r.Post("/", app.LocalSaleHandler.HandleCreateLocalSale)
 			r.Get("/{id}", app.LocalSaleHandler.HandleGetLocalSale)
 		})
+
+		// Admin Only
+		r.Group(func(r chi.Router) {
+			r.Use(app.Middleware.RequireAdmin)
+
+			r.Route("/categories", func(r chi.Router) {
+				r.Get("/", app.CategoryHandler.HandleGetCategories)
+				r.Get("/{id}", app.CategoryHandler.HandleGetCategoryByID)
+				r.Get("/{id}/products", app.ProductHandler.HandleGetProductsByCategory)
+				r.Post("/", app.CategoryHandler.HandleRegisterCategory)
+				r.Patch("/{id}", app.CategoryHandler.HandleUpdateCategory)
+				r.Delete("/{id}", app.CategoryHandler.HandleDeleteCategory)
+			})
+
+			r.Route("/products", func(r chi.Router) {
+				r.Get("/", app.ProductHandler.HandleGetProducts)
+				r.Get("/{id}", app.ProductHandler.HandleGetProductByID)
+				r.Post("/", app.ProductHandler.HandleRegisterProduct)
+				r.Patch("/{id}", app.ProductHandler.HandleUpdateProduct)
+				r.Delete("/{id}", app.ProductHandler.HandleDeleteProduct)
+
+				r.Post("/{productID}/ingredients", app.ProductHandler.HandleAddIngredientToProduct)
+				r.Patch("/{productID}/ingredients/{ingredientID}", app.ProductHandler.HandleUpdateProductIngredient)
+				r.Delete("/{productID}/ingredients/{ingredientID}", app.ProductHandler.HandleRemoveIngredientFromProduct)
+			})
+
+			r.Route("/ingredients", func(r chi.Router) {
+				r.Get("/", app.IngredientHandler.HandleGetAllIngredients)
+				r.Post("/", app.IngredientHandler.HandleCreateIngredient)
+				r.Get("/{id}", app.IngredientHandler.HandleGetIngredientByID)
+				r.Patch("/{id}", app.IngredientHandler.HandleUpdateIngredient)
+				r.Delete("/{id}", app.IngredientHandler.HandleDeleteIngredient)
+			})
+
+			r.Route("/clients", func(r chi.Router) {
+				r.Get("/", app.ClientHandler.HandleGetClients)
+				r.Get("/{id}", app.ClientHandler.HandleGetClientByID)
+				r.Post("/", app.ClientHandler.HandleRegisterClient)
+				r.Patch("/{id}", app.ClientHandler.HandleUpdateClient)
+			})
+
+			r.Route("/providers", func(r chi.Router) {
+				r.Get("/", app.ProviderHandler.HandleGetProviders)
+				r.Get("/{id}", app.ProviderHandler.HandleGetProviderByID)
+				r.Post("/", app.ProviderHandler.HandleRegisterProvider)
+				r.Patch("/{id}", app.ProviderHandler.HandleUpdateProvider)
+			})
+
+			r.Route("/orders", func(r chi.Router) {
+				r.Get("/", app.OrderHandler.HandleListOrders)
+				r.Get("/{id}", app.OrderHandler.HandleGetOrderByID)
+				r.Post("/", app.OrderHandler.HandleRegisterOrder)
+				r.Patch("/{id}/state", app.OrderHandler.HandleUpdateOrderState)
+			})
+
+			r.Route("/payment_methods", func(r chi.Router) {
+				r.Get("/", app.PaymentMethodHandler.HandleGetPaymentMethods)
+				r.Get("/{id}", app.PaymentMethodHandler.HandleGetPaymentMethodByID)
+				r.Post("/", app.PaymentMethodHandler.HandleCreatePaymentMethod)
+				r.Delete("/{id}", app.PaymentMethodHandler.HandleDeletePaymentMethod)
+			})
+		})
 	})
 
 	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("http://localhost:8080/swagger/doc.json")))
 	r.Get("/health", app.HealthCheck)
+	
+	// Public Web Views
+	r.Get("/login", app.WebHandler.HandleShowLogin)
+	r.Post("/login", app.WebHandler.HandleWebLogin)
+
+	// Protected Web Views
+	r.Group(func(r chi.Router) {
+		r.Use(app.Middleware.Authenticate)
+		r.Use(app.Middleware.RequireUser)
+		
+		r.Get("/", app.WebHandler.HandleHome)
+		r.Get("/time", app.WebHandler.HandleTime)
+		r.Post("/logout", app.WebHandler.HandleLogout)
+
+		// Products
+		r.Get("/products", app.WebHandler.HandleListProducts)
+		r.Get("/products/new", app.WebHandler.HandleCreateProductView)
+		r.Post("/products/new", app.WebHandler.HandleCreateProduct)
+		r.Get("/products/{id}/edit", app.WebHandler.HandleEditProductView)
+		r.Post("/products/{id}/edit", app.WebHandler.HandleUpdateProduct)
+		r.Delete("/products/{id}/delete", app.WebHandler.HandleDeleteProduct)
+
+		// Categories
+		r.Get("/categories", app.WebHandler.HandleListCategories)
+		r.Get("/categories/new", app.WebHandler.HandleCreateCategoryView)
+		r.Post("/categories/new", app.WebHandler.HandleCreateCategory)
+		r.Get("/categories/{id}/edit", app.WebHandler.HandleEditCategoryView)
+		r.Post("/categories/{id}/edit", app.WebHandler.HandleUpdateCategory)
+		r.Delete("/categories/{id}/delete", app.WebHandler.HandleDeleteCategory)
+	})
+
 	r.Post("/users", app.UserHandler.HandleRegisterUser)
 	r.Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)
 	return r
