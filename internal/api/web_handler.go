@@ -18,6 +18,7 @@ type WebHandler struct {
 	productStore    store.ProductStore
 	categoryStore   store.CategoryStore
 	ingredientStore store.IngredientStore
+	clientStore     store.ClientStore
 	renderer        *views.Renderer
 	logger          *slog.Logger
 }
@@ -28,6 +29,7 @@ func NewWebHandler(
 	productStore store.ProductStore,
 	categoryStore store.CategoryStore,
 	ingredientStore store.IngredientStore,
+	clientStore store.ClientStore,
 	logger *slog.Logger,
 ) *WebHandler {
 	return &WebHandler{
@@ -36,6 +38,7 @@ func NewWebHandler(
 		productStore:    productStore,
 		categoryStore:   categoryStore,
 		ingredientStore: ingredientStore,
+		clientStore:     clientStore,
 		renderer:        views.NewRenderer(),
 		logger:          logger,
 	}
@@ -642,35 +645,9 @@ func (h *WebHandler) HandleRemoveIngredientFromRecipe(w http.ResponseWriter, r *
 		http.Error(w, "Invalid Product ID", http.StatusBadRequest)
 		return
 	}
-	// Note: The API route uses "productID" and "ingredientID", but here we are in the context of WebHandler.
-	// The URL param name depends on how we register the route.
-	// Let's assume the route is /products/{id}/ingredients/{ingredient_id}
-
-	// Wait, the ProductStore.RemoveIngredientFromProduct takes the specific ingredient_id (which is actually the PI ID? No, it takes ingredientID).
-	// Let's check ProductStore.RemoveIngredientFromProduct again.
-	// It takes (productID, ingredientID).
-	// BUT, the ProductIngredient struct has ID (the row ID) and IngredientID.
-	// If a product has the same ingredient multiple times (unlikely but possible in some models, though usually unique constraint), we need to be careful.
-	// The API handler uses HandleRemoveIngredientFromProduct which takes ingredientID.
-	// Let's stick to that.
 
 	ingredientID, err := strconv.ParseInt(chi.URLParam(r, "ingredient_id"), 10, 64)
 	if err != nil {
-		// Actually, the template uses {{.ID}} which is the ProductIngredient ID (the row ID in product_ingredients table),
-		// NOT the Ingredient ID (from ingredients table).
-		// Let's check ProductStore.RemoveIngredientFromProduct implementation.
-		// query := DELETE FROM product_ingredients WHERE product_id = $1 AND id = $2
-		// Wait, let me check store again.
-		// File internal/store/products_store.go:
-		// func (s *PostgresProductStore) RemoveIngredientFromProduct(productID, ingredientID int64) error {
-		// 	query := `DELETE FROM product_ingredients WHERE product_id = $1 AND id = $2`
-		//  ...
-		// }
-		// AHA! The second parameter is named `ingredientID` in the function signature, BUT the query uses `id = $2`.
-		// So it expects the `product_ingredients.id` (the primary key of the link table), NOT the `ingredients.id`.
-		// This is slightly confusing naming in the store interface but correct behavior for deleting a specific row.
-		// So from the view, we should pass the ProductIngredient ID.
-
 		http.Error(w, "Invalid Ingredient ID", http.StatusBadRequest)
 		return
 	}
@@ -739,3 +716,162 @@ func (h *WebHandler) HandleToggleUserStatus(w http.ResponseWriter, r *http.Reque
 		h.logger.Error("rendering user row", "error", err)
 	}
 }
+
+// --- Clients ---
+
+func (h *WebHandler) HandleListClients(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+
+	q := r.URL.Query().Get("q")
+	pageStr := r.URL.Query().Get("page")
+	page, _ := strconv.Atoi(pageStr)
+	if page < 1 {
+		page = 1
+	}
+	limit := 10
+	offset := (page - 1) * limit
+
+	// Fetch one extra to determine if there is a next page
+	clients, err := h.clientStore.SearchClientsFTS(q, limit+1, offset)
+	if err != nil {
+		h.logger.Error("listing clients", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	hasNext := false
+	if len(clients) > limit {
+		hasNext = true
+		clients = clients[:limit]
+	}
+
+	data := map[string]any{
+		"User":     user,
+		"Clients":  clients,
+		"Query":    q,
+		"Page":     page,
+		"HasNext":  hasNext,
+		"PrevPage": page - 1,
+		"NextPage": page + 1,
+	}
+
+	if err := h.renderer.Render(w, "clients_list.html", data); err != nil {
+		h.logger.Error("rendering clients list", "error", err)
+	}
+}
+
+func (h *WebHandler) HandleCreateClientView(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+
+	data := map[string]any{
+		"User":   user,
+		"Client": store.Client{},
+	}
+
+	if err := h.renderer.Render(w, "client_form.html", data); err != nil {
+		h.logger.Error("rendering client form", "error", err)
+	}
+}
+
+func (h *WebHandler) HandleCreateClient(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	client := &store.Client{
+		Name:      r.FormValue("name"),
+		Address:   r.FormValue("address"),
+		Phone:     r.FormValue("phone"),
+		Reference: r.FormValue("reference"),
+		Email:     r.FormValue("email"),
+		CUIT:      r.FormValue("cuit"),
+		Type:      store.ClientType(r.FormValue("type")),
+	}
+
+	if err := h.clientStore.CreateClient(client); err != nil {
+		h.logger.Error("creating client", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/clients", http.StatusSeeOther)
+}
+
+func (h *WebHandler) HandleEditClientView(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+	clientID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	client, err := h.clientStore.GetClientByID(clientID)
+	if err != nil {
+		h.logger.Error("getting client", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+	if client == nil {
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	data := map[string]any{
+		"User":   user,
+		"Client": client,
+	}
+
+	if err := h.renderer.Render(w, "client_form.html", data); err != nil {
+		h.logger.Error("rendering client form", "error", err)
+	}
+}
+
+func (h *WebHandler) HandleUpdateClient(w http.ResponseWriter, r *http.Request) {
+	clientID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	client := &store.Client{
+		ID:        clientID,
+		Name:      r.FormValue("name"),
+		Address:   r.FormValue("address"),
+		Phone:     r.FormValue("phone"),
+		Reference: r.FormValue("reference"),
+		Email:     r.FormValue("email"),
+		CUIT:      r.FormValue("cuit"),
+		Type:      store.ClientType(r.FormValue("type")),
+	}
+
+	if err := h.clientStore.UpdateClient(client); err != nil {
+		h.logger.Error("updating client", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	http.Redirect(w, r, "/clients", http.StatusSeeOther)
+}
+
+func (h *WebHandler) HandleDeleteClient(w http.ResponseWriter, r *http.Request) {
+	clientID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid ID", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.clientStore.DeleteClient(clientID); err != nil {
+		h.logger.Error("deleting client", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+}
+

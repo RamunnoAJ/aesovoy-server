@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -30,6 +31,7 @@ type ClientStore interface {
 	GetClientByID(id int64) (*Client, error)
 	GetAllClients() ([]*Client, error)
 	SearchClientsFTS(q string, limit, offset int) ([]*Client, error)
+	DeleteClient(id int64) error
 }
 
 type PostgresClientStore struct {
@@ -132,11 +134,52 @@ func (s *PostgresClientStore) SearchClientsFTS(q string, limit, offset int) ([]*
 		return s.list(allq, limit, offset)
 	}
 
+	// Sanitize and format query for prefix matching
+	// Replace characters that might break to_tsquery syntax with spaces
+	safeQ := strings.Map(func(r rune) rune {
+		if strings.ContainsRune("&|!():*", r) {
+			return ' '
+		}
+		return r
+	}, q)
+
+	terms := strings.Fields(safeQ)
+	if len(terms) == 0 {
+		const allq = `
+		SELECT id,name,address,phone,reference,email,cuit,type,created_at
+		FROM clients
+		ORDER BY name
+		LIMIT $1 OFFSET $2`
+		return s.list(allq, limit, offset)
+	}
+
+	var queryParts []string
+	for _, term := range terms {
+		queryParts = append(queryParts, term+":*")
+	}
+	formattedQuery := strings.Join(queryParts, " & ")
+
 	const sqlq = `
 	SELECT id,name,address,phone,reference,email,cuit,type,created_at
 	FROM clients
-	WHERE search_tsv @@ websearch_to_tsquery('spanish', unaccent($1))
-	ORDER BY ts_rank(search_tsv, websearch_to_tsquery('spanish', unaccent($1))) DESC, name
+	WHERE search_tsv @@ to_tsquery('spanish', unaccent($1))
+	ORDER BY ts_rank(search_tsv, to_tsquery('spanish', unaccent($1))) DESC, name
 	LIMIT $2 OFFSET $3`
-	return s.list(sqlq, q, limit, offset)
+	return s.list(sqlq, formattedQuery, limit, offset)
+}
+
+func (s *PostgresClientStore) DeleteClient(id int64) error {
+	const q = `DELETE FROM clients WHERE id=$1`
+	res, err := s.db.Exec(q, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows // Or a custom error indicating not found
+	}
+	return nil
 }

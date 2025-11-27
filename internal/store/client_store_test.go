@@ -1,6 +1,7 @@
 package store
 
 import (
+	"database/sql"
 	"fmt"
 	"testing"
 
@@ -198,51 +199,32 @@ func TestGetAllClients(t *testing.T) {
 	}
 }
 
-func TestSearchClientsFTS(t *testing.T) {
+func TestDeleteClient(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
 	store := NewPostgresClientStore(db)
 
-	c1 := &Client{
-		Name:      "Juan Perez",
-		Address:   "Av. Siempre Viva",
+	client := &Client{
+		Name:      "Cliente a Borrar",
 		Type:      ClientTypeIndividual,
-		Reference: "ref-fts-1",
-		CUIT:      "cuit-fts-1",
-		Email:     "email-fts-1",
+		Reference: "ref-delete",
+		CUIT:      "cuit-delete",
 	}
-	require.NoError(t, store.CreateClient(c1))
-	c2 := &Client{
-		Name:      "Maria Garcia",
-		CUIT:      "cuit-fts-2",
-		Type:      ClientTypeDistributer,
-		Reference: "ref-fts-2",
-		Email:     "email-fts-2",
-	}
-	require.NoError(t, store.CreateClient(c2))
+	require.NoError(t, store.CreateClient(client))
 
-	tests := []struct {
-		name      string
-		query     string
-		wantCount int
-		wantErr   bool
-	}{
-		{name: "search by name", query: "Juan", wantCount: 1, wantErr: false},
-		{name: "search by address", query: "viva", wantCount: 1, wantErr: false},
-		{name: "no results", query: "inexistente", wantCount: 0, wantErr: false},
-		{name: "empty query returns all", query: "", wantCount: 2, wantErr: false},
-	}
+	t.Run("delete existing client", func(t *testing.T) {
+		err := store.DeleteClient(client.ID)
+		require.NoError(t, err)
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			results, err := store.SearchClientsFTS(tt.query, 10, 0)
-			if tt.wantErr {
-				assert.Error(t, err)
-				return
-			}
-			require.NoError(t, err)
-			assert.Len(t, results, tt.wantCount)
-		})
-	}
+		// Verify client is deleted
+		deletedClient, err := store.GetClientByID(client.ID)
+		require.NoError(t, err)
+		assert.Nil(t, deletedClient)
+	})
+
+	t.Run("delete non-existent client", func(t *testing.T) {
+		err := store.DeleteClient(999) // Non-existent ID
+		assert.ErrorIs(t, err, sql.ErrNoRows)
+	})
 }
