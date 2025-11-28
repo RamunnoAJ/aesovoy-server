@@ -5,17 +5,55 @@ import (
 	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
+	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 	"github.com/RamunnoAJ/aesovoy-server/internal/tokens"
 )
+
+type DashboardView struct {
+	Date          string
+	LocalStats    *store.DailySalesStats
+	OrderStats    *store.DailyOrderStats
+	CombinedTotal float64
+	CombinedCount int
+}
 
 func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUser(r)
 
-	data := map[string]any{
-		"User": user,
+	dateStr := r.URL.Query().Get("date")
+	date := time.Now()
+	if dateStr != "" {
+		if d, err := time.Parse("2006-01-02", dateStr); err == nil {
+			date = d
+		}
 	}
 
-	err := h.renderer.Render(w, "home.html", data)
+	localStats, err := h.localSaleService.GetDailyStats(date)
+	if err != nil {
+		h.logger.Error("getting local daily stats", "error", err)
+		localStats = &store.DailySalesStats{ByMethod: make(map[string]float64)}
+	}
+
+	orderStats, err := h.orderStore.GetDailyStats(date)
+	if err != nil {
+		h.logger.Error("getting order daily stats", "error", err)
+		orderStats = &store.DailyOrderStats{}
+	}
+
+	stats := DashboardView{
+		Date:          date.Format("2006-01-02"),
+		LocalStats:    localStats,
+		OrderStats:    orderStats,
+		CombinedTotal: localStats.TotalAmount + orderStats.TotalAmount,
+		CombinedCount: localStats.TotalCount + orderStats.TotalCount,
+	}
+
+	data := map[string]any{
+		"User":  user,
+		"Stats": stats,
+	}
+
+	err = h.renderer.Render(w, "home.html", data)
 	if err != nil {
 		h.logger.Error("failed to render home", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
+	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 )
@@ -142,4 +143,8 @@ func (s *LocalSaleService) GetSale(id int64) (*store.LocalSale, error) {
 
 func (s *LocalSaleService) ListSales() ([]*store.LocalSale, error) {
 	return s.saleStore.ListAll()
+}
+
+func (s *LocalSaleService) GetDailyStats(date time.Time) (*store.DailySalesStats, error) {
+	return s.saleStore.GetDailyStats(date)
 }

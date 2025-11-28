@@ -45,6 +45,12 @@ type OrderStore interface {
 	UpdateOrderState(id int64, state OrderState) error
 	GetOrderByID(id int64) (*Order, error)
 	ListOrders(f OrderFilter) ([]*Order, error)
+	GetDailyStats(date time.Time) (*DailyOrderStats, error)
+}
+
+type DailyOrderStats struct {
+	TotalAmount float64
+	TotalCount  int
 }
 
 type OrderFilter struct {
@@ -60,6 +66,23 @@ type OrderFilter struct {
 type PostgresOrderStore struct{ db *sql.DB }
 
 func NewPostgresOrderStore(db *sql.DB) *PostgresOrderStore { return &PostgresOrderStore{db: db} }
+
+func (s *PostgresOrderStore) GetDailyStats(date time.Time) (*DailyOrderStats, error) {
+	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	end := start.Add(24 * time.Hour)
+
+	stats := &DailyOrderStats{}
+	query := `
+		SELECT COALESCE(SUM(total), 0), COUNT(*)
+		FROM orders
+		WHERE date >= $1 AND date < $2 AND state != 'cancelled'`
+
+	err := s.db.QueryRow(query, start, end).Scan(&stats.TotalAmount, &stats.TotalCount)
+	if err != nil {
+		return nil, err
+	}
+	return stats, nil
+}
 
 func (s *PostgresOrderStore) CreateOrder(o *Order, items []OrderItem) error {
 	tx, err := s.db.Begin()

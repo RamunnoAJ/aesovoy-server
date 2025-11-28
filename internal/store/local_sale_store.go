@@ -24,10 +24,17 @@ type LocalSaleItem struct {
 	LineSubtotal string `json:"line_subtotal"`
 }
 
+type DailySalesStats struct {
+	TotalAmount float64
+	TotalCount  int
+	ByMethod    map[string]float64
+}
+
 type LocalSaleStore interface {
 	CreateInTx(tx *sql.Tx, sale *LocalSale, items []LocalSaleItem) error
 	GetByID(id int64) (*LocalSale, error)
 	ListAll() ([]*LocalSale, error)
+	GetDailyStats(date time.Time) (*DailySalesStats, error)
 }
 
 type PostgresLocalSaleStore struct {
@@ -36,6 +43,51 @@ type PostgresLocalSaleStore struct {
 
 func NewPostgresLocalSaleStore(db *sql.DB) *PostgresLocalSaleStore {
 	return &PostgresLocalSaleStore{db: db}
+}
+
+func (s *PostgresLocalSaleStore) GetDailyStats(date time.Time) (*DailySalesStats, error) {
+	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	end := start.Add(24 * time.Hour)
+
+	stats := &DailySalesStats{
+		ByMethod: make(map[string]float64),
+	}
+
+	// 1. Total and Count
+	queryTotal := `
+		SELECT COALESCE(SUM(total), 0), COUNT(*)
+		FROM local_sales
+		WHERE created_at >= $1 AND created_at < $2`
+	
+	err := s.db.QueryRow(queryTotal, start, end).Scan(&stats.TotalAmount, &stats.TotalCount)
+	if err != nil {
+		return nil, err
+	}
+
+	// 2. Breakdown by Method
+	queryMethod := `
+		SELECT pm.name, COALESCE(SUM(ls.total), 0)
+		FROM local_sales ls
+		JOIN payment_methods pm ON ls.payment_method_id = pm.id
+		WHERE ls.created_at >= $1 AND ls.created_at < $2
+		GROUP BY pm.name`
+	
+	rows, err := s.db.Query(queryMethod, start, end)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		var total float64
+		if err := rows.Scan(&name, &total); err != nil {
+			return nil, err
+		}
+		stats.ByMethod[name] = total
+	}
+
+	return stats, rows.Err()
 }
 
 func (s *PostgresLocalSaleStore) CreateInTx(tx *sql.Tx, sale *LocalSale, items []LocalSaleItem) error {

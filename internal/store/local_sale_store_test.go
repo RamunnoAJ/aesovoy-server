@@ -2,6 +2,7 @@ package store
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -67,4 +68,61 @@ func TestLocalSaleStore_CreateAndGet(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, allSales, 2)
 	})
+}
+
+func TestLocalSaleStore_GetDailyStats(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	s := NewPostgresLocalSaleStore(db)
+	pmStore := NewPostgresPaymentMethodStore(db)
+
+	// Setup
+	pm1 := &PaymentMethod{Name: "Cash", Reference: "cash"}
+	require.NoError(t, pmStore.CreatePaymentMethod(pm1))
+	pm2 := &PaymentMethod{Name: "Card", Reference: "card"}
+	require.NoError(t, pmStore.CreatePaymentMethod(pm2))
+
+	prod := setupProductForStockTest(t, db) // Assuming this helper sets up product
+
+	// Helper to create sale at specific time (simulated via immediate insert,
+	// since we can't easily force CreatedAt via CreateInTx without modifying Store or DB manually.
+	// Postgres defaults CreatedAt to NOW().
+	// To test "yesterday", we can manually update the record after creation or mock the clock if possible.
+	// Easiest is to update the record date manually via SQL.
+
+	createSale := func(pmID int64, amount string, date time.Time) {
+		sale := &LocalSale{PaymentMethodID: pmID, Subtotal: amount, Total: amount}
+		items := []LocalSaleItem{{ProductID: prod.ID, Quantity: 1, UnitPrice: amount, LineSubtotal: amount}}
+		tx, _ := db.Begin()
+		_ = s.CreateInTx(tx, sale, items)
+		tx.Commit()
+
+		// Manually update date
+		_, err := db.Exec("UPDATE local_sales SET created_at = $1 WHERE id = $2", date, sale.ID)
+		require.NoError(t, err)
+	}
+
+	now := time.Now()
+	today := now
+	yesterday := now.Add(-24 * time.Hour)
+
+	// Create sales
+	createSale(pm1.ID, "100.00", today)
+	createSale(pm1.ID, "50.00", today)
+	createSale(pm2.ID, "200.00", today)
+	createSale(pm1.ID, "500.00", yesterday) // Should be ignored
+
+	// Test
+	stats, err := s.GetDailyStats(today)
+	require.NoError(t, err)
+	require.NotNil(t, stats)
+
+	// Verify
+	assert.Equal(t, 3, stats.TotalCount)
+	assert.Equal(t, 350.00, stats.TotalAmount)
+
+	assert.Equal(t, 150.00, stats.ByMethod["Cash"])
+	assert.Equal(t, 200.00, stats.ByMethod["Card"])
+	assert.NotContains(t, stats.ByMethod, "Other")
 }

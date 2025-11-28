@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 	"github.com/stretchr/testify/assert"
@@ -113,7 +114,7 @@ func TestLocalSaleService_CreateLocalSale_Integration(t *testing.T) {
 
 			if tt.wantErr != nil {
 				assert.Error(t, err)
-				// Check substring match for Spanish messages
+				// Use errors.Is for wrapped errors, or check string for simple errors
 				assert.Contains(t, err.Error(), tt.wantErr.Error())
 			} else {
 				require.NoError(t, err)
@@ -125,4 +126,41 @@ func TestLocalSaleService_CreateLocalSale_Integration(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestLocalSaleService_GetDailyStats(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	productStore := store.NewPostgresProductStore(db)
+	categoryStore := store.NewPostgresCategoryStore(db)
+	paymentMethodStore := store.NewPostgresPaymentMethodStore(db)
+	localStockStore := store.NewPostgresLocalStockStore(db)
+	localSaleStore := store.NewPostgresLocalSaleStore(db)
+	service := NewLocalSaleService(db, localSaleStore, localStockStore, paymentMethodStore, productStore)
+
+	// Setup
+	cat := &store.Category{Name: "Category Stats"}
+	require.NoError(t, categoryStore.CreateCategory(cat))
+	prod := &store.Product{CategoryID: cat.ID, Name: "Product Stats", UnitPrice: 100}
+	require.NoError(t, productStore.CreateProduct(prod))
+	pm := &store.PaymentMethod{Name: "Cash", Reference: "cash"}
+	require.NoError(t, paymentMethodStore.CreatePaymentMethod(pm))
+	_, err := localStockStore.Create(prod.ID, 100)
+	require.NoError(t, err)
+
+	// Create Sale via Service
+	req := CreateLocalSaleRequest{
+		PaymentMethodID: pm.ID,
+		Items:           []CreateLocalSaleItem{{ProductID: prod.ID, Quantity: 1}},
+	}
+	_, err = service.CreateLocalSale(req)
+	require.NoError(t, err)
+
+	// Test
+	stats, err := service.GetDailyStats(time.Now())
+	require.NoError(t, err)
+	assert.Equal(t, 100.00, stats.TotalAmount)
+	assert.Equal(t, 1, stats.TotalCount)
+	assert.Equal(t, 100.00, stats.ByMethod["Cash"])
 }

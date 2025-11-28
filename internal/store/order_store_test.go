@@ -2,6 +2,7 @@ package store
 
 import (
 	"testing"
+	"time"
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/assert"
@@ -204,4 +205,49 @@ func TestListOrders(t *testing.T) {
 			assert.Len(t, orders, tt.wantCount)
 		})
 	}
+}
+
+func TestGetDailyStats(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	orderStore := NewPostgresOrderStore(db)
+	clientStore := NewPostgresClientStore(db)
+	productStore := NewPostgresProductStore(db)
+	categoryStore := NewPostgresCategoryStore(db)
+
+	// Setup
+	client := &Client{Name: "Client", Type: ClientTypeIndividual, Reference: "ref-stats", CUIT: "cuit-stats"}
+	require.NoError(t, clientStore.CreateClient(client))
+	cat := &Category{Name: "Category"}
+	require.NoError(t, categoryStore.CreateCategory(cat))
+	prod := &Product{CategoryID: cat.ID, Name: "Product", UnitPrice: 100.0, DistributionPrice: 100.0}
+	require.NoError(t, productStore.CreateProduct(prod))
+
+	createOrder := func(state OrderState, date time.Time) {
+		o := &Order{ClientID: client.ID, State: state}
+		items := []OrderItem{{ProductID: prod.ID, Quantity: 1, Price: "100.0"}}
+		require.NoError(t, orderStore.CreateOrder(o, items))
+		_, err := db.Exec("UPDATE orders SET date = $1 WHERE id = $2", date, o.ID)
+		require.NoError(t, err)
+	}
+
+	now := time.Now()
+	today := now
+	yesterday := now.Add(-24 * time.Hour)
+
+	// Create orders
+	createOrder(OrderTodo, today)      // +100
+	createOrder(OrderDone, today)      // +100
+	createOrder(OrderCancelled, today) // Ignored
+	createOrder(OrderTodo, yesterday)  // Ignored
+
+	// Test
+	stats, err := orderStore.GetDailyStats(today)
+	require.NoError(t, err)
+	require.NotNil(t, stats)
+
+	// Verify
+	assert.Equal(t, 2, stats.TotalCount)
+	assert.Equal(t, 200.00, stats.TotalAmount)
 }
