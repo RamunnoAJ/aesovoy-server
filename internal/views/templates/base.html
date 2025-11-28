@@ -66,5 +66,118 @@
             {{block "content" .}}{{end}}
         </main>
     </div>
+
+    <!-- Toast Notification -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
+        <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                    <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg leading-6 font-medium text-gray-900 mt-4" id="modal-title">Confirmar Acción</h3>
+                <div class="mt-2 px-7 py-3">
+                    <p class="text-sm text-gray-500" id="modal-message">
+                        ¿Estás seguro?
+                    </p>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="modal-confirm" class="px-4 py-2 bg-red-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-300">
+                        Confirmar
+                    </button>
+                    <button id="modal-cancel" class="mt-3 px-4 py-2 bg-white text-gray-700 text-base font-medium rounded-md w-full shadow-sm border border-gray-300 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Cancelar
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Confirmation Modal Logic
+        document.addEventListener("htmx:confirm", function(evt) {
+            // If the event was not triggered by hx-confirm, or if standard confirm wasn't requested
+            if (!evt.detail.question) return;
+
+            // Prevent the default confirmation
+            evt.preventDefault();
+
+            const modal = document.getElementById('confirmation-modal');
+            const message = document.getElementById('modal-message');
+            const confirmBtn = document.getElementById('modal-confirm');
+            const cancelBtn = document.getElementById('modal-cancel');
+
+            message.textContent = evt.detail.question;
+            modal.classList.remove('hidden');
+
+            const handleConfirm = function() {
+                evt.detail.issueRequest(true); // issueRequest(true) skips the confirm check
+                cleanup();
+            };
+
+            const handleCancel = function() {
+                cleanup();
+            };
+            
+            const cleanup = function() {
+                modal.classList.add('hidden');
+                confirmBtn.removeEventListener('click', handleConfirm);
+                cancelBtn.removeEventListener('click', handleCancel);
+            }
+
+            confirmBtn.addEventListener('click', handleConfirm);
+            cancelBtn.addEventListener('click', handleCancel);
+        });
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const colors = {
+                'error': 'bg-red-500',
+                'success': 'bg-green-500',
+                'info': 'bg-blue-500'
+            };
+            const color = colors[type] || colors['info'];
+
+            toast.className = `${color} text-white px-6 py-4 rounded shadow-lg transition-all duration-300 opacity-0 transform translate-y-2`;
+            toast.textContent = message;
+
+            container.appendChild(toast);
+
+            // Trigger animation
+            requestAnimationFrame(() => {
+                toast.classList.remove('opacity-0', 'translate-y-2');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }, 3000);
+        }
+
+        // Check URL parameters for messages
+        const urlParams = new URLSearchParams(window.location.search);
+        const errorMsg = urlParams.get('error');
+        const successMsg = urlParams.get('success');
+
+        if (errorMsg) {
+            showToast(errorMsg, 'error');
+            // Clean URL
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+        if (successMsg) {
+            showToast(successMsg, 'success');
+            const newUrl = window.location.pathname;
+            window.history.replaceState({}, document.title, newUrl);
+        }
+    </script>
 </body>
 </html>

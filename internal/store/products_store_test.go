@@ -208,3 +208,88 @@ func TestProductStore_Ingredients(t *testing.T) {
 	require.NoError(t, err)
 	assert.Empty(t, got.Recipe)
 }
+
+func TestProductStore_Search(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	s := NewPostgresProductStore(db)
+	category := setupCategory(t, db)
+
+	// Create products for search
+	p1 := &Product{CategoryID: category.ID, Name: "Torta de Chocolate", Description: "Deliciosa torta de chocolate con dulce de leche"}
+	require.NoError(t, s.CreateProduct(p1))
+	p2 := &Product{CategoryID: category.ID, Name: "Torta de Vainilla", Description: "Torta clásica de vainilla"}
+	require.NoError(t, s.CreateProduct(p2))
+	p3 := &Product{CategoryID: category.ID, Name: "Alfajor de Maicena", Description: "Alfajor tradicional"}
+	require.NoError(t, s.CreateProduct(p3))
+
+	tests := []struct {
+		name     string
+		query    string
+		limit    int
+		offset   int
+		wantLen  int
+		wantName string // Check first result name if expected > 0
+	}{
+		{
+			name:     "search by name match",
+			query:    "Chocolate",
+			limit:    10,
+			offset:   0,
+			wantLen:  1,
+			wantName: "Torta de Chocolate",
+		},
+		{
+			name:     "search by description match",
+			query:    "Dulce de leche",
+			limit:    10,
+			offset:   0,
+			wantLen:  1,
+			wantName: "Torta de Chocolate",
+		},
+		{
+			name:     "search partial match",
+			query:    "Vaini",
+			limit:    10,
+			offset:   0,
+			wantLen:  1,
+			wantName: "Torta de Vainilla",
+		},
+		{
+			name:     "search multiple match",
+			query:    "Torta",
+			limit:    10,
+			offset:   0,
+			wantLen:  2,
+			// Order is by rank then name. "Torta" appears in both name (A) and description (B) for both? 
+			// Actually 'Torta' is in Name (weight A) for both. 
+			// Sorting by name should put Chocolate before Vainilla.
+			wantName: "Torta de Chocolate", 
+		},
+		{
+			name:    "search no match",
+			query:   "Pizza",
+			limit:   10,
+			offset:  0,
+			wantLen: 0,
+		},
+		{
+			name:    "empty query returns all (paginated)",
+			query:   "",
+			limit:   2,
+			offset:  0,
+			wantLen: 2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := s.SearchProductsFTS(tt.query, tt.limit, tt.offset)
+			require.NoError(t, err)
+			assert.Len(t, got, tt.wantLen)
+			if tt.wantLen > 0 && tt.wantName != "" {
+				assert.Equal(t, tt.wantName, got[0].Name)
+			}
+		})
+	}
+}

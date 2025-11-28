@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 
 	"github.com/lib/pq"
@@ -50,6 +51,7 @@ type ProductStore interface {
 	UpdateProductIngredient(productID, ingredientID int64, quantity float64, unit string) (*ProductIngredient, error)
 	RemoveIngredientFromProduct(productID, ingredientID int64) error
 	GetProductsByIDs(ids []int64) (map[int64]*Product, error)
+	SearchProductsFTS(q string, limit, offset int) ([]*Product, error)
 }
 
 func (s *PostgresProductStore) CreateProduct(product *Product) error {
@@ -319,10 +321,88 @@ func (s *PostgresProductStore) GetProductsByIDs(ids []int64) (map[int64]*Product
 		); err != nil {
 			return nil, err
 		}
-		products[pr.ID] = pr
+		if err := rows.Err(); err != nil {
+			return nil, err
+		}
+	}
+	return products, nil
+}
+
+func (s *PostgresProductStore) list(query string, args ...any) ([]*Product, error) {
+	rows, err := s.db.Query(query, args...)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var products []*Product
+	for rows.Next() {
+		pr := &Product{}
+		if err := rows.Scan(
+			&pr.ID, &pr.CategoryID, &pr.CategoryName,
+			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
+		); err != nil {
+			return nil, err
+		}
+		products = append(products, pr)
 	}
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
 	return products, nil
+}
+
+func (s *PostgresProductStore) SearchProductsFTS(q string, limit, offset int) ([]*Product, error) {
+	if limit <= 0 {
+		limit = 50
+	}
+	if offset < 0 {
+		offset = 0
+	}
+
+	if q == "" {
+		const allq = `
+		SELECT p.id, p.category_id, c.name AS category_name,
+		       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+		FROM products p
+		JOIN categories c ON c.id = p.category_id
+		ORDER BY p.name
+		LIMIT $1 OFFSET $2`
+		return s.list(allq, limit, offset)
+	}
+
+	safeQ := strings.Map(func(r rune) rune {
+		if strings.ContainsRune("&|!():*", r) {
+			return ' '
+		}
+		return r
+	}, q)
+
+	terms := strings.Fields(safeQ)
+	if len(terms) == 0 {
+		const allq = `
+		SELECT p.id, p.category_id, c.name AS category_name,
+		       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+		FROM products p
+		JOIN categories c ON c.id = p.category_id
+		ORDER BY p.name
+		LIMIT $1 OFFSET $2`
+		return s.list(allq, limit, offset)
+	}
+
+	var queryParts []string
+	for _, term := range terms {
+		queryParts = append(queryParts, term+":*")
+	}
+	formattedQuery := strings.Join(queryParts, " & ")
+
+	const sqlq = `
+	SELECT p.id, p.category_id, c.name AS category_name,
+	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+	FROM products p
+	JOIN categories c ON c.id = p.category_id
+	WHERE p.search_tsv @@ to_tsquery('spanish', unaccent($1))
+	ORDER BY ts_rank(p.search_tsv, to_tsquery('spanish', unaccent($1))) DESC, p.name
+	LIMIT $2 OFFSET $3`
+	return s.list(sqlq, formattedQuery, limit, offset)
 }

@@ -1,15 +1,17 @@
 package api
 
 import (
+	"log/slog"
+	"net/http"
+	"strconv"
+	"strings"
+	"time"
+
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 	"github.com/RamunnoAJ/aesovoy-server/internal/tokens"
 	"github.com/RamunnoAJ/aesovoy-server/internal/views"
 	"github.com/go-chi/chi/v5"
-	"log/slog"
-	"net/http"
-	"strconv"
-	"time"
 )
 
 type WebHandler struct {
@@ -173,16 +175,38 @@ func (h *WebHandler) renderLoginError(w http.ResponseWriter, msg string) {
 
 func (h *WebHandler) HandleListProducts(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUser(r)
-	products, err := h.productStore.GetAllProduct()
+
+	q := r.URL.Query().Get("q")
+	pageStr := r.URL.Query().Get("page")
+	page, _ := strconv.Atoi(pageStr)
+	if page < 1 {
+		page = 1
+	}
+	limit := 10
+	offset := (page - 1) * limit
+
+	// Fetch one extra to determine if there is a next page
+	products, err := h.productStore.SearchProductsFTS(q, limit+1, offset)
 	if err != nil {
 		h.logger.Error("listing products", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	hasNext := false
+	if len(products) > limit {
+		hasNext = true
+		products = products[:limit]
+	}
+
 	data := map[string]any{
 		"User":     user,
 		"Products": products,
+		"Query":    q,
+		"Page":     page,
+		"HasNext":  hasNext,
+		"PrevPage": page - 1,
+		"NextPage": page + 1,
 	}
 
 	if err := h.renderer.Render(w, "products_list.html", data); err != nil {
@@ -631,6 +655,10 @@ func (h *WebHandler) HandleAddIngredientToRecipe(w http.ResponseWriter, r *http.
 
 	_, err = h.productStore.AddIngredientToProduct(productID, ingredientID, quantity, unit)
 	if err != nil {
+		if strings.Contains(err.Error(), "duplicate key value") {
+			http.Redirect(w, r, "/products/"+strconv.FormatInt(productID, 10)+"/recipe?error=El ingrediente ya existe en la receta", http.StatusSeeOther)
+			return
+		}
 		h.logger.Error("adding ingredient to recipe", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
@@ -874,4 +902,3 @@ func (h *WebHandler) HandleDeleteClient(w http.ResponseWriter, r *http.Request) 
 
 	w.WriteHeader(http.StatusOK)
 }
-
