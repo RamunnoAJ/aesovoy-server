@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"strings"
 	"time"
 )
 
@@ -19,6 +20,7 @@ type Provider struct {
 type ProviderStore interface {
 	CreateProvider(*Provider) error
 	UpdateProvider(*Provider) error
+	DeleteProvider(id int64) error
 	GetProviderByID(id int64) (*Provider, error)
 	GetAllProviders() ([]*Provider, error)
 	SearchProvidersFTS(q string, limit, offset int) ([]*Provider, error)
@@ -87,6 +89,22 @@ func (s *PostgresProviderStore) UpdateProvider(p *Provider) error {
 	return nil
 }
 
+func (s *PostgresProviderStore) DeleteProvider(id int64) error {
+	const q = `DELETE FROM providers WHERE id=$1`
+	res, err := s.db.Exec(q, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (s *PostgresProviderStore) GetProviderByID(id int64) (*Provider, error) {
 	const q = `SELECT id,name,address,phone,reference,email,cuit,created_at FROM providers WHERE id=$1`
 	return scanProvider(s.db.QueryRow(q, id))
@@ -117,11 +135,35 @@ func (s *PostgresProviderStore) SearchProvidersFTS(q string, limit, offset int) 
 		return s.list(allq, limit, offset)
 	}
 
+	// Sanitize and format query for prefix matching
+	safeQ := strings.Map(func(r rune) rune {
+		if strings.ContainsRune("&|!():*", r) {
+			return ' '
+		}
+		return r
+	}, q)
+
+	terms := strings.Fields(safeQ)
+	if len(terms) == 0 {
+		const allq = `
+		SELECT id,name,address,phone,reference,email,cuit,created_at
+		FROM providers
+		ORDER BY name
+		LIMIT $1 OFFSET $2`
+		return s.list(allq, limit, offset)
+	}
+
+	var queryParts []string
+	for _, term := range terms {
+		queryParts = append(queryParts, term+":*")
+	}
+	formattedQuery := strings.Join(queryParts, " & ")
+
 	const sqlq = `
 	SELECT id,name,address,phone,reference,email,cuit,created_at
 	FROM providers
-	WHERE search_tsv @@ websearch_to_tsquery('spanish', unaccent($1))
-	ORDER BY ts_rank(search_tsv, websearch_to_tsquery('spanish', unaccent($1))) DESC, name
+	WHERE search_tsv @@ to_tsquery('spanish', unaccent($1))
+	ORDER BY ts_rank(search_tsv, to_tsquery('spanish', unaccent($1))) DESC, name
 	LIMIT $2 OFFSET $3`
-	return s.list(sqlq, q, limit, offset)
+	return s.list(sqlq, formattedQuery, limit, offset)
 }

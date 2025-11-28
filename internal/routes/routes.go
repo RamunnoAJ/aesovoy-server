@@ -158,6 +158,14 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Post("/clients/{id}/edit", app.WebHandler.HandleUpdateClient)
 		r.Delete("/clients/{id}/delete", app.WebHandler.HandleDeleteClient)
 
+		// Providers
+		r.Get("/providers", app.WebHandler.HandleListProviders)
+		r.Get("/providers/new", app.WebHandler.HandleCreateProviderView)
+		r.Post("/providers/new", app.WebHandler.HandleCreateProvider)
+		r.Get("/providers/{id}/edit", app.WebHandler.HandleEditProviderView)
+		r.Post("/providers/{id}/edit", app.WebHandler.HandleUpdateProvider)
+		r.Delete("/providers/{id}/delete", app.WebHandler.HandleDeleteProvider)
+
 		// Recipes
 		r.Get("/products/{id}/recipe", app.WebHandler.HandleManageRecipeView)
 		r.Post("/products/{id}/recipe", app.WebHandler.HandleAddIngredientToRecipe)
