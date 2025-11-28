@@ -188,7 +188,14 @@ func TestListOrders(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			orders, err := orderStore.ListOrders(tt.clientID, tt.state, 10, 0)
+			orders, err := orderStore.ListOrders(
+				OrderFilter{
+					ClientID: tt.clientID,
+					State:    tt.state,
+					Limit:    10,
+					Offset:   0,
+				},
+			)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

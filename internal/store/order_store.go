@@ -20,29 +20,41 @@ const (
 type Money = string
 
 type Order struct {
-	ID        int64       `json:"id"`
-	ClientID  int64       `json:"client_id"`
-	Total     Money       `json:"total"`
-	Date      time.Time   `json:"date"`
-	State     OrderState  `json:"state"`
-	CreatedAt time.Time   `json:"created_at"`
-	Items     []OrderItem `json:"items,omitempty"`
+	ID         int64       `json:"id"`
+	ClientID   int64       `json:"client_id"`
+	ClientName string      `json:"client_name,omitempty"`
+	Total      Money       `json:"total"`
+	Date       time.Time   `json:"date"`
+	State      OrderState  `json:"state"`
+	CreatedAt  time.Time   `json:"created_at"`
+	Items      []OrderItem `json:"items,omitempty"`
 }
 
 type OrderItem struct {
-	ID        int64     `json:"id"`
-	OrderID   int64     `json:"order_id"`
-	ProductID int64     `json:"product_id"`
-	Quantity  int       `json:"quantity"`
-	Price     Money     `json:"price"`
-	CreatedAt time.Time `json:"created_at"`
+	ID          int64     `json:"id"`
+	OrderID     int64     `json:"order_id"`
+	ProductID   int64     `json:"product_id"`
+	ProductName string    `json:"product_name,omitempty"`
+	Quantity    int       `json:"quantity"`
+	Price       Money     `json:"price"`
+	CreatedAt   time.Time `json:"created_at"`
 }
 
 type OrderStore interface {
 	CreateOrder(o *Order, items []OrderItem) error
 	UpdateOrderState(id int64, state OrderState) error
 	GetOrderByID(id int64) (*Order, error)
-	ListOrders(clientID *int64, state *OrderState, limit, offset int) ([]*Order, error)
+	ListOrders(f OrderFilter) ([]*Order, error)
+}
+
+type OrderFilter struct {
+	ClientID   *int64
+	State      *OrderState
+	ClientName string
+	StartDate  *time.Time
+	EndDate    *time.Time
+	Limit      int
+	Offset     int
 }
 
 type PostgresOrderStore struct{ db *sql.DB }
@@ -120,15 +132,24 @@ func (s *PostgresOrderStore) UpdateOrderState(id int64, state OrderState) error 
 }
 
 func (s *PostgresOrderStore) GetOrderByID(id int64) (*Order, error) {
-	const q = `SELECT id, client_id, total::text, date, state, created_at FROM orders WHERE id=$1`
+	const q = `
+	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.created_at 
+	FROM orders o
+	JOIN clients c ON c.id = o.client_id
+	WHERE o.id=$1`
 	o := &Order{}
-	if err := s.db.QueryRow(q, id).Scan(&o.ID, &o.ClientID, &o.Total, &o.Date, &o.State, &o.CreatedAt); err != nil {
+	if err := s.db.QueryRow(q, id).Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.CreatedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
 		return nil, err
 	}
-	const qi = `SELECT id, order_id, product_id, quantity, price::text, created_at FROM order_products WHERE order_id=$1 ORDER BY id`
+	const qi = `
+	SELECT op.id, op.order_id, op.product_id, p.name, op.quantity, op.price::text, op.created_at 
+	FROM order_products op
+	JOIN products p ON p.id = op.product_id
+	WHERE op.order_id=$1 
+	ORDER BY op.id`
 	rows, err := s.db.Query(qi, id)
 	if err != nil {
 		return nil, err
@@ -136,7 +157,7 @@ func (s *PostgresOrderStore) GetOrderByID(id int64) (*Order, error) {
 	defer rows.Close()
 	for rows.Next() {
 		var it OrderItem
-		if err := rows.Scan(&it.ID, &it.OrderID, &it.ProductID, &it.Quantity, &it.Price, &it.CreatedAt); err != nil {
+		if err := rows.Scan(&it.ID, &it.OrderID, &it.ProductID, &it.ProductName, &it.Quantity, &it.Price, &it.CreatedAt); err != nil {
 			return nil, err
 		}
 		o.Items = append(o.Items, it)
@@ -144,28 +165,47 @@ func (s *PostgresOrderStore) GetOrderByID(id int64) (*Order, error) {
 	return o, rows.Err()
 }
 
-func (s *PostgresOrderStore) ListOrders(clientID *int64, state *OrderState, limit, offset int) ([]*Order, error) {
-	if limit <= 0 {
-		limit = 50
+func (s *PostgresOrderStore) ListOrders(f OrderFilter) ([]*Order, error) {
+	if f.Limit <= 0 {
+		f.Limit = 50
 	}
-	if offset < 0 {
-		offset = 0
+	if f.Offset < 0 {
+		f.Offset = 0
 	}
 
-	q := `SELECT id, client_id, total::text, date, state, created_at FROM orders`
+	q := `
+	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.created_at 
+	FROM orders o
+	JOIN clients c ON c.id = o.client_id`
 	where := ""
 	args := []any{}
-	if clientID != nil {
-		where = where + fmt.Sprintf("%s client_id=$%d", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
-		args = append(args, *clientID)
+
+	if f.ClientID != nil {
+		where = where + fmt.Sprintf("%s o.client_id=$%d", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
+		args = append(args, *f.ClientID)
 	}
-	if state != nil {
-		where = where + fmt.Sprintf("%s state=$%d", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
-		args = append(args, *state)
+	if f.State != nil {
+		where = where + fmt.Sprintf("%s o.state=$%d", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
+		args = append(args, *f.State)
 	}
-	q = q + " " + where + " ORDER BY date DESC, id DESC LIMIT $%d OFFSET $%d"
-	q = fmt.Sprintf(q, len(args)+1, len(args)+2)
-	args = append(args, limit, offset)
+	if f.ClientName != "" {
+		where = where + fmt.Sprintf("%s unaccent(c.name) ILIKE unaccent('%%' || $%d || '%%')", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
+		args = append(args, f.ClientName)
+	}
+	if f.StartDate != nil {
+		where = where + fmt.Sprintf("%s o.date >= $%d", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
+		args = append(args, *f.StartDate)
+	}
+	if f.EndDate != nil {
+		// Assuming EndDate is inclusive, and we might need to cover the whole day if time is 00:00:00.
+		// But usually caller handles the time part (e.g. setting it to 23:59:59).
+		// We'll just compare strictly here.
+		where = where + fmt.Sprintf("%s o.date <= $%d", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
+		args = append(args, *f.EndDate)
+	}
+
+	q = q + " " + where + fmt.Sprintf(" ORDER BY o.date DESC, o.id DESC LIMIT $%d OFFSET $%d", len(args)+1, len(args)+2)
+	args = append(args, f.Limit, f.Offset)
 
 	rows, err := s.db.Query(q, args...)
 	if err != nil {
@@ -176,7 +216,7 @@ func (s *PostgresOrderStore) ListOrders(clientID *int64, state *OrderState, limi
 	var out []*Order
 	for rows.Next() {
 		o := &Order{}
-		if err := rows.Scan(&o.ID, &o.ClientID, &o.Total, &o.Date, &o.State, &o.CreatedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.CreatedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, o)

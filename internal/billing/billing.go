@@ -2,6 +2,8 @@ package billing
 
 import (
 	"fmt"
+	_ "image/jpeg"
+	_ "image/png"
 	"log"
 	"os"
 	"path/filepath"
@@ -52,54 +54,58 @@ func GenerateInvoice(order *store.Order, client *store.Client, products map[int6
 	defer f.Close()
 
 	// 3. Handle sheet
-	sheetName := client.Name
-	sheetIndex, err := f.GetSheetIndex(sheetName)
-	if err != nil || sheetIndex == -1 {
-		// Sheet doesn't exist, create it by cloning the template sheet
-		templateIndex, err := f.GetSheetIndex(templateSheet)
-		if err != nil || templateIndex == -1 {
-			return fmt.Errorf("template sheet '%s' not found in template file", templateSheet)
-		}
-
-		newSheetIndex, err := f.NewSheet(sheetName)
-		if err != nil {
-			return fmt.Errorf("failed to create new sheet: %w", err)
-		}
-
-		err = f.CopySheet(templateIndex, newSheetIndex)
-		if err != nil {
-			// If copy fails, delete the newly created sheet before returning the error
-			_ = f.DeleteSheet(sheetName)
-			return fmt.Errorf("failed to copy sheet content: %w", err)
-		}
-
-		// Add logo to the new sheet from file bytes
-		logoPath := filepath.Join(projectRoot, "docs", "logo.jpg")
-		opts := &excelize.GraphicOptions{
-			AutoFit: true,
-		}
-		for _, cell := range []string{"D1", "I1"} {
-			err := f.AddPicture(sheetName, cell, logoPath, opts)
-			if err != nil {
-				log.Printf("could not add logo to cell %s: %v", cell, err)
-			}
-		}
-
-		// Set header data on the new sheet
-		setInvoiceHeaders(f, sheetName, order, client)
+	sheetName := getSheetName(order.ID, client.Name)
+	
+	// If sheet exists, delete it to ensure clean state (e.g. if order items changed)
+	if idx, err := f.GetSheetIndex(sheetName); err == nil && idx != -1 {
+		f.DeleteSheet(sheetName)
 	}
+
+	// Create sheet from template
+	templateIndex, err := f.GetSheetIndex(templateSheet)
+	if err != nil || templateIndex == -1 {
+		return fmt.Errorf("template sheet '%s' not found in template file", templateSheet)
+	}
+
+	newSheetIndex, err := f.NewSheet(sheetName)
+	if err != nil {
+		return fmt.Errorf("failed to create new sheet: %w", err)
+	}
+
+	err = f.CopySheet(templateIndex, newSheetIndex)
+	if err != nil {
+		_ = f.DeleteSheet(sheetName)
+		return fmt.Errorf("failed to copy sheet content: %w", err)
+	}
+
+	// Add logo
+	logoPath := filepath.Join(projectRoot, "docs", "logo.jpg")
+	opts := &excelize.GraphicOptions{AutoFit: true}
+	for _, cell := range []string{"D1", "I1"} {
+		if err := f.AddPicture(sheetName, cell, logoPath, opts); err != nil {
+			log.Printf("could not add logo to cell %s: %v", cell, err)
+		}
+	}
+
+	// Set headers
+	setInvoiceHeaders(f, sheetName, order, client)
 
 	row := itemsStartRow
 	var total float64 = 0
 
+	log.Printf("Generating invoice for Order #%d. Items count: %d. Products map size: %d", order.ID, len(order.Items), len(products))
+
 	for _, item := range order.Items {
 		product, ok := products[item.ProductID]
 		if !ok {
+			log.Printf("Product ID %d not found in products map for Order Item", item.ProductID)
 			continue
 		}
 		price, _ := strconv.ParseFloat(item.Price, 64)
 
-		f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), item.Quantity)
+		if err := f.SetCellValue(sheetName, fmt.Sprintf("A%d", row), item.Quantity); err != nil {
+			log.Printf("Error setting cell A%d: %v", row, err)
+		}
 		f.SetCellValue(sheetName, fmt.Sprintf("B%d", row), product.Name)
 		f.SetCellValue(sheetName, fmt.Sprintf("C%d", row), price)
 
@@ -119,6 +125,18 @@ func GenerateInvoice(order *store.Order, client *store.Client, products map[int6
 	f.SetCellValue(sheetName, "I59", total)
 
 	return f.Save()
+}
+
+func getSheetName(orderID int64, clientName string) string {
+	// Format: "ID-ClientName"
+	// Max length 31.
+	// ID can be e.g. 5 digits. "12345-" takes 6 chars.
+	// We should safe truncate.
+	name := fmt.Sprintf("%d-%s", orderID, clientName)
+	if len(name) > 31 {
+		return name[:31]
+	}
+	return name
 }
 
 func createInvoiceFileFromTemplate(filePath string) (*excelize.File, error) {

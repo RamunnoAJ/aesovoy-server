@@ -24,7 +24,7 @@ func TestCreatePaymentMethod(t *testing.T) {
 		{
 			name: "valid payment method",
 			pm: &PaymentMethod{
-				Owner:     "Test Owner 1",
+				Name:      "Test Method 1",
 				Reference: "Test Reference 1",
 			},
 			wantErr: false,
@@ -51,7 +51,7 @@ func TestGetPaymentMethodByID(t *testing.T) {
 	s := NewPostgresPaymentMethodStore(db)
 
 	pm := &PaymentMethod{
-		Owner:     "Existing Owner",
+		Name:      "Existing Method",
 		Reference: "Existing Reference",
 	}
 	require.NoError(t, s.CreatePaymentMethod(pm))
@@ -86,11 +86,68 @@ func TestGetPaymentMethodByID(t *testing.T) {
 			require.NoError(t, err)
 			if tt.wantFound {
 				require.NotNil(t, found)
-				assert.Equal(t, pm.Owner, found.Owner)
+				assert.Equal(t, pm.Name, found.Name)
 				assert.Equal(t, pm.Reference, found.Reference)
 			} else {
 				assert.Nil(t, found)
 			}
+		})
+	}
+}
+
+func TestUpdatePaymentMethod(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	s := NewPostgresPaymentMethodStore(db)
+
+	pm := &PaymentMethod{
+		Name:      "Original Method",
+		Reference: "Original Ref",
+	}
+	require.NoError(t, s.CreatePaymentMethod(pm))
+
+	tests := []struct {
+		name    string
+		update  *PaymentMethod
+		wantErr bool
+	}{
+		{
+			name: "successful update",
+			update: &PaymentMethod{
+				ID:        pm.ID,
+				Name:      "Updated Method",
+				Reference: "Updated Ref",
+			},
+			wantErr: false,
+		},
+		{
+			name: "update non-existent",
+			update: &PaymentMethod{
+				ID:        99999,
+				Name:      "Nobody",
+				Reference: "Nowhere",
+			},
+			wantErr: true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := s.UpdatePaymentMethod(tt.update)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+
+			// Verify update
+			updated, err := s.GetPaymentMethodByID(tt.update.ID)
+			require.NoError(t, err)
+			require.NotNil(t, updated)
+			assert.Equal(t, tt.update.Name, updated.Name)
+			assert.Equal(t, tt.update.Reference, updated.Reference)
+			assert.NotEqual(t, pm.UpdatedAt, updated.UpdatedAt)
 		})
 	}
 }
@@ -104,7 +161,7 @@ func TestGetAllPaymentMethods(t *testing.T) {
 	totalToCreate := 3
 	for i := range totalToCreate {
 		pm := &PaymentMethod{
-			Owner:     fmt.Sprintf("Owner %d", i),
+			Name:      fmt.Sprintf("Method %d", i),
 			Reference: fmt.Sprintf("Reference %d", i),
 		}
 		require.NoError(t, s.CreatePaymentMethod(pm))
@@ -141,7 +198,7 @@ func TestDeletePaymentMethod(t *testing.T) {
 	s := NewPostgresPaymentMethodStore(db)
 
 	pm := &PaymentMethod{
-		Owner:     "To Be Deleted",
+		Name:      "To Be Deleted",
 		Reference: "Delete Me",
 	}
 	require.NoError(t, s.CreatePaymentMethod(pm))

@@ -14,7 +14,7 @@ func TestLocalSaleStore_CreateAndGet(t *testing.T) {
 	s := NewPostgresLocalSaleStore(db)
 
 	// --- Setup dependencies ---
-	pm := &PaymentMethod{Owner: "test", Reference: "test"}
+	pm := &PaymentMethod{Name: "test", Reference: "test"}
 	require.NoError(t, NewPostgresPaymentMethodStore(db).CreatePaymentMethod(pm))
 	prod := setupProductForStockTest(t, db)
 

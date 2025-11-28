@@ -16,12 +16,14 @@
                 <button type="submit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md text-sm">Buscar</button>
             </form>
 
+            {{if eq .User.Role "administrator"}}
             <a href="/products/new" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center gap-2 whitespace-nowrap">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                   <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
                 Nuevo
             </a>
+            {{end}}
         </div>
     </div>
     
@@ -31,8 +33,8 @@
                 <tr>
                     <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                     <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
-                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Precio Unitario</th>
-                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Precio Dietética</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Precio Minorista</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Precio Mayorista</th>
                     <th scope="col" class="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
             </thead>
@@ -55,10 +57,12 @@
                             <div x-show="open" style="display: none;" class="origin-top-right absolute right-0 mt-2 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
                                 <div class="py-1">
                                     <a href="/products/{{.ID}}/recipe" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Receta</a>
+                                    {{if eq $.User.Role "administrator"}}
                                     <a href="/products/{{.ID}}/edit" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Editar</a>
                                     <button hx-delete="/products/{{.ID}}/delete" hx-confirm="¿Estás seguro?" hx-target="closest tr" hx-swap="outerHTML" class="block w-full text-left px-4 py-2 text-sm text-red-700 hover:bg-red-50">
                                         Eliminar
                                     </button>
+                                    {{end}}
                                 </div>
                             </div>
                         </div>

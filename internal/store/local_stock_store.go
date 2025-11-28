@@ -17,11 +17,19 @@ type LocalStockStore interface {
 	Create(productID int64, quantity int) (*LocalStock, error)
 	GetByProductID(productID int64) (*LocalStock, error)
 	ListAll() ([]*LocalStock, error)
+	ListStockWithProductDetails() ([]*ProductStock, error)
 	AdjustQuantity(productID int64, delta int) (*LocalStock, error)
 
 	// Transactional methods
 	CreateInTx(tx *sql.Tx, productID int64, quantity int) (*LocalStock, error)
 	AdjustQuantityTx(tx *sql.Tx, productID int64, delta int) (*LocalStock, error)
+}
+
+type ProductStock struct {
+	ProductID   int64   `json:"product_id"`
+	ProductName string  `json:"product_name"`
+	Price       float64 `json:"price"`
+	Quantity    int     `json:"quantity"`
 }
 
 type PostgresLocalStockStore struct {
@@ -30,6 +38,30 @@ type PostgresLocalStockStore struct {
 
 func NewPostgresLocalStockStore(db *sql.DB) *PostgresLocalStockStore {
 	return &PostgresLocalStockStore{DB: db}
+}
+
+func (s *PostgresLocalStockStore) ListStockWithProductDetails() ([]*ProductStock, error) {
+	query := `
+		SELECT p.id, p.name, p.unit_price, COALESCE(ls.quantity, 0)
+		FROM products p
+		LEFT JOIN local_stock ls ON p.id = ls.product_id
+		ORDER BY p.name`
+
+	rows, err := s.DB.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stocks []*ProductStock
+	for rows.Next() {
+		var ps ProductStock
+		if err := rows.Scan(&ps.ProductID, &ps.ProductName, &ps.Price, &ps.Quantity); err != nil {
+			return nil, err
+		}
+		stocks = append(stocks, &ps)
+	}
+	return stocks, nil
 }
 
 func (s *PostgresLocalStockStore) Create(productID int64, quantity int) (*LocalStock, error) {

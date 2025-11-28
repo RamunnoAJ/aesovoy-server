@@ -145,3 +145,41 @@ func TestLocalStockService_AdjustStock(t *testing.T) {
 		assert.ErrorIs(t, err, ErrStockRecordNotFound)
 	})
 }
+
+func TestLocalStockService_ListStock(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	productStore := store.NewPostgresProductStore(db)
+	categoryStore := store.NewPostgresCategoryStore(db)
+	localStockStore := store.NewPostgresLocalStockStore(db)
+	service := NewLocalStockService(localStockStore, productStore)
+
+	cat := &store.Category{Name: "Category List Test"}
+	require.NoError(t, categoryStore.CreateCategory(cat))
+
+	prodA := &store.Product{CategoryID: cat.ID, Name: "Product A", UnitPrice: 10.5}
+	require.NoError(t, productStore.CreateProduct(prodA))
+	prodB := &store.Product{CategoryID: cat.ID, Name: "Product B", UnitPrice: 20.0}
+	require.NoError(t, productStore.CreateProduct(prodB))
+
+	// Create stock for A
+	_, err := localStockStore.Create(prodA.ID, 50)
+	require.NoError(t, err)
+
+	// Test ListStock
+	list, err := service.ListStock()
+	require.NoError(t, err)
+	require.Len(t, list, 2)
+
+	// Verify order (by name) and content
+	assert.Equal(t, prodA.ID, list[0].ProductID)
+	assert.Equal(t, "Product A", list[0].ProductName)
+	assert.Equal(t, 10.5, list[0].Price)
+	assert.Equal(t, 50, list[0].Quantity)
+
+	assert.Equal(t, prodB.ID, list[1].ProductID)
+	assert.Equal(t, "Product B", list[1].ProductName)
+	assert.Equal(t, 20.0, list[1].Price)
+	assert.Equal(t, 0, list[1].Quantity)
+}

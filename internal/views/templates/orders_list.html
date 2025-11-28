@@ -1,0 +1,142 @@
+{{define "content"}}
+<div class="bg-white rounded-lg shadow-lg">
+    <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+        <h1 class="text-2xl font-bold text-gray-800">Órdenes</h1>
+        
+        <div class="flex items-center gap-2">
+            <a href="/orders?state=todo&q={{.Q}}&start_date={{.StartDate}}&end_date={{.EndDate}}" class="px-3 py-1 rounded-full text-xs font-medium {{if eq .State "todo"}}bg-blue-100 text-blue-800{{else}}bg-gray-100 text-gray-800 hover:bg-gray-200{{end}}">Pendientes</a>
+            <a href="/orders?state=cancelled&q={{.Q}}&start_date={{.StartDate}}&end_date={{.EndDate}}" class="px-3 py-1 rounded-full text-xs font-medium {{if eq .State "cancelled"}}bg-yellow-100 text-yellow-800{{else}}bg-gray-100 text-gray-800 hover:bg-gray-200{{end}}">Canceladas</a>
+            <a href="/orders?state=done&q={{.Q}}&start_date={{.StartDate}}&end_date={{.EndDate}}" class="px-3 py-1 rounded-full text-xs font-medium {{if eq .State "done"}}bg-green-100 text-green-800{{else}}bg-gray-100 text-gray-800 hover:bg-gray-200{{end}}">Listas</a>
+            <a href="/orders?state=delivered&q={{.Q}}&start_date={{.StartDate}}&end_date={{.EndDate}}" class="px-3 py-1 rounded-full text-xs font-medium {{if eq .State "delivered"}}bg-purple-100 text-purple-800{{else}}bg-gray-100 text-gray-800 hover:bg-gray-200{{end}}">Entregadas</a>
+            <a href="/orders?q={{.Q}}&start_date={{.StartDate}}&end_date={{.EndDate}}" class="px-3 py-1 rounded-full text-xs font-medium {{if not .State}}bg-gray-800 text-white{{else}}bg-gray-100 text-gray-800 hover:bg-gray-200{{end}}">Todas</a>
+        </div>
+
+        <div class="flex-1 w-full md:w-auto flex justify-center md:justify-end gap-2">
+            <a href="/orders/new" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center gap-2 whitespace-nowrap">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Nueva
+            </a>
+        </div>
+    </div>
+
+    <!-- Search Form -->
+    <form action="/orders" method="GET" class="p-6 bg-gray-50 border-b border-gray-200 grid grid-cols-1 md:grid-cols-4 gap-4 items-end">
+        <input type="hidden" name="state" value="{{.State}}">
+        
+        <div>
+            <label for="q" class="block text-sm font-medium text-gray-700 mb-1">Cliente</label>
+            <input type="text" name="q" id="q" value="{{.Q}}" placeholder="Buscar por nombre..." class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+        </div>
+
+        <div>
+            <label for="start_date" class="block text-sm font-medium text-gray-700 mb-1">Desde</label>
+            <input type="date" name="start_date" id="start_date" value="{{.StartDate}}" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+        </div>
+
+        <div>
+            <label for="end_date" class="block text-sm font-medium text-gray-700 mb-1">Hasta</label>
+            <input type="date" name="end_date" id="end_date" value="{{.EndDate}}" class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+        </div>
+
+        <div>
+            <button type="submit" class="w-full bg-white border border-gray-300 text-gray-700 hover:bg-gray-50 font-medium py-2 px-4 rounded-md text-sm shadow-sm">
+                Filtrar
+            </button>
+        </div>
+    </form>
+    
+    <div class="overflow-x-auto md:overflow-visible">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Cliente</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Total</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Estado</th>
+                    <th scope="col" class="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {{range .Orders}}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">#{{.ID}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.ClientName}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">${{.Total}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.Date.Format "02/01/2006"}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base">
+                        {{if eq .State "todo"}}
+                            <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10">Pendiente</span>
+                        {{else if eq .State "cancelled"}}
+                            <span class="inline-flex items-center rounded-md bg-yellow-50 px-2 py-1 text-xs font-medium text-yellow-800 ring-1 ring-inset ring-yellow-600/20">Cancelada</span>
+                        {{else if eq .State "done"}}
+                            <span class="inline-flex items-center rounded-md bg-green-50 px-2 py-1 text-xs font-medium text-green-700 ring-1 ring-inset ring-green-600/20">Lista</span>
+                        {{else if eq .State "delivered"}}
+                            <span class="inline-flex items-center rounded-md bg-purple-50 px-2 py-1 text-xs font-medium text-purple-700 ring-1 ring-inset ring-purple-700/10">Entregada</span>
+                        {{end}}
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium relative">
+                         <div class="relative inline-block text-left" x-data="{ open: false }">
+                            <div>
+                                <button @click="open = !open" @click.away="open = false" type="button" class="flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                                    </svg>
+                                </button>
+                            </div>
+                            <div x-show="open" style="display: none;" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
+                                <div class="py-1">
+                                    <a href="/orders/{{.ID}}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Detalle</a>
+                                    <div class="border-t border-gray-100 my-1"></div>
+                                    <div class="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider">Cambiar Estado</div>
+                                    <button hx-patch="/orders/{{.ID}}/state?state=todo" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Pendiente</button>
+                                    <button hx-patch="/orders/{{.ID}}/state?state=done" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Lista</button>
+                                    <button hx-patch="/orders/{{.ID}}/state?state=delivered" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Entregada</button>
+                                    <button hx-patch="/orders/{{.ID}}/state?state=cancelled" class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">Cancelar</button>
+                                </div>
+                            </div>
+                        </div>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+        {{if not .Orders}}
+        <div class="p-6 text-center text-gray-500">
+            No hay órdenes registradas.
+        </div>
+        {{end}}
+    </div>
+    
+    <!-- Pagination -->
+    <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center bg-gray-50 rounded-b-lg">
+        <div>
+            {{if gt .Page 1}}
+            <a href="/orders?page={{.PrevPage}}&state={{.State}}&q={{.Q}}&start_date={{.StartDate}}&end_date={{.EndDate}}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Anterior
+            </a>
+            {{else}}
+            <span class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-300 bg-gray-100 cursor-not-allowed">
+                Anterior
+            </span>
+            {{end}}
+        </div>
+        <span class="text-sm text-gray-700 font-medium">Página {{.Page}}</span>
+        <div>
+            {{if .HasNext}}
+            <a href="/orders?page={{.NextPage}}&state={{.State}}&q={{.Q}}&start_date={{.StartDate}}&end_date={{.EndDate}}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                Siguiente
+            </a>
+            {{else}}
+            <span class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-300 bg-gray-100 cursor-not-allowed">
+                Siguiente
+            </span>
+            {{end}}
+        </div>
+    </div>
+</div>
+<!-- Alpine.js for Dropdown -->
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{{end}}

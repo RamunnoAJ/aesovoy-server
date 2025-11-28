@@ -7,7 +7,7 @@ import (
 
 type PaymentMethod struct {
 	ID        int64     `json:"id"`
-	Owner     string    `json:"owner"`
+	Name      string    `json:"name"`
 	Reference string    `json:"reference"`
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -16,6 +16,7 @@ type PaymentMethod struct {
 type PaymentMethodStore interface {
 	CreatePaymentMethod(pm *PaymentMethod) error
 	GetPaymentMethodByID(id int64) (*PaymentMethod, error)
+	UpdatePaymentMethod(pm *PaymentMethod) error
 	GetAllPaymentMethods() ([]*PaymentMethod, error)
 	DeletePaymentMethod(id int64) error
 }
@@ -30,21 +31,31 @@ func NewPostgresPaymentMethodStore(db *sql.DB) *PostgresPaymentMethodStore {
 
 func (s *PostgresPaymentMethodStore) CreatePaymentMethod(pm *PaymentMethod) error {
 	query := `
-		INSERT INTO payment_methods (owner, reference)
+		INSERT INTO payment_methods (name, reference)
 		VALUES ($1, $2)
 		RETURNING id, created_at, updated_at`
 
-	return s.DB.QueryRow(query, pm.Owner, pm.Reference).Scan(&pm.ID, &pm.CreatedAt, &pm.UpdatedAt)
+	return s.DB.QueryRow(query, pm.Name, pm.Reference).Scan(&pm.ID, &pm.CreatedAt, &pm.UpdatedAt)
+}
+
+func (s *PostgresPaymentMethodStore) UpdatePaymentMethod(pm *PaymentMethod) error {
+	query := `
+		UPDATE payment_methods
+		SET name = $1, reference = $2, updated_at = NOW()
+		WHERE id = $3
+		RETURNING updated_at`
+	
+	return s.DB.QueryRow(query, pm.Name, pm.Reference, pm.ID).Scan(&pm.UpdatedAt)
 }
 
 func (s *PostgresPaymentMethodStore) GetPaymentMethodByID(id int64) (*PaymentMethod, error) {
 	query := `
-		SELECT id, owner, reference, created_at, updated_at
+		SELECT id, name, reference, created_at, updated_at
 		FROM payment_methods
 		WHERE id = $1`
 
 	var pm PaymentMethod
-	err := s.DB.QueryRow(query, id).Scan(&pm.ID, &pm.Owner, &pm.Reference, &pm.CreatedAt, &pm.UpdatedAt)
+	err := s.DB.QueryRow(query, id).Scan(&pm.ID, &pm.Name, &pm.Reference, &pm.CreatedAt, &pm.UpdatedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -56,9 +67,9 @@ func (s *PostgresPaymentMethodStore) GetPaymentMethodByID(id int64) (*PaymentMet
 
 func (s *PostgresPaymentMethodStore) GetAllPaymentMethods() ([]*PaymentMethod, error) {
 	query := `
-		SELECT id, owner, reference, created_at, updated_at
+		SELECT id, name, reference, created_at, updated_at
 		FROM payment_methods
-		ORDER BY owner`
+		ORDER BY name`
 
 	rows, err := s.DB.Query(query)
 	if err != nil {
@@ -69,7 +80,7 @@ func (s *PostgresPaymentMethodStore) GetAllPaymentMethods() ([]*PaymentMethod, e
 	var paymentMethods []*PaymentMethod
 	for rows.Next() {
 		var pm PaymentMethod
-		if err := rows.Scan(&pm.ID, &pm.Owner, &pm.Reference, &pm.CreatedAt, &pm.UpdatedAt); err != nil {
+		if err := rows.Scan(&pm.ID, &pm.Name, &pm.Reference, &pm.CreatedAt, &pm.UpdatedAt); err != nil {
 			return nil, err
 		}
 		paymentMethods = append(paymentMethods, &pm)

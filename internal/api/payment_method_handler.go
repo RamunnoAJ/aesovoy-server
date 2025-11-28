@@ -11,7 +11,7 @@ import (
 )
 
 type registerPaymentMethodRequest struct {
-	Owner     string `json:"owner"`
+	Name      string `json:"name"`
 	Reference string `json:"reference"`
 }
 
@@ -26,11 +26,8 @@ func NewPaymentMethodHandler(s store.PaymentMethodStore, l *slog.Logger) *Paymen
 
 func (h *PaymentMethodHandler) validateRequest(req *registerPaymentMethodRequest) error {
 	var errs utils.ValidationErrors
-	if strings.TrimSpace(req.Owner) == "" {
-		errs = append(errs, utils.FieldError{Field: "owner", Message: "is required"})
-	}
-	if strings.TrimSpace(req.Reference) == "" {
-		errs = append(errs, utils.FieldError{Field: "reference", Message: "is required"})
+	if strings.TrimSpace(req.Name) == "" {
+		errs = append(errs, utils.FieldError{Field: "name", Message: "is required"})
 	}
 	if len(errs) > 0 {
 		return errs
@@ -67,7 +64,7 @@ func (h *PaymentMethodHandler) HandleCreatePaymentMethod(w http.ResponseWriter, 
 	}
 
 	pm := &store.PaymentMethod{
-		Owner:     req.Owner,
+		Name:      req.Name,
 		Reference: req.Reference,
 	}
 
@@ -154,6 +151,10 @@ func (h *PaymentMethodHandler) HandleDeletePaymentMethod(w http.ResponseWriter, 
 	if err := h.store.DeletePaymentMethod(id); err != nil {
 		if err.Error() == "sql: no rows in result set" {
 			utils.Error(w, http.StatusNotFound, "payment method not found")
+			return
+		}
+		if strings.Contains(err.Error(), "violates foreign key constraint") {
+			utils.Error(w, http.StatusConflict, "No se puede eliminar: el método de pago tiene ventas asociadas.")
 			return
 		}
 		h.logger.Error("deleting payment method", "error", err)

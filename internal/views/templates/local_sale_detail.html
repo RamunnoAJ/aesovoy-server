@@ -1,0 +1,65 @@
+{{define "content"}}
+<div class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden">
+    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+        <div class="flex items-center gap-4">
+            <a href="/local-sales" class="text-gray-500 hover:text-gray-700">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+                </svg>
+            </a>
+            <h1 class="text-2xl font-bold text-gray-800">Venta #{{.Sale.ID}}</h1>
+        </div>
+        <div class="text-sm text-gray-500 font-medium">
+            {{.Sale.Date}}
+        </div>
+    </div>
+
+    <div class="p-6 space-y-6">
+        <!-- Sale Info -->
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+                <h3 class="text-sm font-medium text-gray-500">Método de Pago</h3>
+                <p class="mt-1 text-lg text-gray-900">{{.PaymentMethodName}}</p>
+            </div>
+            <div>
+                <!-- Placeholder for potential user/employee info -->
+            </div>
+        </div>
+
+        <!-- Products Table -->
+        <div class="mt-8">
+            <h3 class="text-lg font-medium leading-6 text-gray-900 mb-4">Detalle de Productos</h3>
+            <div class="overflow-x-auto ring-1 ring-gray-200 rounded-lg">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                            <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
+                            <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Precio Unit.</th>
+                            <th scope="col" class="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody class="bg-white divide-y divide-gray-200">
+                        {{range .Sale.Items}}
+                        <tr>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{.ProductName}}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{.Quantity}}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${{.UnitPrice}}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right font-medium">
+                                ${{.LineSubtotal}}
+                            </td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                    <tfoot class="bg-gray-50">
+                        <tr>
+                            <td colspan="3" class="px-6 py-4 text-right text-base font-bold text-gray-900">Total</td>
+                            <td class="px-6 py-4 text-right text-base font-bold text-blue-600">${{.Sale.Total}}</td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

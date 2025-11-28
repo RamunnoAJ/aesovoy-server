@@ -232,7 +232,12 @@ func (h *OrderHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) 
 	limit := parseIntDefault(r.URL.Query().Get("limit"), 50)
 	offset := parseIntDefault(r.URL.Query().Get("offset"), 0)
 
-	list, err := h.orders.ListOrders(clientID, state, limit, offset)
+	list, err := h.orders.ListOrders(store.OrderFilter{
+		ClientID: clientID,
+		State:    state,
+		Limit:    limit,
+		Offset:   offset,
+	})
 	if err != nil {
 		utils.Error(w, http.StatusInternalServerError, "internal server error")
 		return

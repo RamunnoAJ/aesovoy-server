@@ -39,6 +39,8 @@
                     <a href="/products" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Productos
                     </a>
+                    
+                    {{if eq .User.Role "administrator"}}
                     <a href="/categories" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Categorías
                     </a>
@@ -51,8 +53,28 @@
                     <a href="/clients" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Clientes
                     </a>
+                    {{end}}
+
+                    <a href="/payment_methods" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Métodos de Pago
+                    </a>
+                    
                     {{if eq .User.Role "administrator"}}
-                    <div class="border-t border-gray-700 my-2"></div>
+                    <a href="/orders" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Órdenes
+                    </a>
+                    {{end}}
+                        
+                    {{if or (eq .User.Role "administrator") (eq .User.Role "employee")}}
+                    <a href="/local-stock" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Stock Local
+                    </a>
+                    <a href="/local-sales" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Ventas Local
+                    </a>
+                    {{end}}
+                        
+                    {{if eq .User.Role "administrator"}}
                     <a href="/users" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Usuarios
                     </a>
@@ -159,7 +181,7 @@
                 setTimeout(() => {
                     toast.remove();
                 }, 300);
-            }, 3000);
+            }, 5000);
         }
 
         // Check URL parameters for messages
@@ -178,6 +200,27 @@
             const newUrl = window.location.pathname;
             window.history.replaceState({}, document.title, newUrl);
         }
+
+        // HTMX Error Handling
+        document.body.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.failed) {
+                const xhr = evt.detail.xhr;
+                let msg = "Ha ocurrido un error inesperado";
+                try {
+                    const resp = JSON.parse(xhr.responseText);
+                    if (resp.message) {
+                        msg = resp.message;
+                    } else if (resp.error && typeof resp.error === 'string') {
+                        msg = resp.error;
+                    }
+                } catch (e) {
+                    if (xhr.responseText && xhr.responseText.length < 200) {
+                        msg = xhr.responseText;
+                    }
+                }
+                showToast(msg, 'error');
+            }
+        });
     </script>
 </body>
 </html>

@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	ErrStockRecordExists      = errors.New("stock record already exists for this product")
-	ErrStockRecordNotFound    = errors.New("stock record not found for this product")
-	ErrProductNotFound        = errors.New("product not found")
-	ErrInsufficientStock      = errors.New("insufficient stock for adjustment")
-	ErrInitialQuantityInvalid = errors.New("initial quantity must be zero or greater")
+	ErrStockRecordExists      = errors.New("Ya existe un stock asignado para este producto")
+	ErrStockRecordNotFound    = errors.New("No se encontró stock para este producto")
+	ErrProductNotFound        = errors.New("Producto no encontrado")
+	ErrInsufficientStock      = errors.New("No hay stock suficiente")
+	ErrInitialQuantityInvalid = errors.New("Cantidad inicial debe ser 0 o mayor")
 )
 
 type LocalStockService struct {
@@ -31,8 +31,8 @@ func (s *LocalStockService) GetStock(productID int64) (*store.LocalStock, error)
 	return s.stockStore.GetByProductID(productID)
 }
 
-func (s *LocalStockService) ListStock() ([]*store.LocalStock, error) {
-	return s.stockStore.ListAll()
+func (s *LocalStockService) ListStock() ([]*store.ProductStock, error) {
+	return s.stockStore.ListStockWithProductDetails()
 }
 
 func (s *LocalStockService) CreateInitialStock(productID int64, initialQuantity int) (*store.LocalStock, error) {
@@ -74,6 +74,7 @@ func (s *LocalStockService) AdjustStock(productID int64, delta int) (*store.Loca
 
 	return s.stockStore.AdjustQuantity(productID, delta)
 }
+
 // HasSufficientStock is for future integration with sales flow.
 func (s *LocalStockService) HasSufficientStock(productID int64, quantityNeeded int) (bool, error) {
 	stock, err := s.stockStore.GetByProductID(productID)

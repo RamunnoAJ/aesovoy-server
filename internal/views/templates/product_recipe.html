@@ -15,7 +15,7 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Current Recipe List -->
-        <div class="md:col-span-2 bg-white rounded-lg shadow-lg overflow-hidden">
+        <div class="{{if eq .User.Role "administrator"}}md:col-span-2{{else}}md:col-span-3{{end}} bg-white rounded-lg shadow-lg overflow-hidden">
             <div class="p-4 border-b border-gray-200">
                 <h2 class="font-semibold text-gray-700">Ingredientes Actuales</h2>
             </div>
@@ -26,7 +26,9 @@
                             <th class="px-4 py-2 text-left text-sm font-medium text-gray-500 uppercase">Ingrediente</th>
                             <th class="px-4 py-2 text-left text-sm font-medium text-gray-500 uppercase">Cantidad</th>
                             <th class="px-4 py-2 text-left text-sm font-medium text-gray-500 uppercase">Unidad</th>
+                            {{if eq .User.Role "administrator"}}
                             <th class="px-4 py-2 text-right text-sm font-medium text-gray-500 uppercase">Acciones</th>
+                            {{end}}
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
@@ -35,6 +37,7 @@
                             <td class="px-4 py-2 text-base text-gray-900">{{.Name}}</td>
                             <td class="px-4 py-2 text-base text-gray-900">{{.Quantity}}</td>
                             <td class="px-4 py-2 text-base text-gray-500">{{.Unit}}</td>
+                            {{if eq $.User.Role "administrator"}}
                             <td class="px-4 py-2 text-right text-base">
                                 <button hx-delete="/products/{{$.Product.ID}}/ingredients/{{.ID}}" hx-confirm="¿Quitar ingrediente?" hx-target="closest tr" hx-swap="outerHTML" class="text-red-600 hover:text-red-900">
                                     <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -42,6 +45,7 @@
                                     </svg>
                                 </button>
                             </td>
+                            {{end}}
                         </tr>
                         {{end}}
                     </tbody>
@@ -54,6 +58,7 @@
             </div>
         </div>
 
+        {{if eq .User.Role "administrator"}}
         <!-- Add New Ingredient Form -->
         <div class="bg-white rounded-lg shadow-lg h-fit">
             <div class="p-4 border-b border-gray-200">
@@ -90,6 +95,7 @@
                 </button>
             </form>
         </div>
+        {{end}}
     </div>
 </div>
 {{end}}

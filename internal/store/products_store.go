@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"strings"
 	"time"
-
-	"github.com/lib/pq"
 )
 
 type PostgresProductStore struct {
@@ -306,7 +304,7 @@ func (s *PostgresProductStore) GetProductsByIDs(ids []int64) (map[int64]*Product
 	JOIN categories c ON c.id = p.category_id
 	WHERE p.id = ANY($1)`
 
-	rows, err := s.db.Query(q, pq.Array(ids))
+	rows, err := s.db.Query(q, ids)
 	if err != nil {
 		return nil, err
 	}
@@ -321,9 +319,10 @@ func (s *PostgresProductStore) GetProductsByIDs(ids []int64) (map[int64]*Product
 		); err != nil {
 			return nil, err
 		}
-		if err := rows.Err(); err != nil {
-			return nil, err
-		}
+		products[pr.ID] = pr
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
 	}
 	return products, nil
 }

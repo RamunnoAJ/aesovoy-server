@@ -169,6 +169,44 @@ func TestLocalStockStore_ListAll(t *testing.T) {
 	}
 }
 
+func TestLocalStockStore_ListStockWithProductDetails(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	s := NewPostgresLocalStockStore(db)
+	// Create products manually to control names for ordering
+	categoryStore := NewPostgresCategoryStore(db)
+	productStore := NewPostgresProductStore(db)
+	cat := &Category{Name: "Cat"}
+	require.NoError(t, categoryStore.CreateCategory(cat))
+
+	prodA := &Product{Name: "A Product", CategoryID: cat.ID, UnitPrice: 10.5}
+	require.NoError(t, productStore.CreateProduct(prodA))
+	prodB := &Product{Name: "B Product", CategoryID: cat.ID, UnitPrice: 20.0}
+	require.NoError(t, productStore.CreateProduct(prodB))
+
+	// Create stock for A only
+	_, err := s.Create(prodA.ID, 50)
+	require.NoError(t, err)
+
+	// Test
+	list, err := s.ListStockWithProductDetails()
+	require.NoError(t, err)
+	require.Len(t, list, 2)
+
+	// A Product
+	assert.Equal(t, prodA.ID, list[0].ProductID)
+	assert.Equal(t, "A Product", list[0].ProductName)
+	assert.Equal(t, 10.5, list[0].Price)
+	assert.Equal(t, 50, list[0].Quantity)
+
+	// B Product (should have 0 quantity)
+	assert.Equal(t, prodB.ID, list[1].ProductID)
+	assert.Equal(t, "B Product", list[1].ProductName)
+	assert.Equal(t, 20.0, list[1].Price)
+	assert.Equal(t, 0, list[1].Quantity)
+}
+
 func setupProductForStockTest(t *testing.T, db *sql.DB) *Product {
 	t.Helper()
 	categoryStore := NewPostgresCategoryStore(db)

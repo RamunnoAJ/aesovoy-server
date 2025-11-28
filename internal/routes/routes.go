@@ -112,7 +112,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 
 	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("http://localhost:8080/swagger/doc.json")))
 	r.Get("/health", app.HealthCheck)
-	
+
 	// Public Web Views
 	r.Get("/login", app.WebHandler.HandleShowLogin)
 	r.Post("/login", app.WebHandler.HandleWebLogin)
@@ -121,7 +121,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	r.Group(func(r chi.Router) {
 		r.Use(app.Middleware.Authenticate)
 		r.Use(app.Middleware.RequireUser)
-		
+
 		r.Get("/", app.WebHandler.HandleHome)
 		r.Get("/time", app.WebHandler.HandleTime)
 		r.Post("/logout", app.WebHandler.HandleLogout)
@@ -170,6 +170,31 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/products/{id}/recipe", app.WebHandler.HandleManageRecipeView)
 		r.Post("/products/{id}/recipe", app.WebHandler.HandleAddIngredientToRecipe)
 		r.Delete("/products/{id}/ingredients/{ingredient_id}", app.WebHandler.HandleRemoveIngredientFromRecipe)
+
+		// Payment Methods
+		r.Get("/payment_methods", app.WebHandler.HandleListPaymentMethods)
+		r.Get("/payment_methods/new", app.WebHandler.HandleCreatePaymentMethodView)
+		r.Post("/payment_methods/new", app.WebHandler.HandleCreatePaymentMethod)
+		r.Get("/payment_methods/{id}/edit", app.WebHandler.HandleEditPaymentMethodView)
+		r.Post("/payment_methods/{id}/edit", app.WebHandler.HandleUpdatePaymentMethod)
+		r.Delete("/payment_methods/{id}/delete", app.WebHandler.HandleDeletePaymentMethod)
+
+		// Orders
+		r.Get("/orders", app.WebHandler.HandleListOrders)
+		r.Get("/orders/new", app.WebHandler.HandleCreateOrderView)
+		r.Post("/orders/new", app.WebHandler.HandleCreateOrder)
+		r.Get("/orders/{id}", app.WebHandler.HandleGetOrderView)
+		r.Patch("/orders/{id}/state", app.WebHandler.HandleUpdateOrderState)
+
+		// Local Stock (Admin only checked in handler)
+		r.Get("/local-stock", app.WebHandler.HandleListLocalStock)
+		r.Post("/local-stock/update", app.WebHandler.HandleUpdateLocalStock)
+
+		// Local Sales (Admin/Employee checked in handler)
+		r.Get("/local-sales", app.WebHandler.HandleListLocalSales)
+		r.Get("/local-sales/new", app.WebHandler.HandleCreateLocalSaleView)
+		r.Post("/local-sales/new", app.WebHandler.HandleCreateLocalSale)
+		r.Get("/local-sales/{id}", app.WebHandler.HandleGetLocalSaleView)
 	})
 
 	r.Post("/users", app.UserHandler.HandleRegisterUser)

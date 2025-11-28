@@ -1,0 +1,42 @@
+{{define "content"}}
+<div class="bg-white rounded-lg shadow-lg">
+    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-800">Stock del Local</h1>
+        <!-- Admin Only View -->
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+                <tr>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Precio</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Cantidad Actual</th>
+                    <th scope="col" class="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+                {{range .Stocks}}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{.ProductName}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">${{.Price}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-900 font-bold" id="qty-{{.ProductID}}">{{.Quantity}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium">
+                        <div class="flex items-center justify-end gap-3">
+                            <a href="/products/{{.ProductID}}/recipe" class="text-blue-600 hover:text-blue-900 hover:underline">Ver Receta</a>
+                            
+                            {{if eq $.User.Role "administrator"}}
+                            <div class="flex gap-1">
+                                <button hx-post="/local-stock/update" hx-vals='{"product_id": "{{.ProductID}}", "delta": -1}' hx-target="#qty-{{.ProductID}}" class="bg-red-100 text-red-800 px-2 py-1 rounded hover:bg-red-200 min-w-[30px]">-1</button>
+                                <button hx-post="/local-stock/update" hx-vals='{"product_id": "{{.ProductID}}", "delta": 1}' hx-target="#qty-{{.ProductID}}" class="bg-green-100 text-green-800 px-2 py-1 rounded hover:bg-green-200 min-w-[30px]">+1</button>
+                            </div>
+                            {{end}}
+                        </div>
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}

@@ -28,7 +28,7 @@ func TestLocalSaleService_CreateLocalSale_Integration(t *testing.T) {
 	cat := &store.Category{Name: "Category For Sale Test"}
 	require.NoError(t, categoryStore.CreateCategory(cat))
 
-	pm := &store.PaymentMethod{Owner: "sale-tester", Reference: "cash"}
+	pm := &store.PaymentMethod{Name: "sale-tester", Reference: "cash"}
 	require.NoError(t, paymentMethodStore.CreatePaymentMethod(pm))
 
 	prod10 := &store.Product{CategoryID: cat.ID, Name: "Product 10", UnitPrice: 100}
@@ -78,6 +78,7 @@ func TestLocalSaleService_CreateLocalSale_Integration(t *testing.T) {
 				PaymentMethodID: 99,
 				Items:           []CreateLocalSaleItem{{ProductID: 10, Quantity: 1}}, // Must be non-empty
 			},
+			// Variable updated to Spanish in service
 			wantErr: ErrPaymentMethodNotFound,
 		},
 		{
@@ -86,7 +87,7 @@ func TestLocalSaleService_CreateLocalSale_Integration(t *testing.T) {
 				PaymentMethodID: pm.ID,
 				Items:           []CreateLocalSaleItem{{ProductID: 99, Quantity: 1}},
 			},
-			wantErr: ErrProductNotFound,
+			wantErr: errors.New("producto no encontrado"),
 		},
 		{
 			name: "insufficient stock",
@@ -94,7 +95,7 @@ func TestLocalSaleService_CreateLocalSale_Integration(t *testing.T) {
 				PaymentMethodID: pm.ID,
 				Items:           []CreateLocalSaleItem{{ProductID: prod10.ID, Quantity: 11}}, // Only 10 in stock
 			},
-			wantErr: ErrInsufficientStock,
+			wantErr: errors.New("stock insuficiente"),
 		},
 		{
 			name: "sale with no items",
@@ -102,7 +103,7 @@ func TestLocalSaleService_CreateLocalSale_Integration(t *testing.T) {
 				PaymentMethodID: pm.ID,
 				Items:           []CreateLocalSaleItem{},
 			},
-			wantErr: errors.New("sale must have at least one item"),
+			wantErr: errors.New("la venta debe tener al menos un ítem"),
 		},
 	}
 
@@ -112,7 +113,7 @@ func TestLocalSaleService_CreateLocalSale_Integration(t *testing.T) {
 
 			if tt.wantErr != nil {
 				assert.Error(t, err)
-				// Use errors.Is for wrapped errors, or check string for simple errors
+				// Check substring match for Spanish messages
 				assert.Contains(t, err.Error(), tt.wantErr.Error())
 			} else {
 				require.NoError(t, err)
