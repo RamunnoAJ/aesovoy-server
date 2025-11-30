@@ -1,0 +1,49 @@
+services:
+  db:
+    container_name: "aesovoy_db"
+    image: postgres:12.4-alpine
+    volumes:
+      - "postgres_data:/var/lib/postgresql/data"
+    environment:
+      POSTGRES_DB: "${DB_NAME}"
+      POSTGRES_USER: "${DB_USER}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD}"
+    restart: always
+    # No ports exposed to host for security in production
+
+  api:
+    container_name: "aesovoy_api"
+    build:
+      context: .
+      dockerfile: ./Dockerfile
+    depends_on:
+      - db
+    environment:
+      DB_HOST: "db"
+      DB_NAME: "${DB_NAME}"
+      DB_USER: "${DB_USER}"
+      DB_PASSWORD: "${DB_PASSWORD}"
+      # Production specific envs
+      GIN_MODE: "release" # If using Gin (using Chi here but good practice)
+      PORT: "8080"
+      DOMAIN: "${DOMAIN}" # Used for cookie security if needed
+    restart: always
+
+  caddy:
+    image: caddy:2-alpine
+    container_name: "aesovoy_caddy"
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - api
+
+volumes:
+  postgres_data:
+  caddy_data:
+  caddy_config:
