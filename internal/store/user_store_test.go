@@ -106,6 +106,45 @@ func TestUserStore_GetUpdate(t *testing.T) {
 	assert.Equal(t, "new@example.com", got2.Email)
 }
 
+func TestUserStore_GetUserByEmail(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	us := NewPostgresUserStore(db)
+
+	email := "email@test.com"
+	u := &User{Username: "emailtest", Email: email, Role: "employee"}
+	require.NoError(t, u.PasswordHash.Set("password"))
+	require.NoError(t, us.CreateUser(u))
+
+	tests := []struct {
+		name      string
+		email     string
+		wantFound bool
+		wantErr   bool
+	}{
+		{name: "found user", email: email, wantFound: true, wantErr: false},
+		{name: "not found", email: "notfound@test.com", wantFound: false, wantErr: false},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := us.GetUserByEmail(tt.email)
+			if tt.wantErr {
+				assert.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
+			if tt.wantFound {
+				require.NotNil(t, got)
+				assert.Equal(t, u.ID, got.ID)
+				assert.Equal(t, email, got.Email)
+			} else {
+				assert.Nil(t, got)
+			}
+		})
+	}
+}
+
 func TestUserStore_GetUserToken(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()

@@ -15,6 +15,8 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 
 	r.Use(middleware.RequestID)
 	r.Use(middleware.Recoverer)
+	r.Use(mymw.AddSecurityHeaders)
+	r.Use(mymw.CSRFProtection)
 	r.Use(mymw.Logging(app.Logger))
 	r.Use(cors.Handler(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
@@ -116,6 +118,10 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 	// Public Web Views
 	r.Get("/login", app.WebHandler.HandleShowLogin)
 	r.Post("/login", app.WebHandler.HandleWebLogin)
+	r.Get("/forgot-password", app.WebHandler.HandleShowForgotPassword)
+	r.Post("/forgot-password", app.WebHandler.HandleSendPasswordResetEmail)
+	r.Get("/reset-password", app.WebHandler.HandleShowResetPassword)
+	r.Post("/reset-password", app.WebHandler.HandleResetPassword)
 
 	// Protected Web Views
 	r.Group(func(r chi.Router) {

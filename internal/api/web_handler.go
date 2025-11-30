@@ -3,6 +3,7 @@ package api
 import (
 	"log/slog"
 
+	"github.com/RamunnoAJ/aesovoy-server/internal/mailer"
 	"github.com/RamunnoAJ/aesovoy-server/internal/services"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 	"github.com/RamunnoAJ/aesovoy-server/internal/views"
@@ -20,6 +21,7 @@ type WebHandler struct {
 	orderStore         store.OrderStore
 	localStockService  *services.LocalStockService
 	localSaleService   *services.LocalSaleService
+	mailer             *mailer.Mailer
 	renderer           *views.Renderer
 	logger             *slog.Logger
 }
@@ -36,6 +38,7 @@ func NewWebHandler(
 	orderStore store.OrderStore,
 	localStockService *services.LocalStockService,
 	localSaleService *services.LocalSaleService,
+	mailer *mailer.Mailer,
 	logger *slog.Logger,
 ) *WebHandler {
 	return &WebHandler{
@@ -50,6 +53,7 @@ func NewWebHandler(
 		orderStore:         orderStore,
 		localStockService:  localStockService,
 		localSaleService:   localSaleService,
+		mailer:             mailer,
 		renderer:           views.NewRenderer(),
 		logger:             logger,
 	}

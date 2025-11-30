@@ -68,6 +68,7 @@ func NewPostgresUserStore(db *sql.DB) *PostgresUserStore {
 type UserStore interface {
 	CreateUser(*User) error
 	GetUserByUsername(username string) (*User, error)
+	GetUserByEmail(email string) (*User, error)
 	GetUserByID(id int64) (*User, error)
 	UpdateUser(*User) error
 	GetUserToken(scope, tokenPlainText string) (*User, error)
@@ -130,6 +131,38 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	return user, nil
 }
 
+func (s *PostgresUserStore) GetUserByEmail(email string) (*User, error) {
+	user := &User{
+		PasswordHash: Password{},
+	}
+
+	query := `
+	SELECT id, username, email, password_hash, role, is_active, created_at 
+	FROM users
+	WHERE email = $1
+	`
+
+	err := s.db.QueryRow(query, email).Scan(
+		&user.ID,
+		&user.Username,
+		&user.Email,
+		&user.PasswordHash.hash,
+		&user.Role,
+		&user.IsActive,
+		&user.CreatedAt,
+	)
+
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+
+	if err != nil {
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (s *PostgresUserStore) GetUserByID(id int64) (*User, error) {
 	user := &User{
 		PasswordHash: Password{},
@@ -165,11 +198,11 @@ func (s *PostgresUserStore) GetUserByID(id int64) (*User, error) {
 func (s *PostgresUserStore) UpdateUser(user *User) error {
 	query := `
 	UPDATE users
-	SET username = $1, email = $2, role = $3, is_active = $4
-	WHERE id = $5
+	SET username = $1, email = $2, role = $3, is_active = $4, password_hash = $5
+	WHERE id = $6
 	`
 
-	result, err := s.db.Exec(query, user.Username, user.Email, user.Role, user.IsActive, user.ID)
+	result, err := s.db.Exec(query, user.Username, user.Email, user.Role, user.IsActive, user.PasswordHash.hash, user.ID)
 	if err != nil {
 		return err
 	}

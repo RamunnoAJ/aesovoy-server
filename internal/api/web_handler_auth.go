@@ -67,6 +67,8 @@ func (h *WebHandler) HandleLogout(w http.ResponseWriter, r *http.Request) {
 		Expires:  time.Unix(0, 0),
 		HttpOnly: true,
 		Path:     "/",
+		SameSite: http.SameSiteStrictMode,
+		Secure:   r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https",
 	})
 
 	if r.Header.Get("HX-Request") != "" {
@@ -146,6 +148,7 @@ func (h *WebHandler) HandleWebLogin(w http.ResponseWriter, r *http.Request) {
 		HttpOnly: true,
 		Path:     "/",
 		SameSite: http.SameSiteStrictMode,
+		Secure:   r.TLS != nil || r.Header.Get("X-Forwarded-Proto") == "https",
 	})
 
 	w.Header().Set("HX-Redirect", "/")

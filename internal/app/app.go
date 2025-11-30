@@ -9,6 +9,7 @@ import (
 	"os"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/api"
+	"github.com/RamunnoAJ/aesovoy-server/internal/mailer"
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/services"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
@@ -79,6 +80,14 @@ func NewApplication() (*Application, error) {
 	localStockService := services.NewLocalStockService(localStockStore, productStore)
 	localSaleService := services.NewLocalSaleService(pgDB, localSaleStore, localStockStore, paymentMethodStore, productStore)
 
+	mailer := mailer.New(
+		os.Getenv("SMTP_HOST"),
+		os.Getenv("SMTP_PORT"),
+		os.Getenv("SMTP_USERNAME"),
+		os.Getenv("SMTP_PASSWORD"),
+		os.Getenv("SMTP_FROM"),
+	)
+
 	// our handlers will go here
 	userHandler := api.NewUserHandler(userStore, logger)
 	tokenHandler := api.NewTokenHandler(tokenStore, userStore, logger)
@@ -95,7 +104,7 @@ func NewApplication() (*Application, error) {
 	webHandler := api.NewWebHandler(
 		userStore, tokenStore, productStore, categoryStore, ingredientStore,
 		clientStore, providerStore, paymentMethodStore, orderStore,
-		localStockService, localSaleService, logger,
+		localStockService, localSaleService, mailer, logger,
 	)
 
 	app := &Application{
