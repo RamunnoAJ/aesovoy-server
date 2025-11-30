@@ -34,7 +34,7 @@ type LocalSaleStore interface {
 	CreateInTx(tx *sql.Tx, sale *LocalSale, items []LocalSaleItem) error
 	GetByID(id int64) (*LocalSale, error)
 	ListAll() ([]*LocalSale, error)
-	GetDailyStats(date time.Time) (*DailySalesStats, error)
+	GetStats(start, end time.Time) (*DailySalesStats, error)
 }
 
 type PostgresLocalSaleStore struct {
@@ -45,10 +45,7 @@ func NewPostgresLocalSaleStore(db *sql.DB) *PostgresLocalSaleStore {
 	return &PostgresLocalSaleStore{db: db}
 }
 
-func (s *PostgresLocalSaleStore) GetDailyStats(date time.Time) (*DailySalesStats, error) {
-	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
-	end := start.Add(24 * time.Hour)
-
+func (s *PostgresLocalSaleStore) GetStats(start, end time.Time) (*DailySalesStats, error) {
 	stats := &DailySalesStats{
 		ByMethod: make(map[string]float64),
 	}

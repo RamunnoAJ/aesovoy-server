@@ -70,7 +70,7 @@ func TestLocalSaleStore_CreateAndGet(t *testing.T) {
 	})
 }
 
-func TestLocalSaleStore_GetDailyStats(t *testing.T) {
+func TestLocalSaleStore_GetStats(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
@@ -83,13 +83,7 @@ func TestLocalSaleStore_GetDailyStats(t *testing.T) {
 	pm2 := &PaymentMethod{Name: "Card", Reference: "card"}
 	require.NoError(t, pmStore.CreatePaymentMethod(pm2))
 
-	prod := setupProductForStockTest(t, db) // Assuming this helper sets up product
-
-	// Helper to create sale at specific time (simulated via immediate insert,
-	// since we can't easily force CreatedAt via CreateInTx without modifying Store or DB manually.
-	// Postgres defaults CreatedAt to NOW().
-	// To test "yesterday", we can manually update the record after creation or mock the clock if possible.
-	// Easiest is to update the record date manually via SQL.
+	prod := setupProductForStockTest(t, db)
 
 	createSale := func(pmID int64, amount string, date time.Time) {
 		sale := &LocalSale{PaymentMethodID: pmID, Subtotal: amount, Total: amount}
@@ -104,17 +98,18 @@ func TestLocalSaleStore_GetDailyStats(t *testing.T) {
 	}
 
 	now := time.Now()
-	today := now
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	todayEnd := todayStart.Add(24 * time.Hour)
 	yesterday := now.Add(-24 * time.Hour)
 
 	// Create sales
-	createSale(pm1.ID, "100.00", today)
-	createSale(pm1.ID, "50.00", today)
-	createSale(pm2.ID, "200.00", today)
+	createSale(pm1.ID, "100.00", now)
+	createSale(pm1.ID, "50.00", now)
+	createSale(pm2.ID, "200.00", now)
 	createSale(pm1.ID, "500.00", yesterday) // Should be ignored
 
 	// Test
-	stats, err := s.GetDailyStats(today)
+	stats, err := s.GetStats(todayStart, todayEnd)
 	require.NoError(t, err)
 	require.NotNil(t, stats)
 

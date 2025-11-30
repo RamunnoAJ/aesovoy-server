@@ -50,6 +50,15 @@ type ProductStore interface {
 	RemoveIngredientFromProduct(productID, ingredientID int64) error
 	GetProductsByIDs(ids []int64) (map[int64]*Product, error)
 	SearchProductsFTS(q string, limit, offset int) ([]*Product, error)
+	GetTopSellingProducts(start, end time.Time) ([]*TopProduct, error)
+	GetTopSellingProductsLocal(start, end time.Time) ([]*TopProduct, error)
+	GetTopSellingProductsDistribution(start, end time.Time) ([]*TopProduct, error)
+}
+
+type TopProduct struct {
+	ID       int64   `json:"id"`
+	Name     string  `json:"name"`
+	Quantity float64 `json:"quantity"`
 }
 
 func (s *PostgresProductStore) CreateProduct(product *Product) error {
@@ -404,4 +413,100 @@ func (s *PostgresProductStore) SearchProductsFTS(q string, limit, offset int) ([
 	ORDER BY ts_rank(p.search_tsv, to_tsquery('spanish', unaccent($1))) DESC, p.name
 	LIMIT $2 OFFSET $3`
 	return s.list(sqlq, formattedQuery, limit, offset)
+}
+
+func (s *PostgresProductStore) GetTopSellingProducts(start, end time.Time) ([]*TopProduct, error) {
+	query := `
+	WITH combined_sales AS (
+		SELECT product_id, quantity FROM local_sale_items lsi
+		JOIN local_sales ls ON ls.id = lsi.local_sale_id
+		WHERE ls.created_at >= $1 AND ls.created_at < $2
+		UNION ALL
+		SELECT product_id, quantity FROM order_products op
+		JOIN orders o ON o.id = op.order_id
+		WHERE o.date >= $1 AND o.date < $2 AND o.state != 'cancelled'
+	)
+	SELECT p.id, p.name, SUM(cs.quantity) as total_qty
+	FROM combined_sales cs
+	JOIN products p ON p.id = cs.product_id
+	GROUP BY p.id, p.name
+	ORDER BY total_qty DESC
+	LIMIT 3
+	`
+
+	rows, err := s.db.Query(query, start, end)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var topProducts []*TopProduct
+	for rows.Next() {
+		tp := &TopProduct{}
+		if err := rows.Scan(&tp.ID, &tp.Name, &tp.Quantity); err != nil {
+			return nil, err
+		}
+		topProducts = append(topProducts, tp)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+
+	return topProducts, nil
+}
+
+func (s *PostgresProductStore) GetTopSellingProductsLocal(start, end time.Time) ([]*TopProduct, error) {
+	query := `
+	SELECT p.id, p.name, SUM(lsi.quantity) as total_qty
+	FROM local_sale_items lsi
+	JOIN local_sales ls ON ls.id = lsi.local_sale_id
+	JOIN products p ON p.id = lsi.product_id
+	WHERE ls.created_at >= $1 AND ls.created_at < $2
+	GROUP BY p.id, p.name
+	ORDER BY total_qty DESC
+	LIMIT 3
+	`
+	rows, err := s.db.Query(query, start, end)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var topProducts []*TopProduct
+	for rows.Next() {
+		tp := &TopProduct{}
+		if err := rows.Scan(&tp.ID, &tp.Name, &tp.Quantity); err != nil {
+			return nil, err
+		}
+		topProducts = append(topProducts, tp)
+	}
+	return topProducts, rows.Err()
+}
+
+func (s *PostgresProductStore) GetTopSellingProductsDistribution(start, end time.Time) ([]*TopProduct, error) {
+	query := `
+	SELECT p.id, p.name, SUM(op.quantity) as total_qty
+	FROM order_products op
+	JOIN orders o ON o.id = op.order_id
+	JOIN products p ON p.id = op.product_id
+	WHERE o.date >= $1 AND o.date < $2 AND o.state != 'cancelled'
+	GROUP BY p.id, p.name
+	ORDER BY total_qty DESC
+	LIMIT 3
+	`
+	rows, err := s.db.Query(query, start, end)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var topProducts []*TopProduct
+	for rows.Next() {
+		tp := &TopProduct{}
+		if err := rows.Scan(&tp.ID, &tp.Name, &tp.Quantity); err != nil {
+			return nil, err
+		}
+		topProducts = append(topProducts, tp)
+	}
+	return topProducts, rows.Err()
 }

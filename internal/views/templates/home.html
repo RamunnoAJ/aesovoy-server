@@ -2,29 +2,38 @@
 <div class="space-y-6">
     <div class="bg-white p-6 rounded-lg shadow-lg flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 class="text-2xl font-bold text-gray-800">Panel de Control</h1>
-        <form action="/" method="GET" class="flex gap-2">
-            <input type="date" name="date" value="{{.Stats.Date}}" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
-            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md text-sm">Ir</button>
+        <form action="/" method="GET" class="flex flex-wrap gap-2 items-center bg-gray-50 p-2 rounded-md border border-gray-200">
+            <select name="view" id="view-select" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm" onchange="updateDateInput()">
+                <option value="day" {{if eq .Stats.ViewType "day"}}selected{{end}}>Diario</option>
+                <option value="month" {{if eq .Stats.ViewType "month"}}selected{{end}}>Mensual</option>
+            </select>
+            
+            <input type="date" id="date-input" name="date" value="{{.Stats.Date}}" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm">
+            
+            <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-md text-sm shadow-sm transition-colors">
+                <span class="hidden sm:inline">Actualizar</span>
+                <span class="sm:hidden">Ir</span>
+            </button>
         </form>
     </div>
 
     <!-- Summary Cards -->
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-blue-500">
+        <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-blue-500 transform hover:scale-[1.02] transition-transform">
             <h3 class="text-sm font-medium text-gray-500 uppercase">Total Facturado</h3>
             <div class="mt-2 flex items-baseline">
                 <span class="text-3xl font-bold text-gray-900">${{printf "%.2f" .Stats.CombinedTotal}}</span>
-                <span class="ml-2 text-sm text-gray-500">en {{.Stats.CombinedCount}} operaciones</span>
+                <span class="ml-2 text-sm text-gray-500">en {{.Stats.CombinedCount}} ops</span>
             </div>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-green-500">
+        <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-green-500 transform hover:scale-[1.02] transition-transform">
             <h3 class="text-sm font-medium text-gray-500 uppercase">Ventas Local</h3>
             <div class="mt-2 flex items-baseline">
                 <span class="text-3xl font-bold text-gray-900">${{printf "%.2f" .Stats.LocalStats.TotalAmount}}</span>
                 <span class="ml-2 text-sm text-gray-500">{{.Stats.LocalStats.TotalCount}} ventas</span>
             </div>
         </div>
-        <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-purple-500">
+        <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-purple-500 transform hover:scale-[1.02] transition-transform">
             <h3 class="text-sm font-medium text-gray-500 uppercase">Ordenes</h3>
             <div class="mt-2 flex items-baseline">
                 <span class="text-3xl font-bold text-gray-900">${{printf "%.2f" .Stats.OrderStats.TotalAmount}}</span>
@@ -33,30 +42,35 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Local Sales Breakdown -->
-        <div class="bg-white rounded-lg shadow-lg overflow-hidden">
-            <div class="p-4 border-b border-gray-200">
-                <h3 class="text-lg font-bold text-gray-800">Desglose Ventas Local</h3>
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden h-full">
+            <div class="p-4 border-b border-gray-200 bg-gray-50">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-green-600">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z" />
+                    </svg>
+                    Desglose por Método (Local)
+                </h3>
             </div>
             <div class="p-4">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead>
                         <tr>
-                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Método de Pago</th>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Método</th>
                             <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Total</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-200">
                         {{range $name, $amount := .Stats.LocalStats.ByMethod}}
-                        <tr>
-                            <td class="py-2 text-sm text-gray-900">{{$name}}</td>
-                            <td class="py-2 text-sm text-gray-900 text-right">${{printf "%.2f" $amount}}</td>
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-2 text-sm text-gray-900 font-medium">{{$name}}</td>
+                            <td class="py-2 text-sm text-gray-900 text-right font-mono">${{printf "%.2f" $amount}}</td>
                         </tr>
                         {{end}}
                         {{if not .Stats.LocalStats.ByMethod}}
                         <tr>
-                            <td colspan="2" class="py-4 text-center text-gray-500 text-sm">No hay ventas registradas hoy.</td>
+                            <td colspan="2" class="py-8 text-center text-gray-500 text-sm italic">No hay ventas registradas.</td>
                         </tr>
                         {{end}}
                     </tbody>
@@ -64,15 +78,108 @@
             </div>
         </div>
 
-        <!-- Info Card (Placeholder for future charts/info) -->
-        <div class="bg-white rounded-lg shadow-lg p-6">
-            <h3 class="text-lg font-bold text-gray-800 mb-4">Información</h3>
-            <p class="text-gray-600 text-sm">
-                Este panel muestra las ventas realizadas en la fecha seleccionada.
-                Las "Ventas Local" corresponden a las operaciones registradas directamente en la caja.
-                Las "Ordenes" corresponden a pedidos de clientes gestionados para envío o retiro.
-            </p>
+        <!-- Top Products with Tabs -->
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden h-full flex flex-col">
+            <div class="p-4 border-b border-gray-200 bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-yellow-600">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 0 1 1.04 0l2.125 5.111a.563.563 0 0 0 .475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 0 0-.182.557l1.285 5.385a.562.562 0 0 1-.84.61l-4.725-2.885a.562.562 0 0 0-.586 0L6.982 20.54a.562.562 0 0 1-.84-.61l1.285-5.386a.562.562 0 0 0-.182-.557l-4.204-3.602a.562.562 0 0 1 .321-.988l5.518-.442a.563.563 0 0 0 .475-.345L11.48 3.5Z" />
+                    </svg>
+                    Más Vendidos
+                </h3>
+                <div class="flex space-x-1 bg-gray-200 p-1 rounded-lg">
+                    <button onclick="switchTab('combined')" id="tab-btn-combined" class="px-3 py-1 rounded-md text-xs font-medium transition-all bg-white shadow text-gray-800">Todos</button>
+                    <button onclick="switchTab('local')" id="tab-btn-local" class="px-3 py-1 rounded-md text-xs font-medium transition-all text-gray-600 hover:text-gray-800">Local</button>
+                    <button onclick="switchTab('distrib')" id="tab-btn-distrib" class="px-3 py-1 rounded-md text-xs font-medium transition-all text-gray-600 hover:text-gray-800">Distrib.</button>
+                </div>
+            </div>
+            
+            <div class="p-4 flex-1">
+                <!-- Combined Table -->
+                <div id="tab-content-combined" class="tab-content">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <tbody class="divide-y divide-gray-200">
+                            {{range .Stats.TopProducts}}
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-3 text-sm text-gray-900 font-medium">{{.Name}}</td>
+                                <td class="py-3 text-sm text-gray-900 text-right font-mono font-bold">{{printf "%.0f" .Quantity}}</td>
+                            </tr>
+                            {{end}}
+                            {{if not .Stats.TopProducts}}
+                            <tr><td colspan="2" class="py-8 text-center text-gray-500 text-sm italic">Sin datos.</td></tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Local Table -->
+                <div id="tab-content-local" class="tab-content hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <tbody class="divide-y divide-gray-200">
+                            {{range .Stats.TopProductsLocal}}
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-3 text-sm text-gray-900 font-medium">{{.Name}}</td>
+                                <td class="py-3 text-sm text-gray-900 text-right font-mono font-bold">{{printf "%.0f" .Quantity}}</td>
+                            </tr>
+                            {{end}}
+                            {{if not .Stats.TopProductsLocal}}
+                            <tr><td colspan="2" class="py-8 text-center text-gray-500 text-sm italic">Sin datos local.</td></tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Distrib Table -->
+                <div id="tab-content-distrib" class="tab-content hidden">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <tbody class="divide-y divide-gray-200">
+                            {{range .Stats.TopProductsDistrib}}
+                            <tr class="hover:bg-gray-50">
+                                <td class="py-3 text-sm text-gray-900 font-medium">{{.Name}}</td>
+                                <td class="py-3 text-sm text-gray-900 text-right font-mono font-bold">{{printf "%.0f" .Quantity}}</td>
+                            </tr>
+                            {{end}}
+                            {{if not .Stats.TopProductsDistrib}}
+                            <tr><td colspan="2" class="py-8 text-center text-gray-500 text-sm italic">Sin datos distribución.</td></tr>
+                            {{end}}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
         </div>
     </div>
 </div>
+
+<script>
+    function updateDateInput() {
+        const viewSelect = document.getElementById('view-select');
+        const dateInput = document.getElementById('date-input');
+        
+        if (viewSelect.value === 'month') {
+            dateInput.type = 'month';
+        } else {
+            dateInput.type = 'date';
+        }
+    }
+
+    function switchTab(tabName) {
+        // Hide all contents
+        document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+        // Show selected content
+        document.getElementById('tab-content-' + tabName).classList.remove('hidden');
+
+        // Reset all buttons
+        document.querySelectorAll('[id^="tab-btn-"]').forEach(btn => {
+            btn.classList.remove('bg-white', 'shadow', 'text-gray-800');
+            btn.classList.add('text-gray-600', 'hover:text-gray-800');
+        });
+
+        // Highlight selected button
+        const btn = document.getElementById('tab-btn-' + tabName);
+        btn.classList.remove('text-gray-600', 'hover:text-gray-800');
+        btn.classList.add('bg-white', 'shadow', 'text-gray-800');
+    }
+    
+    document.addEventListener('DOMContentLoaded', updateDateInput);
+</script>
 {{end}}

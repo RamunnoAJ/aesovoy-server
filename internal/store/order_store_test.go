@@ -207,7 +207,7 @@ func TestListOrders(t *testing.T) {
 	}
 }
 
-func TestGetDailyStats(t *testing.T) {
+func TestGetStats(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
@@ -233,17 +233,18 @@ func TestGetDailyStats(t *testing.T) {
 	}
 
 	now := time.Now()
-	today := now
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	todayEnd := todayStart.Add(24 * time.Hour)
 	yesterday := now.Add(-24 * time.Hour)
 
 	// Create orders
-	createOrder(OrderTodo, today)      // +100
-	createOrder(OrderDone, today)      // +100
-	createOrder(OrderCancelled, today) // Ignored
+	createOrder(OrderTodo, now)        // +100
+	createOrder(OrderDone, now)        // +100
+	createOrder(OrderCancelled, now)   // Ignored
 	createOrder(OrderTodo, yesterday)  // Ignored
 
 	// Test
-	stats, err := orderStore.GetDailyStats(today)
+	stats, err := orderStore.GetStats(todayStart, todayEnd)
 	require.NoError(t, err)
 	require.NotNil(t, stats)
 

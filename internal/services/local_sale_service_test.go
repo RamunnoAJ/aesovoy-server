@@ -128,7 +128,7 @@ func TestLocalSaleService_CreateLocalSale_Integration(t *testing.T) {
 	}
 }
 
-func TestLocalSaleService_GetDailyStats(t *testing.T) {
+func TestLocalSaleService_GetStats(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
@@ -158,7 +158,11 @@ func TestLocalSaleService_GetDailyStats(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test
-	stats, err := service.GetDailyStats(time.Now())
+	now := time.Now()
+	start := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	end := start.Add(24 * time.Hour)
+
+	stats, err := service.GetStats(start, end)
 	require.NoError(t, err)
 	assert.Equal(t, 100.00, stats.TotalAmount)
 	assert.Equal(t, 1, stats.TotalCount)

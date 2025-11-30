@@ -151,6 +151,7 @@ func TestUpdateClient(t *testing.T) {
 
 			updatedClient, err := store.GetClientByID(client.ID)
 			require.NoError(t, err)
+			require.NotNil(t, updatedClient)
 			assert.Equal(t, client.Name, updatedClient.Name)
 			assert.Equal(t, client.Email, updatedClient.Email)
 		})

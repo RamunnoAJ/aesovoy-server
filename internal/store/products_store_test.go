@@ -293,3 +293,110 @@ func TestProductStore_Search(t *testing.T) {
 		})
 	}
 }
+
+func TestProductStore_GetTopSellingProducts(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	ps := NewPostgresProductStore(db)
+	cat := setupCategory(t, db)
+
+	// Create products
+	p1 := &Product{CategoryID: cat.ID, Name: "Top 1"}
+	require.NoError(t, ps.CreateProduct(p1))
+	p2 := &Product{CategoryID: cat.ID, Name: "Top 2"}
+	require.NoError(t, ps.CreateProduct(p2))
+	p3 := &Product{CategoryID: cat.ID, Name: "Not Top"}
+	require.NoError(t, ps.CreateProduct(p3))
+
+	// Setup other stores to create sales
+	pmStore := NewPostgresPaymentMethodStore(db)
+	pm := &PaymentMethod{Name: "Cash", Reference: "cash"}
+	require.NoError(t, pmStore.CreatePaymentMethod(pm))
+	lsStore := NewPostgresLocalSaleStore(db)
+
+	orderStore := NewPostgresOrderStore(db)
+	clientStore := NewPostgresClientStore(db)
+	client := &Client{Name: "C", Type: ClientTypeIndividual, Reference: "r", CUIT: "c"}
+	require.NoError(t, clientStore.CreateClient(client))
+
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	todayEnd := todayStart.Add(24 * time.Hour)
+
+	// Create Local Sale: p1 (5 units), p2 (2 units)
+	tx, _ := db.Begin()
+	ls := &LocalSale{PaymentMethodID: pm.ID, Subtotal: "0", Total: "0"}
+	items := []LocalSaleItem{
+		{ProductID: p1.ID, Quantity: 5, UnitPrice: "1", LineSubtotal: "5"},
+		{ProductID: p2.ID, Quantity: 2, UnitPrice: "1", LineSubtotal: "2"},
+	}
+	_ = lsStore.CreateInTx(tx, ls, items)
+	tx.Commit()
+	// Set date manually to ensure it falls in range if needed (Postgres uses NOW() default)
+	// But default is NOW(), so it's fine.
+
+	// Create Order: p1 (3 units), p2 (1 unit), p3 (0 unit)
+	o := &Order{ClientID: client.ID, State: OrderDone}
+	oItems := []OrderItem{
+		{ProductID: p1.ID, Quantity: 3, Price: "1"}, // Total p1 = 8
+		{ProductID: p2.ID, Quantity: 1, Price: "1"}, // Total p2 = 3
+	}
+	require.NoError(t, orderStore.CreateOrder(o, oItems))
+
+	// Create Order (Cancelled): p2 (10 units) - Should be ignored
+	oCan := &Order{ClientID: client.ID, State: OrderCancelled}
+	oCanItems := []OrderItem{{ProductID: p2.ID, Quantity: 10, Price: "1"}}
+	require.NoError(t, orderStore.CreateOrder(oCan, oCanItems))
+
+	// Test
+	top, err := ps.GetTopSellingProducts(todayStart, todayEnd)
+	require.NoError(t, err)
+	require.Len(t, top, 2) // We only sold p1 and p2 effectively. p3 sold 0. The query joins on sales tables.
+
+	assert.Equal(t, p1.ID, top[0].ID)
+	assert.Equal(t, 8.0, top[0].Quantity) // 5 local + 3 order
+
+		assert.Equal(t, p2.ID, top[1].ID)
+
+		assert.Equal(t, 3.0, top[1].Quantity) // 2 local + 1 order
+
+	
+
+		// Test Local
+
+		topLocal, err := ps.GetTopSellingProductsLocal(todayStart, todayEnd)
+
+		require.NoError(t, err)
+
+		require.Len(t, topLocal, 2)
+
+		assert.Equal(t, p1.ID, topLocal[0].ID)
+
+		assert.Equal(t, 5.0, topLocal[0].Quantity)
+
+		assert.Equal(t, p2.ID, topLocal[1].ID)
+
+		assert.Equal(t, 2.0, topLocal[1].Quantity)
+
+	
+
+		// Test Distribution
+
+		topDistrib, err := ps.GetTopSellingProductsDistribution(todayStart, todayEnd)
+
+		require.NoError(t, err)
+
+		require.Len(t, topDistrib, 2)
+
+		assert.Equal(t, p1.ID, topDistrib[0].ID)
+
+		assert.Equal(t, 3.0, topDistrib[0].Quantity)
+
+		assert.Equal(t, p2.ID, topDistrib[1].ID)
+
+		assert.Equal(t, 1.0, topDistrib[1].Quantity)
+
+	}
+
+	
