@@ -60,9 +60,9 @@
                         <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{.Name}}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.CategoryName}}</td>
                         <td class="px-6 py-4 whitespace-nowrap text-base text-gray-900 font-bold">{{.CurrentStock}}</td>
-                        <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">${{.UnitPrice}}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{formatMoney .UnitPrice}}</td>
                         {{if eq $.User.Role "administrator"}}
-                        <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">${{.DistributionPrice}}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{formatMoney .DistributionPrice}}</td>
                         {{end}}
                         <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium relative">
                              <div class="relative inline-block text-left" x-data="{ open: false }">

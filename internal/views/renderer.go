@@ -6,6 +6,7 @@ import (
 	"html/template"
 	"io"
 	"strconv"
+	"strings"
 )
 
 //go:embed templates/*.html
@@ -24,6 +25,53 @@ func NewRenderer() *Renderer {
 					return "0.00"
 				}
 				return fmt.Sprintf("%.2f", p*float64(qty))
+			},
+			"formatMoney": func(v interface{}) string {
+				var val float64
+				switch i := v.(type) {
+				case float64:
+					val = i
+				case float32:
+					val = float64(i)
+				case int:
+					val = float64(i)
+				case int64:
+					val = float64(i)
+				case string:
+					var err error
+					val, err = strconv.ParseFloat(i, 64)
+					if err != nil {
+						return "$ 0,00"
+					}
+				default:
+					return "$ 0,00"
+				}
+
+				s := fmt.Sprintf("%.2f", val)
+				parts := strings.Split(s, ".")
+				integerPart := parts[0]
+				decimalPart := parts[1]
+
+				var result []byte
+				// Handle negative sign
+				isNegative := false
+				if len(integerPart) > 0 && integerPart[0] == '-' {
+					isNegative = true
+					integerPart = integerPart[1:]
+				}
+
+				for i, c := range integerPart {
+					if i > 0 && (len(integerPart)-i)%3 == 0 {
+						result = append(result, '.')
+					}
+					result = append(result, byte(c))
+				}
+
+				prefix := "$ "
+				if isNegative {
+					prefix = "$ -"
+				}
+				return prefix + string(result) + "," + decimalPart
 			},
 		},
 	}

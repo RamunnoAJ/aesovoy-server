@@ -99,16 +99,33 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		localStats = &store.DailySalesStats{ByMethod: make(map[string]float64)}
 	}
 
-	orderStats, err := h.orderStore.GetStats(start, end)
-	if err != nil {
-		h.logger.Error("getting order stats", "error", err)
+	var orderStats *store.DailyOrderStats
+	var topProducts []*store.TopProduct
+	var topProductsDistrib []*store.TopProduct
+
+	if user.Role == "administrator" {
+		orderStats, err = h.orderStore.GetStats(start, end)
+		if err != nil {
+			h.logger.Error("getting order stats", "error", err)
+			orderStats = &store.DailyOrderStats{}
+		}
+
+		topProducts, err = h.productStore.GetTopSellingProducts(start, end)
+		if err != nil {
+			h.logger.Error("getting top products", "error", err)
+			topProducts = []*store.TopProduct{}
+		}
+
+		topProductsDistrib, err = h.productStore.GetTopSellingProductsDistribution(start, end)
+		if err != nil {
+			h.logger.Error("getting top products distribution", "error", err)
+			topProductsDistrib = []*store.TopProduct{}
+		}
+	} else {
+		// Initialize empty/zero for employee
 		orderStats = &store.DailyOrderStats{}
-	}
-	
-	topProducts, err := h.productStore.GetTopSellingProducts(start, end)
-	if err != nil {
-		h.logger.Error("getting top products", "error", err)
 		topProducts = []*store.TopProduct{}
+		topProductsDistrib = []*store.TopProduct{}
 	}
 
 	topProductsLocal, err := h.productStore.GetTopSellingProductsLocal(start, end)
@@ -117,10 +134,12 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		topProductsLocal = []*store.TopProduct{}
 	}
 
-	topProductsDistrib, err := h.productStore.GetTopSellingProductsDistribution(start, end)
-	if err != nil {
-		h.logger.Error("getting top products distribution", "error", err)
-		topProductsDistrib = []*store.TopProduct{}
+	combinedTotal := localStats.TotalAmount
+	combinedCount := localStats.TotalCount
+
+	if user.Role == "administrator" {
+		combinedTotal += orderStats.TotalAmount
+		combinedCount += orderStats.TotalCount
 	}
 
 	stats := DashboardView{
@@ -128,8 +147,8 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		ViewType:           viewType,
 		LocalStats:         localStats,
 		OrderStats:         orderStats,
-		CombinedTotal:      localStats.TotalAmount + orderStats.TotalAmount,
-		CombinedCount:      localStats.TotalCount + orderStats.TotalCount,
+		CombinedTotal:      combinedTotal,
+		CombinedCount:      combinedCount,
 		TopProducts:        topProducts,
 		TopProductsLocal:   topProductsLocal,
 		TopProductsDistrib: topProductsDistrib,

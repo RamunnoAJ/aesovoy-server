@@ -44,9 +44,9 @@
                         <tr>
                             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{.ProductName}}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{.Quantity}}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${{.UnitPrice}}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{formatMoney .UnitPrice}}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right font-medium">
-                                ${{.LineSubtotal}}
+                                {{formatMoney .LineSubtotal}}
                             </td>
                         </tr>
                         {{end}}
@@ -54,7 +54,7 @@
                     <tfoot class="bg-gray-50">
                         <tr>
                             <td colspan="3" class="px-6 py-4 text-right text-base font-bold text-gray-900">Total</td>
-                            <td class="px-6 py-4 text-right text-base font-bold text-blue-600">${{.Sale.Total}}</td>
+                            <td class="px-6 py-4 text-right text-base font-bold text-blue-600">{{formatMoney .Sale.Total}}</td>
                         </tr>
                     </tfoot>
                 </table>
