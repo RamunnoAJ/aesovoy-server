@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
@@ -277,4 +278,41 @@ func (h *WebHandler) HandleRemoveIngredientFromRecipe(w http.ResponseWriter, r *
 	}
 
 	w.WriteHeader(http.StatusOK)
+}
+
+func (h *WebHandler) HandleGetRecipeModal(w http.ResponseWriter, r *http.Request) {
+	productID, _ := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	product, err := h.productStore.GetProductByID(productID)
+	if err != nil || product == nil {
+		http.Error(w, "Not Found", http.StatusNotFound)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	fmt.Fprintf(w, `<div class="p-6">
+		<div class="flex justify-between items-center mb-4">
+			<h3 class="text-xl font-bold text-gray-900">%s</h3>
+			<button @click="openRecipe = false" class="text-gray-400 hover:text-gray-600">
+				<svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+			</button>
+		</div>
+		<h4 class="text-sm font-medium text-gray-500 uppercase tracking-wider mb-2">Ingredientes</h4>
+		<ul class="divide-y divide-gray-200 border-t border-b border-gray-200">`, product.Name)
+
+	for _, ing := range product.Recipe {
+		fmt.Fprintf(w, `<li class="py-3 flex justify-between items-center">
+			<span class="text-gray-700">%s</span>
+			<span class="font-mono font-medium text-gray-900">%.2f %s</span>
+		</li>`, ing.Name, ing.Quantity, ing.Unit)
+	}
+
+	if len(product.Recipe) == 0 {
+		fmt.Fprint(w, `<li class="py-3 text-center text-gray-500 italic">Este producto no tiene receta definida.</li>`)
+	}
+
+	fmt.Fprint(w, `</ul>
+		<div class="mt-6 flex justify-end">
+			<a href="/products/`+strconv.FormatInt(product.ID, 10)+`/recipe" class="text-blue-600 hover:text-blue-800 text-sm font-medium">Editar Receta &rarr;</a>
+		</div>
+	</div>`)
 }

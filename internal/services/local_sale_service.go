@@ -145,6 +145,12 @@ func (s *LocalSaleService) ListSales() ([]*store.LocalSale, error) {
 	return s.saleStore.ListAll()
 }
 
+func (s *LocalSaleService) ListSalesByDate(date time.Time) ([]*store.LocalSale, error) {
+	start := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	end := start.Add(24 * time.Hour)
+	return s.saleStore.ListByDate(start, end)
+}
+
 func (s *LocalSaleService) GetStats(start, end time.Time) (*store.DailySalesStats, error) {
 	return s.saleStore.GetStats(start, end)
 }

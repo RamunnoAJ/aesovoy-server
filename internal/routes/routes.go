@@ -174,6 +174,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 
 		// Recipes
 		r.Get("/products/{id}/recipe", app.WebHandler.HandleManageRecipeView)
+		r.Get("/products/{id}/recipe-modal", app.WebHandler.HandleGetRecipeModal)
 		r.Post("/products/{id}/recipe", app.WebHandler.HandleAddIngredientToRecipe)
 		r.Delete("/products/{id}/ingredients/{ingredient_id}", app.WebHandler.HandleRemoveIngredientFromRecipe)
 

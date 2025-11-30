@@ -34,6 +34,7 @@ type LocalSaleStore interface {
 	CreateInTx(tx *sql.Tx, sale *LocalSale, items []LocalSaleItem) error
 	GetByID(id int64) (*LocalSale, error)
 	ListAll() ([]*LocalSale, error)
+	ListByDate(start, end time.Time) ([]*LocalSale, error)
 	GetStats(start, end time.Time) (*DailySalesStats, error)
 }
 
@@ -43,6 +44,30 @@ type PostgresLocalSaleStore struct {
 
 func NewPostgresLocalSaleStore(db *sql.DB) *PostgresLocalSaleStore {
 	return &PostgresLocalSaleStore{db: db}
+}
+
+func (s *PostgresLocalSaleStore) ListByDate(start, end time.Time) ([]*LocalSale, error) {
+	query := `
+		SELECT id, payment_method_id, subtotal::text, total::text, created_at, updated_at
+		FROM local_sales 
+		WHERE created_at >= $1 AND created_at < $2
+		ORDER BY created_at DESC`
+
+	rows, err := s.db.Query(query, start, end)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var sales []*LocalSale
+	for rows.Next() {
+		var sale LocalSale
+		if err := rows.Scan(&sale.ID, &sale.PaymentMethodID, &sale.Subtotal, &sale.Total, &sale.CreatedAt, &sale.UpdatedAt); err != nil {
+			return nil, err
+		}
+		sales = append(sales, &sale)
+	}
+	return sales, rows.Err()
 }
 
 func (s *PostgresLocalSaleStore) GetStats(start, end time.Time) (*DailySalesStats, error) {

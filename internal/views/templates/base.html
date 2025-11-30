@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>A Eso Voy</title>
     <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-gray-100 font-sans leading-normal tracking-normal flex flex-col min-h-screen">
@@ -66,9 +67,6 @@
                     {{end}}
                         
                     {{if or (eq .User.Role "administrator") (eq .User.Role "employee")}}
-                    <a href="/local-stock" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
-                        Stock Local
-                    </a>
                     <a href="/local-sales" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Ventas Local
                     </a>

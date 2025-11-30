@@ -1,17 +1,25 @@
 {{define "content"}}
 <div class="bg-white rounded-lg shadow-lg">
-    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+    <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
         <h1 class="text-2xl font-bold text-gray-800">Ventas del Local</h1>
         
-        <a href="/local-sales/new" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center gap-2">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            Nueva
-        </a>
+        <div class="flex items-center gap-4">
+            <form action="/local-sales" method="GET" class="flex items-center gap-2 bg-gray-50 p-1 rounded-md border border-gray-200">
+                <label for="date-filter" class="text-sm text-gray-600 pl-2">Fecha:</label>
+                <input type="date" id="date-filter" name="date" value="{{.CurrentDate}}" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm py-1">
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm">Filtrar</button>
+            </form>
+
+            <a href="/local-sales/new" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center gap-2 shadow-sm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Nueva Venta
+            </a>
+        </div>
     </div>
     
-    <div class="overflow-x-auto">
+    <div class="overflow-x-auto md:overflow-visible">
         <table class="min-w-full divide-y divide-gray-200">
             <thead class="bg-gray-50">
                 <tr>
@@ -38,9 +46,9 @@
                                     </svg>
                                 </button>
                             </div>
-                            <div x-show="open" style="display: none;" class="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
+                            <div x-show="open" style="display: none;" class="origin-top-right absolute right-0 mt-2 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
                                 <div class="py-1">
-                                    <a href="/local-sales/{{.ID}}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Detalle</a>
+                                    <a href="/local-sales/{{.ID}}?date={{$.CurrentDate}}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Ver Detalle</a>
                                 </div>
                             </div>
                         </div>
@@ -50,12 +58,15 @@
             </tbody>
         </table>
         {{if not .Sales}}
-        <div class="p-6 text-center text-gray-500">
-            No hay ventas registradas.
+        <div class="p-12 text-center flex flex-col items-center justify-center">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-12 h-12 text-gray-300 mb-4">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5m8.25 3v6.75m0 0l-3-3m3 3l3-3M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
+            </svg>
+            <p class="text-gray-500 text-lg">No hay ventas registradas para esta fecha.</p>
+            <p class="text-gray-400 text-sm mt-1">Selecciona otro día o crea una nueva venta.</p>
+                </div>
+                {{end}}
+            </div>
         </div>
         {{end}}
-    </div>
-</div>
-<!-- Alpine.js for Dropdown -->
-<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
-{{end}}
+        

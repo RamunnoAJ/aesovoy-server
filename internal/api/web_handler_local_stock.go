@@ -35,14 +35,10 @@ func (h *WebHandler) HandleListLocalStock(w http.ResponseWriter, r *http.Request
 func (h *WebHandler) HandleUpdateLocalStock(w http.ResponseWriter, r *http.Request) {
 	// Used by HTMX to update stock
 	user := middleware.GetUser(r)
-	if user.Role != "administrator" {
+	if user.Role != "administrator" && user.Role != "employee" {
 		http.Error(w, "Forbidden", http.StatusForbidden)
 		return
 	}
-
-	// If coming from a form or JSON? HTMX usually sends Form data, but let's support query/form for simple +/- buttons.
-	// Or maybe we use a modal with a form.
-	// Let's assume we receive `product_id` and `delta` in body or query.
 
 	if err := r.ParseForm(); err != nil {
 		http.Error(w, "Bad Request", http.StatusBadRequest)
@@ -50,15 +46,11 @@ func (h *WebHandler) HandleUpdateLocalStock(w http.ResponseWriter, r *http.Reque
 	}
 
 	pidStr := r.FormValue("product_id")
-	deltaStr := r.FormValue("delta")
-
 	pid, _ := strconv.ParseInt(pidStr, 10, 64)
-	delta, _ := strconv.Atoi(deltaStr)
 
-	// If record doesn't exist, we might need CreateInitialStock logic.
-	// The Service `AdjustStock` fails if record not found.
-	// We should check or use a service method that "Upserts".
-	// Let's check if stock exists first.
+	// Check if we are setting absolute quantity or delta
+	newQtyStr := r.FormValue("new_quantity")
+	
 	stock, err := h.localStockService.GetStock(pid)
 	if err != nil {
 		h.logger.Error("getting stock", "error", err)
@@ -66,13 +58,36 @@ func (h *WebHandler) HandleUpdateLocalStock(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	var delta int
+
+	if newQtyStr != "" {
+		// Absolute Set
+		newQty, _ := strconv.Atoi(newQtyStr)
+		currentQty := 0
+		if stock != nil {
+			currentQty = stock.Quantity
+		}
+		delta = newQty - currentQty
+	} else {
+		// Relative Delta
+		deltaStr := r.FormValue("delta")
+		delta, _ = strconv.Atoi(deltaStr)
+	}
+
 	if stock == nil {
-		// Create initial if delta is positive
-		if delta < 0 {
+		// Create initial if needed
+		// If delta makes it negative, create fails inside service usually? 
+		// Service CreateInitial takes absolute.
+		// If we are here, stock is nil.
+		// If we have absolute newQty, create with that.
+		// If we have delta, assume start 0 + delta.
+		
+		initialQty := delta 
+		if initialQty < 0 {
 			http.Error(w, "Cannot decrease 0 stock", http.StatusBadRequest)
 			return
 		}
-		_, err = h.localStockService.CreateInitialStock(pid, delta)
+		_, err = h.localStockService.CreateInitialStock(pid, initialQty)
 	} else {
 		_, err = h.localStockService.AdjustStock(pid, delta)
 	}
@@ -83,8 +98,8 @@ func (h *WebHandler) HandleUpdateLocalStock(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// Return the new quantity to update the UI (HTMX)
-	// We can just return the number as text to swap the cell
-	newStock, _ := h.localStockService.GetStock(pid) // fetch fresh
-	w.Write([]byte(strconv.Itoa(newStock.Quantity)))
+	// If request came from modal (redirect usually) or HTMX (partial)?
+	// If form submit, redirect. If HTMX, redirect or refresh.
+	// Simplest for Modal: Redirect to list.
+	http.Redirect(w, r, "/local-stock", http.StatusSeeOther)
 }

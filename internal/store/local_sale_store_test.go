@@ -121,3 +121,44 @@ func TestLocalSaleStore_GetStats(t *testing.T) {
 	assert.Equal(t, 200.00, stats.ByMethod["Card"])
 	assert.NotContains(t, stats.ByMethod, "Other")
 }
+
+func TestLocalSaleStore_ListByDate(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	s := NewPostgresLocalSaleStore(db)
+	pmStore := NewPostgresPaymentMethodStore(db)
+
+	// Setup
+	pm := &PaymentMethod{Name: "Cash", Reference: "cash"}
+	require.NoError(t, pmStore.CreatePaymentMethod(pm))
+	prod := setupProductForStockTest(t, db)
+
+	createSale := func(amount string, date time.Time) {
+		sale := &LocalSale{PaymentMethodID: pm.ID, Subtotal: amount, Total: amount}
+		items := []LocalSaleItem{{ProductID: prod.ID, Quantity: 1, UnitPrice: amount, LineSubtotal: amount}}
+		tx, _ := db.Begin()
+		_ = s.CreateInTx(tx, sale, items)
+		tx.Commit()
+		_, err := db.Exec("UPDATE local_sales SET created_at = $1 WHERE id = $2", date, sale.ID)
+		require.NoError(t, err)
+	}
+
+	now := time.Now()
+	todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+	todayEnd := todayStart.Add(24 * time.Hour)
+	yesterday := now.Add(-24 * time.Hour)
+
+	createSale("10.00", now)       // In range
+	createSale("20.00", yesterday) // Out of range
+
+	sales, err := s.ListByDate(todayStart, todayEnd)
+	require.NoError(t, err)
+	assert.Len(t, sales, 1)
+	assert.Equal(t, "10.00", sales[0].Total)
+
+	// Test empty range
+	sales, err = s.ListByDate(todayEnd, todayEnd.Add(24*time.Hour))
+	require.NoError(t, err)
+	assert.Empty(t, sales)
+}

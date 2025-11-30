@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/services"
@@ -18,7 +19,17 @@ func (h *WebHandler) HandleListLocalSales(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	sales, err := h.localSaleService.ListSales()
+	dateStr := r.URL.Query().Get("date")
+	targetDate := time.Now()
+	if dateStr != "" {
+		if d, err := time.Parse("2006-01-02", dateStr); err == nil {
+			targetDate = d
+		}
+	} else {
+		dateStr = targetDate.Format("2006-01-02")
+	}
+
+	sales, err := h.localSaleService.ListSalesByDate(targetDate)
 	if err != nil {
 		h.logger.Error("listing local sales", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -51,8 +62,9 @@ func (h *WebHandler) HandleListLocalSales(w http.ResponseWriter, r *http.Request
 	}
 
 	data := map[string]any{
-		"User":  user,
-		"Sales": saleViews,
+		"User":        user,
+		"Sales":       saleViews,
+		"CurrentDate": dateStr,
 	}
 
 	if err := h.renderer.Render(w, "local_sales_list.html", data); err != nil {
@@ -205,10 +217,16 @@ func (h *WebHandler) HandleGetLocalSaleView(w http.ResponseWriter, r *http.Reque
 		Items: itemViews,
 	}
 
+	backDate := r.URL.Query().Get("date")
+	if backDate == "" {
+		backDate = time.Now().Format("2006-01-02")
+	}
+
 	data := map[string]any{
 		"User":              user,
 		"Sale":              saleView,
 		"PaymentMethodName": pmName,
+		"BackDate":          backDate,
 	}
 
 	if err := h.renderer.Render(w, "local_sale_detail.html", data); err != nil {

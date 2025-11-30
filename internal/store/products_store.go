@@ -25,6 +25,7 @@ type Product struct {
 	UnitPrice         float64              `json:"unit_price"`
 	DistributionPrice float64              `json:"distribution_price"`
 	CreatedAt         time.Time            `json:"created_at"`
+	CurrentStock      float64              `json:"current_stock"`
 	Recipe            []*ProductIngredient `json:"recipe,omitempty"`
 }
 
@@ -349,6 +350,7 @@ func (s *PostgresProductStore) list(query string, args ...any) ([]*Product, erro
 		if err := rows.Scan(
 			&pr.ID, &pr.CategoryID, &pr.CategoryName,
 			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
+			&pr.CurrentStock,
 		); err != nil {
 			return nil, err
 		}
@@ -371,9 +373,11 @@ func (s *PostgresProductStore) SearchProductsFTS(q string, limit, offset int) ([
 	if q == "" {
 		const allq = `
 		SELECT p.id, p.category_id, c.name AS category_name,
-		       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+		       p.name, p.description, p.unit_price, p.distribution_price, p.created_at,
+		       COALESCE(ls.quantity, 0) as current_stock
 		FROM products p
 		JOIN categories c ON c.id = p.category_id
+		LEFT JOIN local_stock ls ON ls.product_id = p.id
 		ORDER BY p.name
 		LIMIT $1 OFFSET $2`
 		return s.list(allq, limit, offset)
@@ -390,9 +394,11 @@ func (s *PostgresProductStore) SearchProductsFTS(q string, limit, offset int) ([
 	if len(terms) == 0 {
 		const allq = `
 		SELECT p.id, p.category_id, c.name AS category_name,
-		       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+		       p.name, p.description, p.unit_price, p.distribution_price, p.created_at,
+		       COALESCE(ls.quantity, 0) as current_stock
 		FROM products p
 		JOIN categories c ON c.id = p.category_id
+		LEFT JOIN local_stock ls ON ls.product_id = p.id
 		ORDER BY p.name
 		LIMIT $1 OFFSET $2`
 		return s.list(allq, limit, offset)
@@ -406,9 +412,11 @@ func (s *PostgresProductStore) SearchProductsFTS(q string, limit, offset int) ([
 
 	const sqlq = `
 	SELECT p.id, p.category_id, c.name AS category_name,
-	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at,
+	       COALESCE(ls.quantity, 0) as current_stock
 	FROM products p
 	JOIN categories c ON c.id = p.category_id
+	LEFT JOIN local_stock ls ON ls.product_id = p.id
 	WHERE p.search_tsv @@ to_tsquery('spanish', unaccent($1))
 	ORDER BY ts_rank(p.search_tsv, to_tsquery('spanish', unaccent($1))) DESC, p.name
 	LIMIT $2 OFFSET $3`

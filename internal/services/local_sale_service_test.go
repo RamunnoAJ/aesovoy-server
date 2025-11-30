@@ -168,3 +168,45 @@ func TestLocalSaleService_GetStats(t *testing.T) {
 	assert.Equal(t, 1, stats.TotalCount)
 	assert.Equal(t, 100.00, stats.ByMethod["Cash"])
 }
+
+func TestLocalSaleService_ListSalesByDate(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	productStore := store.NewPostgresProductStore(db)
+	categoryStore := store.NewPostgresCategoryStore(db)
+	paymentMethodStore := store.NewPostgresPaymentMethodStore(db)
+	localStockStore := store.NewPostgresLocalStockStore(db)
+	localSaleStore := store.NewPostgresLocalSaleStore(db)
+	service := NewLocalSaleService(db, localSaleStore, localStockStore, paymentMethodStore, productStore)
+
+	// Setup
+	cat := &store.Category{Name: "Category Date"}
+	require.NoError(t, categoryStore.CreateCategory(cat))
+	prod := &store.Product{CategoryID: cat.ID, Name: "Product Date", UnitPrice: 10}
+	require.NoError(t, productStore.CreateProduct(prod))
+	pm := &store.PaymentMethod{Name: "Cash", Reference: "cash"}
+	require.NoError(t, paymentMethodStore.CreatePaymentMethod(pm))
+	_, err := localStockStore.Create(prod.ID, 100)
+	require.NoError(t, err)
+
+	// Create Sale (implicitly today)
+	req := CreateLocalSaleRequest{
+		PaymentMethodID: pm.ID,
+		Items:           []CreateLocalSaleItem{{ProductID: prod.ID, Quantity: 1}},
+	}
+	_, err = service.CreateLocalSale(req)
+	require.NoError(t, err)
+
+	// Test finding today's sale
+	today := time.Now()
+	sales, err := service.ListSalesByDate(today)
+	require.NoError(t, err)
+	assert.Len(t, sales, 1)
+
+	// Test finding nothing for tomorrow
+	tomorrow := today.Add(24 * time.Hour)
+	sales, err = service.ListSalesByDate(tomorrow)
+	require.NoError(t, err)
+	assert.Len(t, sales, 0)
+}
