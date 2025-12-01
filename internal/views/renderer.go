@@ -97,6 +97,7 @@ func NewRenderer() *Renderer {
 				}
 				return fmt.Sprintf("%.2f", val)
 			},
+			"add": func(a, b int) int { return a + b },
 		},
 	}
 }

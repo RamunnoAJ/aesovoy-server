@@ -102,6 +102,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 			r.Route("/invoices", func(r chi.Router) {
 				r.Get("/", app.InvoiceHandler.List)
 				r.Get("/download/{filename}", app.InvoiceHandler.Download)
+				r.Delete("/{filename}", app.InvoiceHandler.Delete)
 			})
 
 			r.Route("/payment_methods", func(r chi.Router) {

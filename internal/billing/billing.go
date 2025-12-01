@@ -8,8 +8,10 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 	"github.com/xuri/excelize/v2"
@@ -32,20 +34,26 @@ type InvoiceFile struct {
 	Name    string
 	Size    int64
 	ModTime string
+	RawTime time.Time
 }
 
-func ListInvoices() ([]InvoiceFile, error) {
+func ListInvoices(page, limit int, dateFilter string) ([]InvoiceFile, int, error) {
 	entries, err := os.ReadDir(invoiceDir)
 	if err != nil {
 		if os.IsNotExist(err) {
-			return []InvoiceFile{}, nil
+			return []InvoiceFile{}, 0, nil
 		}
-		return nil, err
+		return nil, 0, err
 	}
 
 	var files []InvoiceFile
 	for _, entry := range entries {
 		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".xlsx") {
+			// Filter by date if provided
+			if dateFilter != "" && !strings.Contains(entry.Name(), dateFilter) {
+				continue
+			}
+
 			info, err := entry.Info()
 			if err != nil {
 				continue
@@ -54,10 +62,35 @@ func ListInvoices() ([]InvoiceFile, error) {
 				Name:    entry.Name(),
 				Size:    info.Size(),
 				ModTime: info.ModTime().Format("2006-01-02 15:04:05"),
+				RawTime: info.ModTime(),
 			})
 		}
 	}
-	return files, nil
+
+	// Sort by modification time (descending)
+	sort.Slice(files, func(i, j int) bool {
+		return files[i].RawTime.After(files[j].RawTime)
+	})
+
+	total := len(files)
+	start := (page - 1) * limit
+	if start > total {
+		start = total
+	}
+	end := start + limit
+	if end > total {
+		end = total
+	}
+
+	return files[start:end], total, nil
+}
+
+func DeleteInvoice(filename string) error {
+	path, err := GetInvoicePath(filename)
+	if err != nil {
+		return err
+	}
+	return os.Remove(path)
 }
 
 func GetInvoicePath(filename string) (string, error) {
