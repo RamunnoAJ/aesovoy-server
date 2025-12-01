@@ -7,31 +7,6 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 )
 
-func (h *WebHandler) HandleListLocalStock(w http.ResponseWriter, r *http.Request) {
-	user := middleware.GetUser(r)
-
-	// Admin and Employee can see stock
-	if user.Role != "administrator" && user.Role != "employee" {
-		http.Error(w, "Forbidden", http.StatusForbidden)
-		return
-	}
-
-	stocks, err := h.localStockService.ListStock()
-	if err != nil {
-		h.logger.Error("listing local stock", "error", err)
-		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
-		return
-	}
-
-	data := map[string]any{
-		"User":   user,
-		"Stocks": stocks,
-	}
-
-	if err := h.renderer.Render(w, "local_stock_list.html", data); err != nil {
-		h.logger.Error("rendering local stock list", "error", err)
-	}
-}
 func (h *WebHandler) HandleUpdateLocalStock(w http.ResponseWriter, r *http.Request) {
 	// Used by HTMX to update stock
 	user := middleware.GetUser(r)
@@ -98,8 +73,11 @@ func (h *WebHandler) HandleUpdateLocalStock(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	// If request came from modal (redirect usually) or HTMX (partial)?
-	// If form submit, redirect. If HTMX, redirect or refresh.
-	// Simplest for Modal: Redirect to list.
-	http.Redirect(w, r, "/local-stock", http.StatusSeeOther)
+	// Redirect based on input or default to local-stock list
+	redirectTo := r.FormValue("redirect_to")
+	if redirectTo == "" {
+		redirectTo = "/local-stock"
+	}
+
+	http.Redirect(w, r, redirectTo, http.StatusSeeOther)
 }

@@ -200,7 +200,6 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Patch("/orders/{id}/state", app.WebHandler.HandleUpdateOrderState)
 
 		// Local Stock (Admin only checked in handler)
-		r.Get("/local-stock", app.WebHandler.HandleListLocalStock)
 		r.Post("/local-stock/update", app.WebHandler.HandleUpdateLocalStock)
 
 		// Local Sales (Admin/Employee checked in handler)
