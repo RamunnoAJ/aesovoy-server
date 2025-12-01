@@ -19,19 +19,18 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/routes"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/testutils"
 	"github.com/RamunnoAJ/aesovoy-server/internal/views"
 	"github.com/go-chi/chi/v5"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"github.com/RamunnoAJ/aesovoy-server/internal/testutils"
 )
 
 // Mock Implementations for Stores
 type MockUserStore struct {
 	mock.Mock
 }
-
 
 func (m *MockUserStore) GetUserByID(id int64) (*store.User, error) {
 	args := m.Called(id)
@@ -406,7 +405,7 @@ func TestHandleCalculateProduction(t *testing.T) {
 		ID:   1,
 		Name: "Product A",
 		Recipe: []*store.ProductIngredient{
-			{IngredientID: 101, Name: "Ingr X", Quantity: 0.5, Unit: "kg"},
+			{IngredientID: 101, Name: "Ingr X", Quantity: 0.5, Unit: "g"},
 			{IngredientID: 102, Name: "Ingr Y", Quantity: 200, Unit: "gr"},
 		},
 	}
@@ -426,7 +425,7 @@ func TestHandleCalculateProduction(t *testing.T) {
 	assert.Equal(t, http.StatusOK, rr.Code)
 	body := rr.Body.String()
 	assert.Contains(t, body, "Ingredientes Necesarios para 10 unidades de Product A")
-	assert.Contains(t, body, "5.00 kg de Ingr X")  // 0.5 * 10
+	assert.Contains(t, body, "5.00 g de Ingr X")     // 0.5 * 10
 	assert.Contains(t, body, "2000.00 gr de Ingr Y") // 200 * 10
 }
 
@@ -484,8 +483,6 @@ func TestHandleCalculateProduction_ProductNotFound(t *testing.T) {
 	assert.Contains(t, rr.Body.String(), "Producto no encontrado")
 }
 
-
-
 func TestHandleShowPendingProductionIngredients(t *testing.T) {
 	r, mockUserStore, _, mockProductStore, mockOrderStore, _, _ := setupTestApp(t)
 	defer mock.AssertExpectationsForObjects(t, mockUserStore, mockProductStore, mockOrderStore)
@@ -504,16 +501,16 @@ func TestHandleShowPendingProductionIngredients(t *testing.T) {
 		ID:   1,
 		Name: "Product Alpha",
 		Recipe: []*store.ProductIngredient{
-			{IngredientID: 101, Name: "Flour", Quantity: 0.1, Unit: "kg"},
-			{IngredientID: 102, Name: "Sugar", Quantity: 0.05, Unit: "kg"},
+			{IngredientID: 101, Name: "Flour", Quantity: 0.1, Unit: "g"},
+			{IngredientID: 102, Name: "Sugar", Quantity: 0.05, Unit: "g"},
 		},
 	}
 	productBeta := &store.Product{
 		ID:   2,
 		Name: "Product Beta",
 		Recipe: []*store.ProductIngredient{
-			{IngredientID: 101, Name: "Flour", Quantity: 0.2, Unit: "kg"},
-			{IngredientID: 103, Name: "Butter", Quantity: 0.1, Unit: "kg"},
+			{IngredientID: 101, Name: "Flour", Quantity: 0.2, Unit: "g"},
+			{IngredientID: 103, Name: "Butter", Quantity: 0.1, Unit: "g"},
 		},
 	}
 	mockProductStore.On("GetProductByID", int64(1)).Return(productAlpha, nil)
@@ -528,13 +525,13 @@ func TestHandleShowPendingProductionIngredients(t *testing.T) {
 	assert.Contains(t, body, "Ingredientes Totales para Producción Pendiente")
 
 	// Expected aggregated quantities:
-	// Flour: (0.1 * 5) + (0.2 * 2) = 0.5 + 0.4 = 0.9 kg
-	// Sugar: (0.05 * 5) = 0.25 kg
-	// Butter: (0.1 * 2) = 0.2 kg
+	// Flour: (0.1 * 5) + (0.2 * 2) = 0.5 + 0.4 = 0.9 g
+	// Sugar: (0.05 * 5) = 0.25 g
+	// Butter: (0.1 * 2) = 0.2 g
 
-	assert.Contains(t, body, "0.90 kg de Flour")
-	assert.Contains(t, body, "0.25 kg de Sugar")
-	assert.Contains(t, body, "0.20 kg de Butter")
+	assert.Contains(t, body, "0.90 g de Flour")
+	assert.Contains(t, body, "0.25 g de Sugar")
+	assert.Contains(t, body, "0.20 g de Butter")
 
 	// Check if product details are also rendered
 	assert.Contains(t, body, "Product Alpha")
@@ -543,4 +540,3 @@ func TestHandleShowPendingProductionIngredients(t *testing.T) {
 	assert.Contains(t, body, "5</td>")
 	assert.Contains(t, body, "2</td>")
 }
-

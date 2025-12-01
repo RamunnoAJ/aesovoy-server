@@ -23,6 +23,7 @@ type Client struct {
 	CUIT      string     `json:"cuit"`
 	Type      ClientType `json:"type"`
 	CreatedAt time.Time  `json:"created_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
 }
 
 type ClientStore interface {
@@ -45,7 +46,7 @@ func scanClient(row interface {
 }) (*Client, error) {
 	var c Client
 	err := row.Scan(
-		&c.ID, &c.Name, &c.Address, &c.Phone, &c.Reference, &c.Email, &c.CUIT, &c.Type, &c.CreatedAt,
+		&c.ID, &c.Name, &c.Address, &c.Phone, &c.Reference, &c.Email, &c.CUIT, &c.Type, &c.CreatedAt, &c.DeletedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -65,7 +66,7 @@ func (s *PostgresClientStore) list(query string, args ...any) ([]*Client, error)
 	var clients []*Client
 	for rows.Next() {
 		var c Client
-		if err := rows.Scan(&c.ID, &c.Name, &c.Address, &c.Phone, &c.Reference, &c.Email, &c.CUIT, &c.Type, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Address, &c.Phone, &c.Reference, &c.Email, &c.CUIT, &c.Type, &c.CreatedAt, &c.DeletedAt); err != nil {
 			return nil, err
 		}
 		clients = append(clients, &c)
@@ -89,7 +90,7 @@ func (s *PostgresClientStore) UpdateClient(c *Client) error {
 	const q = `
 	UPDATE clients
 	SET name=$1, address=$2, phone=$3, reference=$4, email=$5, cuit=$6, type=$7
-	WHERE id=$8`
+	WHERE id=$8 AND deleted_at IS NULL`
 	res, err := s.db.Exec(q, c.Name, c.Address, c.Phone, c.Reference, c.Email, c.CUIT, c.Type, c.ID)
 	if err != nil {
 		return err
@@ -105,14 +106,15 @@ func (s *PostgresClientStore) UpdateClient(c *Client) error {
 }
 
 func (s *PostgresClientStore) GetClientByID(id int64) (*Client, error) {
-	const q = `SELECT id,name,address,phone,reference,email,cuit,type,created_at FROM clients WHERE id=$1`
+	const q = `SELECT id,name,address,phone,reference,email,cuit,type,created_at,deleted_at FROM clients WHERE id=$1 AND deleted_at IS NULL`
 	return scanClient(s.db.QueryRow(q, id))
 }
 
 func (s *PostgresClientStore) GetAllClients() ([]*Client, error) {
 	const q = `
-	SELECT id,name,address,phone,reference,email,cuit,type,created_at
+	SELECT id,name,address,phone,reference,email,cuit,type,created_at,deleted_at
 	FROM clients
+	WHERE deleted_at IS NULL
 	ORDER BY name`
 	return s.list(q)
 }
@@ -127,8 +129,9 @@ func (s *PostgresClientStore) SearchClientsFTS(q string, limit, offset int) ([]*
 
 	if q == "" {
 		const allq = `
-		SELECT id,name,address,phone,reference,email,cuit,type,created_at
+		SELECT id,name,address,phone,reference,email,cuit,type,created_at,deleted_at
 		FROM clients
+		WHERE deleted_at IS NULL
 		ORDER BY name
 		LIMIT $1 OFFSET $2`
 		return s.list(allq, limit, offset)
@@ -146,8 +149,9 @@ func (s *PostgresClientStore) SearchClientsFTS(q string, limit, offset int) ([]*
 	terms := strings.Fields(safeQ)
 	if len(terms) == 0 {
 		const allq = `
-		SELECT id,name,address,phone,reference,email,cuit,type,created_at
+		SELECT id,name,address,phone,reference,email,cuit,type,created_at,deleted_at
 		FROM clients
+		WHERE deleted_at IS NULL
 		ORDER BY name
 		LIMIT $1 OFFSET $2`
 		return s.list(allq, limit, offset)
@@ -160,16 +164,16 @@ func (s *PostgresClientStore) SearchClientsFTS(q string, limit, offset int) ([]*
 	formattedQuery := strings.Join(queryParts, " & ")
 
 	const sqlq = `
-	SELECT id,name,address,phone,reference,email,cuit,type,created_at
+	SELECT id,name,address,phone,reference,email,cuit,type,created_at,deleted_at
 	FROM clients
-	WHERE search_tsv @@ to_tsquery('spanish', unaccent($1))
+	WHERE search_tsv @@ to_tsquery('spanish', unaccent($1)) AND deleted_at IS NULL
 	ORDER BY ts_rank(search_tsv, to_tsquery('spanish', unaccent($1))) DESC, name
 	LIMIT $2 OFFSET $3`
 	return s.list(sqlq, formattedQuery, limit, offset)
 }
 
 func (s *PostgresClientStore) DeleteClient(id int64) error {
-	const q = `DELETE FROM clients WHERE id=$1`
+	const q = `UPDATE clients SET deleted_at = NOW() WHERE id=$1 AND deleted_at IS NULL`
 	res, err := s.db.Exec(q, id)
 	if err != nil {
 		return err

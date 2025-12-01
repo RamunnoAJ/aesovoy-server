@@ -9,6 +9,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 	"github.com/xuri/excelize/v2"
@@ -26,6 +27,50 @@ const (
 	templateSheet = "Hoja1"
 	itemsStartRow = 12
 )
+
+type InvoiceFile struct {
+	Name    string
+	Size    int64
+	ModTime string
+}
+
+func ListInvoices() ([]InvoiceFile, error) {
+	entries, err := os.ReadDir(invoiceDir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return []InvoiceFile{}, nil
+		}
+		return nil, err
+	}
+
+	var files []InvoiceFile
+	for _, entry := range entries {
+		if !entry.IsDir() && strings.HasSuffix(entry.Name(), ".xlsx") {
+			info, err := entry.Info()
+			if err != nil {
+				continue
+			}
+			files = append(files, InvoiceFile{
+				Name:    entry.Name(),
+				Size:    info.Size(),
+				ModTime: info.ModTime().Format("2006-01-02 15:04:05"),
+			})
+		}
+	}
+	return files, nil
+}
+
+func GetInvoicePath(filename string) (string, error) {
+	// Basic security check
+	if strings.Contains(filename, "..") || strings.Contains(filename, "/") || strings.Contains(filename, "\\") {
+		return "", fmt.Errorf("invalid filename")
+	}
+	path := filepath.Join(invoiceDir, filename)
+	if _, err := os.Stat(path); os.IsNotExist(err) {
+		return "", os.ErrNotExist
+	}
+	return path, nil
+}
 
 // GenerateInvoice creates or updates an Excel invoice file based on an order.
 func GenerateInvoice(order *store.Order, client *store.Client, products map[int64]*store.Product) error {
@@ -54,8 +99,8 @@ func GenerateInvoice(order *store.Order, client *store.Client, products map[int6
 	defer f.Close()
 
 	// 3. Handle sheet
-	sheetName := getSheetName(order.ID, client.Name)
-	
+	sheetName := getSheetName(client.Name)
+
 	// If sheet exists, delete it to ensure clean state (e.g. if order items changed)
 	if idx, err := f.GetSheetIndex(sheetName); err == nil && idx != -1 {
 		f.DeleteSheet(sheetName)
@@ -127,12 +172,16 @@ func GenerateInvoice(order *store.Order, client *store.Client, products map[int6
 	return f.Save()
 }
 
-func getSheetName(orderID int64, clientName string) string {
-	// Format: "ID-ClientName"
-	// Max length 31.
-	// ID can be e.g. 5 digits. "12345-" takes 6 chars.
-	// We should safe truncate.
-	name := fmt.Sprintf("%d-%s", orderID, clientName)
+func getSheetName(clientName string) string {
+	// Excel sheet name limit is 31 chars
+	// We only use the client name as requested.
+	// We need to sanitize invalid characters: : \ / ? * [ ]
+	name := clientName
+	invalidChars := []string{":", "\\", "/", "?", "*", "[", "]"}
+	for _, char := range invalidChars {
+		name = strings.ReplaceAll(name, char, "")
+	}
+
 	if len(name) > 31 {
 		return name[:31]
 	}

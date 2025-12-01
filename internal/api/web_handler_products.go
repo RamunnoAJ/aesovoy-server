@@ -222,6 +222,10 @@ func (h *WebHandler) HandleManageRecipeView(w http.ResponseWriter, r *http.Reque
 		"AllIngredients": allIngredients,
 	}
 
+	if errMsg := r.URL.Query().Get("error"); errMsg != "" {
+		w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast": {"message": "%s", "type": "error"}}`, errMsg))
+	}
+
 	if err := h.renderer.Render(w, "product_recipe.html", data); err != nil {
 		h.logger.Error("rendering product recipe", "error", err)
 	}
@@ -300,9 +304,13 @@ func (h *WebHandler) HandleGetRecipeModal(w http.ResponseWriter, r *http.Request
 		<ul class="divide-y divide-gray-200 border-t border-b border-gray-200">`, product.Name)
 
 	for _, ing := range product.Recipe {
+		qtyFormat := "%.2f"
+		if ing.Unit == "g" || ing.Unit == "ml" {
+			qtyFormat = "%.0f"
+		}
 		fmt.Fprintf(w, `<li class="py-3 flex justify-between items-center">
 			<span class="text-gray-700">%s</span>
-			<span class="font-mono font-medium text-gray-900">%.2f %s</span>
+			<span class="font-mono font-medium text-gray-900">`+qtyFormat+` %s</span>
 		</li>`, ing.Name, ing.Quantity, ing.Unit)
 	}
 

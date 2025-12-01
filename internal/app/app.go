@@ -13,6 +13,7 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/services"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/views"
 	"github.com/RamunnoAJ/aesovoy-server/migrations"
 	"gopkg.in/natefinch/lumberjack.v2"
 )
@@ -30,6 +31,7 @@ type Application struct {
 	PaymentMethodHandler *api.PaymentMethodHandler
 	LocalStockHandler    *api.LocalStockHandler
 	LocalSaleHandler     *api.LocalSaleHandler
+	InvoiceHandler       *api.InvoiceHandler
 	WebHandler           *api.WebHandler
 	Middleware           middleware.UserMiddleware
 	DB                   *sql.DB
@@ -89,6 +91,7 @@ func NewApplication() (*Application, error) {
 	)
 
 	// our handlers will go here
+	renderer := views.NewRenderer()
 	userHandler := api.NewUserHandler(userStore, logger)
 	tokenHandler := api.NewTokenHandler(tokenStore, userStore, logger)
 	middlewareHandler := middleware.UserMiddleware{UserStore: userStore}
@@ -101,6 +104,7 @@ func NewApplication() (*Application, error) {
 	paymentMethodHandler := api.NewPaymentMethodHandler(paymentMethodStore, logger)
 	localStockHandler := api.NewLocalStockHandler(localStockService, logger)
 	localSaleHandler := api.NewLocalSaleHandler(localSaleService, logger)
+	invoiceHandler := api.NewInvoiceHandler(renderer)
 	webHandler := api.NewWebHandler(
 		userStore, tokenStore, productStore, categoryStore, ingredientStore,
 		clientStore, providerStore, paymentMethodStore, orderStore,
@@ -121,6 +125,7 @@ func NewApplication() (*Application, error) {
 		PaymentMethodHandler: paymentMethodHandler,
 		LocalStockHandler:    localStockHandler,
 		LocalSaleHandler:     localSaleHandler,
+		InvoiceHandler:       invoiceHandler,
 		WebHandler:           webHandler,
 		DB:                   pgDB,
 	}

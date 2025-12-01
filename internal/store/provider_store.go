@@ -7,14 +7,15 @@ import (
 )
 
 type Provider struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	Address   string    `json:"address,omitempty"`
-	Phone     string    `json:"phone,omitempty"`
-	Reference string    `json:"reference"`
-	Email     string    `json:"email,omitempty"`
-	CUIT      string    `json:"cuit"`
-	CreatedAt time.Time `json:"created_at"`
+	ID        int64      `json:"id"`
+	Name      string     `json:"name"`
+	Address   string     `json:"address,omitempty"`
+	Phone     string     `json:"phone,omitempty"`
+	Reference string     `json:"reference"`
+	Email     string     `json:"email,omitempty"`
+	CUIT      string     `json:"cuit"`
+	CreatedAt time.Time  `json:"created_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
 }
 
 type ProviderStore interface {
@@ -34,7 +35,7 @@ func NewPostgresProviderStore(db *sql.DB) *PostgresProviderStore {
 
 func scanProvider(row interface{ Scan(dest ...any) error }) (*Provider, error) {
 	var p Provider
-	err := row.Scan(&p.ID, &p.Name, &p.Address, &p.Phone, &p.Reference, &p.Email, &p.CUIT, &p.CreatedAt)
+	err := row.Scan(&p.ID, &p.Name, &p.Address, &p.Phone, &p.Reference, &p.Email, &p.CUIT, &p.CreatedAt, &p.DeletedAt)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -53,7 +54,7 @@ func (s *PostgresProviderStore) list(query string, args ...any) ([]*Provider, er
 	var out []*Provider
 	for rows.Next() {
 		var p Provider
-		if err := rows.Scan(&p.ID, &p.Name, &p.Address, &p.Phone, &p.Reference, &p.Email, &p.CUIT, &p.CreatedAt); err != nil {
+		if err := rows.Scan(&p.ID, &p.Name, &p.Address, &p.Phone, &p.Reference, &p.Email, &p.CUIT, &p.CreatedAt, &p.DeletedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, &p)
@@ -74,7 +75,7 @@ func (s *PostgresProviderStore) UpdateProvider(p *Provider) error {
 	const q = `
 	UPDATE providers
 	SET name=$1, address=$2, phone=$3, reference=$4, email=$5, cuit=$6
-	WHERE id=$7`
+	WHERE id=$7 AND deleted_at IS NULL`
 	res, err := s.db.Exec(q, p.Name, p.Address, p.Phone, p.Reference, p.Email, p.CUIT, p.ID)
 	if err != nil {
 		return err
@@ -90,7 +91,7 @@ func (s *PostgresProviderStore) UpdateProvider(p *Provider) error {
 }
 
 func (s *PostgresProviderStore) DeleteProvider(id int64) error {
-	const q = `DELETE FROM providers WHERE id=$1`
+	const q = `UPDATE providers SET deleted_at = NOW() WHERE id=$1 AND deleted_at IS NULL`
 	res, err := s.db.Exec(q, id)
 	if err != nil {
 		return err
@@ -106,14 +107,15 @@ func (s *PostgresProviderStore) DeleteProvider(id int64) error {
 }
 
 func (s *PostgresProviderStore) GetProviderByID(id int64) (*Provider, error) {
-	const q = `SELECT id,name,address,phone,reference,email,cuit,created_at FROM providers WHERE id=$1`
+	const q = `SELECT id,name,address,phone,reference,email,cuit,created_at,deleted_at FROM providers WHERE id=$1 AND deleted_at IS NULL`
 	return scanProvider(s.db.QueryRow(q, id))
 }
 
 func (s *PostgresProviderStore) GetAllProviders() ([]*Provider, error) {
 	const q = `
-	SELECT id,name,address,phone,reference,email,cuit,created_at
+	SELECT id,name,address,phone,reference,email,cuit,created_at,deleted_at
 	FROM providers
+	WHERE deleted_at IS NULL
 	ORDER BY name`
 	return s.list(q)
 }
@@ -128,8 +130,9 @@ func (s *PostgresProviderStore) SearchProvidersFTS(q string, limit, offset int) 
 
 	if q == "" {
 		const allq = `
-		SELECT id,name,address,phone,reference,email,cuit,created_at
+		SELECT id,name,address,phone,reference,email,cuit,created_at,deleted_at
 		FROM providers
+		WHERE deleted_at IS NULL
 		ORDER BY name
 		LIMIT $1 OFFSET $2`
 		return s.list(allq, limit, offset)
@@ -146,8 +149,9 @@ func (s *PostgresProviderStore) SearchProvidersFTS(q string, limit, offset int) 
 	terms := strings.Fields(safeQ)
 	if len(terms) == 0 {
 		const allq = `
-		SELECT id,name,address,phone,reference,email,cuit,created_at
+		SELECT id,name,address,phone,reference,email,cuit,created_at,deleted_at
 		FROM providers
+		WHERE deleted_at IS NULL
 		ORDER BY name
 		LIMIT $1 OFFSET $2`
 		return s.list(allq, limit, offset)
@@ -160,10 +164,11 @@ func (s *PostgresProviderStore) SearchProvidersFTS(q string, limit, offset int) 
 	formattedQuery := strings.Join(queryParts, " & ")
 
 	const sqlq = `
-	SELECT id,name,address,phone,reference,email,cuit,created_at
+	SELECT id,name,address,phone,reference,email,cuit,created_at,deleted_at
 	FROM providers
-	WHERE search_tsv @@ to_tsquery('spanish', unaccent($1))
+	WHERE search_tsv @@ to_tsquery('spanish', unaccent($1)) AND deleted_at IS NULL
 	ORDER BY ts_rank(search_tsv, to_tsquery('spanish', unaccent($1))) DESC, name
 	LIMIT $2 OFFSET $3`
 	return s.list(sqlq, formattedQuery, limit, offset)
 }
+

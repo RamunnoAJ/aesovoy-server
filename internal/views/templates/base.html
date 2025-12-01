@@ -64,6 +64,9 @@
                     <a href="/orders" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Órdenes
                     </a>
+                    <a href="/invoices" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
+                        Facturas
+                    </a>
                     {{end}}
                         
                     {{if or (eq .User.Role "administrator") (eq .User.Role "employee")}}
@@ -198,6 +201,10 @@
             }, 5000);
         }
 
+        document.body.addEventListener("showToast", function(evt){
+            showToast(evt.detail.message, evt.detail.type);
+        });
+
         // Check URL parameters for messages
         const urlParams = new URLSearchParams(window.location.search);
         const errorMsg = urlParams.get('error');
@@ -235,6 +242,88 @@
                 showToast(msg, 'error');
             }
         });
+
+        // Reusable Alpine.js function for product item management with search
+        function createProductItemManager(allProductsData, pricingFunction) {
+            // Create a lookup map for quick access
+            const productsLookup = allProductsData.reduce((acc, p) => {
+                acc[p.id] = p;
+                return acc;
+            }, {});
+
+            return {
+                items: [{ product_id: '', quantity: 1, searchTerm: '', isOpen: false }],
+                
+                getFilteredProducts(index) {
+                    const term = this.items[index].searchTerm;
+                    if (!term) {
+                        return allProductsData;
+                    }
+                    const lowerSearchTerm = term.toLowerCase();
+                    return allProductsData.filter(p => p.name.toLowerCase().includes(lowerSearchTerm));
+                },
+
+                selectProduct(index, product) {
+                    // Check for duplicates
+                    const isDuplicate = this.items.some((item, i) => i !== index && item.product_id === product.id);
+                    if (isDuplicate) {
+                        showToast('Este producto ya ha sido agregado.', 'error');
+                        this.items[index].isOpen = false;
+                        return;
+                    }
+
+                    this.items[index].product_id = product.id;
+                    this.items[index].searchTerm = product.name;
+                    this.items[index].isOpen = false;
+                },
+
+                openDropdown(index) {
+                    this.items[index].isOpen = true;
+                },
+
+                closeDropdown(index) {
+                    // Delay closing to allow click event on option to fire
+                    setTimeout(() => {
+                        this.items[index].isOpen = false;
+                    }, 200);
+                },
+
+                addItem() {
+                    this.items.push({ product_id: '', quantity: 1, searchTerm: '', isOpen: false });
+                },
+                
+                removeItem(index) {
+                    if (this.items.length > 1) { // Ensure at least one item remains
+                        this.items.splice(index, 1);
+                    }
+                },
+
+                getPrice(productId, priceType = 'unit') {
+                    if (!productId || !productsLookup[productId]) return '';
+                    return pricingFunction(productsLookup[productId], priceType);
+                },
+
+                getSubtotal(index, priceType = 'unit') {
+                    const item = this.items[index];
+                    const price = parseFloat(this.getPrice(item.product_id, priceType));
+                    if (!isNaN(price) && item.quantity) {
+                        return (price * item.quantity).toFixed(2);
+                    }
+                    return '0.00';
+                },
+
+                getTotal(priceType = 'unit') {
+                    let total = 0;
+                    this.items.forEach((item, index) => {
+                        const sub = parseFloat(this.getSubtotal(index, priceType));
+                        if (!isNaN(sub)) {
+                            total += sub;
+                        }
+                    });
+                    return total.toFixed(2);
+                }
+            }
+        }
     </script>
 </body>
 </html>

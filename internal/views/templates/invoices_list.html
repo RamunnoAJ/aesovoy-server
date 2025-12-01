@@ -1,0 +1,43 @@
+{{define "content"}}
+<div class="bg-white shadow rounded-lg overflow-hidden">
+    <div class="p-6 border-b border-gray-200 flex justify-between items-center">
+        <h1 class="text-2xl font-bold text-gray-800">Facturas y Remitos</h1>
+    </div>
+    
+    <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-gray-600">
+            <thead class="bg-gray-50 text-gray-900 font-semibold uppercase text-xs">
+                <tr>
+                    <th class="px-6 py-3">Nombre del Archivo</th>
+                    <th class="px-6 py-3">Fecha Modificación</th>
+                    <th class="px-6 py-3">Tamaño</th>
+                    <th class="px-6 py-3 text-right">Acciones</th>
+                </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-200">
+                {{range .Invoices}}
+                <tr class="hover:bg-gray-50">
+                    <td class="px-6 py-4 font-medium text-gray-900">{{.Name}}</td>
+                    <td class="px-6 py-4">{{.ModTime}}</td>
+                    <td class="px-6 py-4">{{.Size}} bytes</td>
+                    <td class="px-6 py-4 text-right">
+                        <a href="/invoices/download/{{.Name}}" class="text-blue-600 hover:text-blue-900 font-semibold flex items-center justify-end gap-1">
+                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5M16.5 12 12 16.5m0 0L7.5 12m4.5 4.5V3" />
+                            </svg>
+                            Descargar
+                        </a>
+                    </td>
+                </tr>
+                {{else}}
+                <tr>
+                    <td colspan="4" class="px-6 py-4 text-center text-gray-500">
+                        No hay facturas generadas.
+                    </td>
+                </tr>
+                {{end}}
+            </tbody>
+        </table>
+    </div>
+</div>
+{{end}}

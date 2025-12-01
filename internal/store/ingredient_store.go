@@ -6,10 +6,11 @@ import (
 )
 
 type Ingredient struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        int64      `json:"id"`
+	Name      string     `json:"name"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
 }
 
 type IngredientStore interface {
@@ -51,8 +52,9 @@ func (s *PostgresIngredientStore) CreateIngredient(ingredient *Ingredient) error
 
 func (s *PostgresIngredientStore) GetAllIngredients() ([]*Ingredient, error) {
 	query := `
-	SELECT id, name, created_at, updated_at
+	SELECT id, name, created_at, updated_at, deleted_at
 	FROM ingredients
+	WHERE deleted_at IS NULL
 	ORDER BY name
 	`
 
@@ -65,7 +67,7 @@ func (s *PostgresIngredientStore) GetAllIngredients() ([]*Ingredient, error) {
 	var ingredients []*Ingredient
 	for rows.Next() {
 		i := &Ingredient{}
-		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt, &i.UpdatedAt); err != nil {
+		if err := rows.Scan(&i.ID, &i.Name, &i.CreatedAt, &i.UpdatedAt, &i.DeletedAt); err != nil {
 			return nil, err
 		}
 		ingredients = append(ingredients, i)
@@ -82,9 +84,9 @@ func (s *PostgresIngredientStore) GetIngredientByID(id int64) (*Ingredient, erro
 	ingredient := &Ingredient{}
 
 	query := `
-	SELECT id, name, created_at, updated_at
+	SELECT id, name, created_at, updated_at, deleted_at
 	FROM ingredients
-	WHERE id = $1
+	WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	err := s.db.QueryRow(query, id).Scan(
@@ -92,6 +94,7 @@ func (s *PostgresIngredientStore) GetIngredientByID(id int64) (*Ingredient, erro
 		&ingredient.Name,
 		&ingredient.CreatedAt,
 		&ingredient.UpdatedAt,
+		&ingredient.DeletedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -109,7 +112,7 @@ func (s *PostgresIngredientStore) UpdateIngredient(ingredient *Ingredient) error
 	query := `
 	UPDATE ingredients
 	SET name = $1, updated_at = NOW()
-	WHERE id = $2
+	WHERE id = $2 AND deleted_at IS NULL
 	RETURNING updated_at
 	`
 
@@ -126,8 +129,9 @@ func (s *PostgresIngredientStore) UpdateIngredient(ingredient *Ingredient) error
 
 func (s *PostgresIngredientStore) DeleteIngredient(id int64) error {
 	query := `
-	DELETE FROM ingredients
-	WHERE id = $1
+	UPDATE ingredients
+	SET deleted_at = NOW()
+	WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	result, err := s.db.Exec(query, id)

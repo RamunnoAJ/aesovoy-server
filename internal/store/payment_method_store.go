@@ -6,11 +6,12 @@ import (
 )
 
 type PaymentMethod struct {
-	ID        int64     `json:"id"`
-	Name      string    `json:"name"`
-	Reference string    `json:"reference"`
-	CreatedAt time.Time `json:"created_at"`
-	UpdatedAt time.Time `json:"updated_at"`
+	ID        int64      `json:"id"`
+	Name      string     `json:"name"`
+	Reference string     `json:"reference"`
+	CreatedAt time.Time  `json:"created_at"`
+	UpdatedAt time.Time  `json:"updated_at"`
+	DeletedAt *time.Time `json:"deleted_at"`
 }
 
 type PaymentMethodStore interface {
@@ -42,7 +43,7 @@ func (s *PostgresPaymentMethodStore) UpdatePaymentMethod(pm *PaymentMethod) erro
 	query := `
 		UPDATE payment_methods
 		SET name = $1, reference = $2, updated_at = NOW()
-		WHERE id = $3
+		WHERE id = $3 AND deleted_at IS NULL
 		RETURNING updated_at`
 	
 	return s.DB.QueryRow(query, pm.Name, pm.Reference, pm.ID).Scan(&pm.UpdatedAt)
@@ -50,12 +51,12 @@ func (s *PostgresPaymentMethodStore) UpdatePaymentMethod(pm *PaymentMethod) erro
 
 func (s *PostgresPaymentMethodStore) GetPaymentMethodByID(id int64) (*PaymentMethod, error) {
 	query := `
-		SELECT id, name, reference, created_at, updated_at
+		SELECT id, name, reference, created_at, updated_at, deleted_at
 		FROM payment_methods
-		WHERE id = $1`
+		WHERE id = $1 AND deleted_at IS NULL`
 
 	var pm PaymentMethod
-	err := s.DB.QueryRow(query, id).Scan(&pm.ID, &pm.Name, &pm.Reference, &pm.CreatedAt, &pm.UpdatedAt)
+	err := s.DB.QueryRow(query, id).Scan(&pm.ID, &pm.Name, &pm.Reference, &pm.CreatedAt, &pm.UpdatedAt, &pm.DeletedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -67,8 +68,9 @@ func (s *PostgresPaymentMethodStore) GetPaymentMethodByID(id int64) (*PaymentMet
 
 func (s *PostgresPaymentMethodStore) GetAllPaymentMethods() ([]*PaymentMethod, error) {
 	query := `
-		SELECT id, name, reference, created_at, updated_at
+		SELECT id, name, reference, created_at, updated_at, deleted_at
 		FROM payment_methods
+		WHERE deleted_at IS NULL
 		ORDER BY name`
 
 	rows, err := s.DB.Query(query)
@@ -80,7 +82,7 @@ func (s *PostgresPaymentMethodStore) GetAllPaymentMethods() ([]*PaymentMethod, e
 	var paymentMethods []*PaymentMethod
 	for rows.Next() {
 		var pm PaymentMethod
-		if err := rows.Scan(&pm.ID, &pm.Name, &pm.Reference, &pm.CreatedAt, &pm.UpdatedAt); err != nil {
+		if err := rows.Scan(&pm.ID, &pm.Name, &pm.Reference, &pm.CreatedAt, &pm.UpdatedAt, &pm.DeletedAt); err != nil {
 			return nil, err
 		}
 		paymentMethods = append(paymentMethods, &pm)
@@ -90,7 +92,7 @@ func (s *PostgresPaymentMethodStore) GetAllPaymentMethods() ([]*PaymentMethod, e
 }
 
 func (s *PostgresPaymentMethodStore) DeletePaymentMethod(id int64) error {
-	query := "DELETE FROM payment_methods WHERE id = $1"
+	query := "UPDATE payment_methods SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL"
 	result, err := s.DB.Exec(query, id)
 	if err != nil {
 		return err

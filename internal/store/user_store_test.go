@@ -197,3 +197,39 @@ func TestUserStore_GetUserToken(t *testing.T) {
 		})
 	}
 }
+
+func TestUserStore_SoftDelete(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	us := NewPostgresUserStore(db)
+
+	u := &User{Username: "todelete", Email: "del@example.com", Role: "employee"}
+	require.NoError(t, u.PasswordHash.Set("pass"))
+	require.NoError(t, us.CreateUser(u))
+
+	// Verify exists
+	got, err := us.GetUserByUsername("todelete")
+	require.NoError(t, err)
+	require.NotNil(t, got)
+
+	// Delete
+	require.NoError(t, us.DeleteUser(u.ID))
+
+	// Verify not found (Soft Deleted)
+	gotDeleted, err := us.GetUserByUsername("todelete")
+	require.NoError(t, err)
+	assert.Nil(t, gotDeleted)
+
+	// Create same username should succeed
+	u2 := &User{Username: "todelete", Email: "del2@example.com", Role: "employee"}
+	require.NoError(t, u2.PasswordHash.Set("pass"))
+	err = us.CreateUser(u2)
+	require.NoError(t, err)
+	assert.NotEqual(t, u.ID, u2.ID)
+
+	// Verify new user is found
+	gotNew, err := us.GetUserByUsername("todelete")
+	require.NoError(t, err)
+	require.NotNil(t, gotNew)
+	assert.Equal(t, u2.ID, gotNew.ID)
+}

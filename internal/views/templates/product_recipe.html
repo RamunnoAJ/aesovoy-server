@@ -13,7 +13,7 @@
         <span class="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded uppercase">{{.Product.CategoryName}}</span>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div id="recipe-container" class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Current Recipe List -->
         <div id="recipe-list" class="{{if eq .User.Role "administrator"}}md:col-span-2{{else}}md:col-span-3{{end}} bg-white rounded-lg shadow-lg overflow-hidden">
             <div class="p-4 border-b border-gray-200">
@@ -38,7 +38,7 @@
                         {{range .Product.Recipe}}
                         <tr>
                             <td class="px-4 py-2 text-base text-gray-900">{{.Name}}</td>
-                            <td class="px-4 py-2 text-base text-gray-900">{{.Quantity}}</td>
+                            <td class="px-4 py-2 text-base text-gray-900">{{formatQuantity .Quantity .Unit}}</td>
                             <td class="px-4 py-2 text-base text-gray-500">{{.Unit}}</td>
                             {{if eq $.User.Role "administrator"}}
                             <td class="px-4 py-2 text-right text-base">
@@ -67,7 +67,7 @@
             <div class="p-4 border-b border-gray-200">
                 <h2 class="font-semibold text-gray-700 text-base">Agregar Ingrediente</h2>
             </div>
-            <form action="/products/{{.Product.ID}}/recipe" method="POST" class="p-4 space-y-4" hx-post="/products/{{.Product.ID}}/recipe" hx-target="#recipe-list" hx-swap="outerHTML" hx-indicator="#recipe-list-indicator">
+            <form action="/products/{{.Product.ID}}/recipe" method="POST" class="p-4 space-y-4" hx-post="/products/{{.Product.ID}}/recipe" hx-target="#recipe-container" hx-select="#recipe-container" hx-swap="outerHTML" hx-indicator="#recipe-list-indicator">
                 <div>
                     <label for="ingredient_id" class="block text-base font-medium text-gray-700">Ingrediente</label>
                     <select id="ingredient_id" name="ingredient_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base">
@@ -85,9 +85,7 @@
                     <div>
                         <label for="unit" class="block text-base font-medium text-gray-700">Unidad</label>
                         <select name="unit" id="unit" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base">
-                            <option value="kg">kilogramo</option>
                             <option value="g">gramo</option>
-                            <option value="l">litro</option>
                             <option value="ml">mililitro</option>
                             <option value="u">Unidad</option>
                         </select>

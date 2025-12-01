@@ -4,8 +4,6 @@ import (
 	"database/sql"
 	"fmt"
 	"time"
-
-	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 )
 
 type OrderState string
@@ -33,6 +31,7 @@ type Order struct {
 	Date       time.Time   `json:"date"`
 	State      OrderState  `json:"state"`
 	CreatedAt  time.Time   `json:"created_at"`
+	DeletedAt  *time.Time  `json:"deleted_at"`
 	Items      []OrderItem `json:"items,omitempty"`
 }
 
@@ -49,6 +48,7 @@ type OrderItem struct {
 type OrderStore interface {
 	CreateOrder(o *Order, items []OrderItem) error
 	UpdateOrderState(id int64, state OrderState) error
+	DeleteOrder(id int64) error
 	GetOrderByID(id int64) (*Order, error)
 	ListOrders(f OrderFilter) ([]*Order, error)
 	GetStats(start, end time.Time) (*DailyOrderStats, error)
@@ -79,7 +79,7 @@ func (s *PostgresOrderStore) GetStats(start, end time.Time) (*DailyOrderStats, e
 	query := `
 		SELECT COALESCE(SUM(total), 0), COUNT(*)
 		FROM orders
-		WHERE date >= $1 AND date < $2 AND state != 'cancelled'`
+		WHERE date >= $1 AND date < $2 AND state != 'cancelled' AND deleted_at IS NULL`
 
 	err := s.db.QueryRow(query, start, end).Scan(&stats.TotalAmount, &stats.TotalCount)
 	if err != nil {
@@ -143,8 +143,24 @@ func (s *PostgresOrderStore) CreateOrder(o *Order, items []OrderItem) error {
 }
 
 func (s *PostgresOrderStore) UpdateOrderState(id int64, state OrderState) error {
-	const q = `UPDATE orders SET state=$1 WHERE id=$2`
+	const q = `UPDATE orders SET state=$1 WHERE id=$2 AND deleted_at IS NULL`
 	res, err := s.db.Exec(q, state, id)
+	if err != nil {
+		return err
+	}
+	n, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if n == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
+func (s *PostgresOrderStore) DeleteOrder(id int64) error {
+	const q = `UPDATE orders SET deleted_at = NOW() WHERE id=$1 AND deleted_at IS NULL`
+	res, err := s.db.Exec(q, id)
 	if err != nil {
 		return err
 	}
@@ -160,12 +176,12 @@ func (s *PostgresOrderStore) UpdateOrderState(id int64, state OrderState) error 
 
 func (s *PostgresOrderStore) GetOrderByID(id int64) (*Order, error) {
 	const q = `
-	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.created_at 
+	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.created_at, o.deleted_at
 	FROM orders o
 	JOIN clients c ON c.id = o.client_id
-	WHERE o.id=$1`
+	WHERE o.id=$1 AND o.deleted_at IS NULL`
 	o := &Order{}
-	if err := s.db.QueryRow(q, id).Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.CreatedAt); err != nil {
+	if err := s.db.QueryRow(q, id).Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.CreatedAt, &o.DeletedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -201,33 +217,30 @@ func (s *PostgresOrderStore) ListOrders(f OrderFilter) ([]*Order, error) {
 	}
 
 	q := `
-	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.created_at 
+	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.created_at, o.deleted_at
 	FROM orders o
 	JOIN clients c ON c.id = o.client_id`
-	where := ""
+	where := "WHERE o.deleted_at IS NULL"
 	args := []any{}
 
 	if f.ClientID != nil {
-		where = where + fmt.Sprintf("%s o.client_id=$%d", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
+		where += fmt.Sprintf(" AND o.client_id=$%d", len(args)+1)
 		args = append(args, *f.ClientID)
 	}
 	if f.State != nil {
-		where = where + fmt.Sprintf("%s o.state=$%d", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
+		where += fmt.Sprintf(" AND o.state=$%d", len(args)+1)
 		args = append(args, *f.State)
 	}
 	if f.ClientName != "" {
-		where = where + fmt.Sprintf("%s unaccent(c.name) ILIKE unaccent('%%' || $%d || '%%')", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
+		where += fmt.Sprintf(" AND unaccent(c.name) ILIKE unaccent('%%' || $%d || '%%')", len(args)+1)
 		args = append(args, f.ClientName)
 	}
 	if f.StartDate != nil {
-		where = where + fmt.Sprintf("%s o.date >= $%d", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
+		where += fmt.Sprintf(" AND o.date >= $%d", len(args)+1)
 		args = append(args, *f.StartDate)
 	}
 	if f.EndDate != nil {
-		// Assuming EndDate is inclusive, and we might need to cover the whole day if time is 00:00:00.
-		// But usually caller handles the time part (e.g. setting it to 23:59:59).
-		// We'll just compare strictly here.
-		where = where + fmt.Sprintf("%s o.date <= $%d", utils.Tern(where == "", "WHERE", " AND "), len(args)+1)
+		where += fmt.Sprintf(" AND o.date <= $%d", len(args)+1)
 		args = append(args, *f.EndDate)
 	}
 
@@ -243,7 +256,7 @@ func (s *PostgresOrderStore) ListOrders(f OrderFilter) ([]*Order, error) {
 	var out []*Order
 	for rows.Next() {
 		o := &Order{}
-		if err := rows.Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.CreatedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.CreatedAt, &o.DeletedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, o)
@@ -260,7 +273,7 @@ func (s *PostgresOrderStore) GetPendingProductionRequirements() ([]*ProductionRe
 		FROM order_products op
 		JOIN orders o ON o.id = op.order_id
 		JOIN products p ON p.id = op.product_id
-		WHERE o.state = 'todo'
+		WHERE o.state = 'todo' AND o.deleted_at IS NULL AND p.deleted_at IS NULL
 		GROUP BY p.id, p.name
 		ORDER BY total_quantity DESC
 	`

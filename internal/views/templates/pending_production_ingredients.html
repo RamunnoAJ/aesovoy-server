@@ -14,7 +14,8 @@
             <h2 class="text-xl font-semibold mb-3">Resumen de Ingredientes:</h2>
             <ul class="list-disc list-inside space-y-1">
                 {{range $ingredientName, $quantity := .AggregatedIngredients}}
-                    <li>{{printf "%.2f" $quantity}} {{index $.IngredientUnits $ingredientName}} de {{$ingredientName}}</li>
+                    {{$unit := index $.IngredientUnits $ingredientName}}
+                    <li>{{formatQuantity $quantity $unit}} {{$unit}} de {{$ingredientName}}</li>
                 {{end}}
             </ul>
         {{else}}

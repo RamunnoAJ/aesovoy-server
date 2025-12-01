@@ -2,6 +2,7 @@ package views
 
 import (
 	"embed"
+	"encoding/json"
 	"fmt"
 	"html/template"
 	"io"
@@ -19,6 +20,13 @@ type Renderer struct {
 func NewRenderer() *Renderer {
 	return &Renderer{
 		funcMap: template.FuncMap{
+			"jsToJson": func(v interface{}) string {
+				b, err := json.Marshal(v)
+				if err != nil {
+					return "{}"
+				}
+				return string(b)
+			},
 			"mulPrice": func(price string, qty int) string {
 				p, err := strconv.ParseFloat(price, 64)
 				if err != nil {
@@ -73,6 +81,22 @@ func NewRenderer() *Renderer {
 				}
 				return prefix + string(result) + "," + decimalPart
 			},
+			"formatQuantity": func(q interface{}, unit string) string {
+				var val float64
+				switch v := q.(type) {
+				case float64:
+					val = v
+				case int:
+					val = float64(v)
+				default:
+					return fmt.Sprintf("%v", q)
+				}
+
+				if unit == "g" || unit == "ml" {
+					return fmt.Sprintf("%.0f", val)
+				}
+				return fmt.Sprintf("%.2f", val)
+			},
 		},
 	}
 }
@@ -87,9 +111,31 @@ func (r *Renderer) Render(w io.Writer, page string, data any) error {
 }
 
 func (r *Renderer) RenderPartial(w io.Writer, page string, data any) error {
+
 	tmpl, err := template.New(page).Funcs(r.funcMap).ParseFS(fs, "templates/"+page)
+
 	if err != nil {
+
 		return err
+
 	}
+
 	return tmpl.Execute(w, data)
+
+}
+
+
+
+func (r *Renderer) RenderBlock(w io.Writer, page string, blockName string, data any) error {
+
+	tmpl, err := template.New(page).Funcs(r.funcMap).ParseFS(fs, "templates/"+page)
+
+	if err != nil {
+
+		return err
+
+	}
+
+	return tmpl.ExecuteTemplate(w, blockName, data)
+
 }

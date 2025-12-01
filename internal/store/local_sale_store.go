@@ -12,6 +12,7 @@ type LocalSale struct {
 	Total           string          `json:"total"`
 	CreatedAt       time.Time       `json:"created_at"`
 	UpdatedAt       time.Time       `json:"updated_at"`
+	DeletedAt       *time.Time      `json:"deleted_at"`
 	Items           []LocalSaleItem `json:"items,omitempty"`
 }
 
@@ -32,6 +33,7 @@ type DailySalesStats struct {
 
 type LocalSaleStore interface {
 	CreateInTx(tx *sql.Tx, sale *LocalSale, items []LocalSaleItem) error
+	DeleteInTx(tx *sql.Tx, id int64) error
 	GetByID(id int64) (*LocalSale, error)
 	ListAll() ([]*LocalSale, error)
 	ListByDate(start, end time.Time) ([]*LocalSale, error)
@@ -46,9 +48,25 @@ func NewPostgresLocalSaleStore(db *sql.DB) *PostgresLocalSaleStore {
 	return &PostgresLocalSaleStore{db: db}
 }
 
+func (s *PostgresLocalSaleStore) DeleteInTx(tx *sql.Tx, id int64) error {
+	query := `UPDATE local_sales SET deleted_at = NOW() WHERE id = $1`
+	result, err := tx.Exec(query, id)
+	if err != nil {
+		return err
+	}
+	rows, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (s *PostgresLocalSaleStore) ListByDate(start, end time.Time) ([]*LocalSale, error) {
 	query := `
-		SELECT id, payment_method_id, subtotal::text, total::text, created_at, updated_at
+		SELECT id, payment_method_id, subtotal::text, total::text, created_at, updated_at, deleted_at
 		FROM local_sales 
 		WHERE created_at >= $1 AND created_at < $2
 		ORDER BY created_at DESC`
@@ -62,7 +80,7 @@ func (s *PostgresLocalSaleStore) ListByDate(start, end time.Time) ([]*LocalSale,
 	var sales []*LocalSale
 	for rows.Next() {
 		var sale LocalSale
-		if err := rows.Scan(&sale.ID, &sale.PaymentMethodID, &sale.Subtotal, &sale.Total, &sale.CreatedAt, &sale.UpdatedAt); err != nil {
+		if err := rows.Scan(&sale.ID, &sale.PaymentMethodID, &sale.Subtotal, &sale.Total, &sale.CreatedAt, &sale.UpdatedAt, &sale.DeletedAt); err != nil {
 			return nil, err
 		}
 		sales = append(sales, &sale)
@@ -75,23 +93,23 @@ func (s *PostgresLocalSaleStore) GetStats(start, end time.Time) (*DailySalesStat
 		ByMethod: make(map[string]float64),
 	}
 
-	// 1. Total and Count
+	// 1. Total and Count (Exclude deleted)
 	queryTotal := `
 		SELECT COALESCE(SUM(total), 0), COUNT(*)
 		FROM local_sales
-		WHERE created_at >= $1 AND created_at < $2`
+		WHERE created_at >= $1 AND created_at < $2 AND deleted_at IS NULL`
 	
 	err := s.db.QueryRow(queryTotal, start, end).Scan(&stats.TotalAmount, &stats.TotalCount)
 	if err != nil {
 		return nil, err
 	}
 
-	// 2. Breakdown by Method
+	// 2. Breakdown by Method (Exclude deleted)
 	queryMethod := `
 		SELECT pm.name, COALESCE(SUM(ls.total), 0)
 		FROM local_sales ls
 		JOIN payment_methods pm ON ls.payment_method_id = pm.id
-		WHERE ls.created_at >= $1 AND ls.created_at < $2
+		WHERE ls.created_at >= $1 AND ls.created_at < $2 AND ls.deleted_at IS NULL
 		GROUP BY pm.name`
 	
 	rows, err := s.db.Query(queryMethod, start, end)
@@ -144,11 +162,11 @@ func (s *PostgresLocalSaleStore) CreateInTx(tx *sql.Tx, sale *LocalSale, items [
 
 func (s *PostgresLocalSaleStore) GetByID(id int64) (*LocalSale, error) {
 	query := `
-		SELECT id, payment_method_id, subtotal::text, total::text, created_at, updated_at
+		SELECT id, payment_method_id, subtotal::text, total::text, created_at, updated_at, deleted_at
 		FROM local_sales WHERE id = $1`
 
 	sale := &LocalSale{}
-	err := s.db.QueryRow(query, id).Scan(&sale.ID, &sale.PaymentMethodID, &sale.Subtotal, &sale.Total, &sale.CreatedAt, &sale.UpdatedAt)
+	err := s.db.QueryRow(query, id).Scan(&sale.ID, &sale.PaymentMethodID, &sale.Subtotal, &sale.Total, &sale.CreatedAt, &sale.UpdatedAt, &sale.DeletedAt)
 	if err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
@@ -178,7 +196,7 @@ func (s *PostgresLocalSaleStore) GetByID(id int64) (*LocalSale, error) {
 
 func (s *PostgresLocalSaleStore) ListAll() ([]*LocalSale, error) {
 	query := `
-		SELECT id, payment_method_id, subtotal::text, total::text, created_at, updated_at
+		SELECT id, payment_method_id, subtotal::text, total::text, created_at, updated_at, deleted_at
 		FROM local_sales ORDER BY created_at DESC`
 
 	rows, err := s.db.Query(query)
@@ -190,7 +208,7 @@ func (s *PostgresLocalSaleStore) ListAll() ([]*LocalSale, error) {
 	var sales []*LocalSale
 	for rows.Next() {
 		var sale LocalSale
-		if err := rows.Scan(&sale.ID, &sale.PaymentMethodID, &sale.Subtotal, &sale.Total, &sale.CreatedAt, &sale.UpdatedAt); err != nil {
+		if err := rows.Scan(&sale.ID, &sale.PaymentMethodID, &sale.Subtotal, &sale.Total, &sale.CreatedAt, &sale.UpdatedAt, &sale.DeletedAt); err != nil {
 			return nil, err
 		}
 		sales = append(sales, &sale)

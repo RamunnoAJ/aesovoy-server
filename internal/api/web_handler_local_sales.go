@@ -1,6 +1,7 @@
 package api
 
 import (
+	"fmt"
 	"net/http"
 	"net/url"
 	"strconv"
@@ -49,6 +50,7 @@ func (h *WebHandler) HandleListLocalSales(w http.ResponseWriter, r *http.Request
 		PaymentMethod string
 		Total         string
 		Date          string
+		IsVoided      bool
 	}
 
 	var saleViews []SaleView
@@ -58,6 +60,7 @@ func (h *WebHandler) HandleListLocalSales(w http.ResponseWriter, r *http.Request
 			PaymentMethod: pmMap[s.PaymentMethodID],
 			Total:         s.Total,
 			Date:          s.CreatedAt.Format("02/01/2006 15:04"),
+			IsVoided:      s.DeletedAt != nil,
 		})
 	}
 
@@ -231,5 +234,83 @@ func (h *WebHandler) HandleGetLocalSaleView(w http.ResponseWriter, r *http.Reque
 
 	if err := h.renderer.Render(w, "local_sale_detail.html", data); err != nil {
 		h.logger.Error("rendering local sale detail", "error", err)
+	}
+}
+
+func (h *WebHandler) HandleRevokeLocalSale(w http.ResponseWriter, r *http.Request) {
+	user := middleware.GetUser(r)
+	// Employee or Admin
+	if user.Role != "administrator" && user.Role != "employee" {
+		http.Error(w, "Forbidden", http.StatusForbidden)
+		return
+	}
+
+	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
+	if err != nil {
+		w.WriteHeader(http.StatusBadRequest)
+		w.Write([]byte(`{"error": "ID inválido"}`))
+		return
+	}
+
+	// If employee, check time limit
+	if user.Role == "employee" {
+		sale, err := h.localSaleService.GetSale(id)
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			w.Write([]byte(`{"error": "Error al verificar la venta"}`))
+			return
+		}
+		if sale == nil {
+			w.WriteHeader(http.StatusNotFound)
+			w.Write([]byte(`{"error": "Venta no encontrada"}`))
+			return
+		}
+
+		if time.Since(sale.CreatedAt) > 1*time.Hour {
+			w.WriteHeader(http.StatusForbidden)
+			w.Write([]byte(`{"error": "Solo se pueden anular ventas dentro de la primera hora."}`))
+			return
+		}
+	}
+
+	if err := h.localSaleService.RevokeLocalSale(id); err != nil {
+		h.logger.Error("revoking local sale", "error", err)
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+		return
+	}
+
+	// Fetch updated sale to render the row
+	updatedSale, err := h.localSaleService.GetSale(id)
+	if err != nil {
+		h.logger.Error("getting updated sale after revoke", "error", err)
+		// Fallback to empty OK, client just won't see update until refresh
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+
+	pmName := "Unknown"
+	if pm, err := h.paymentMethodStore.GetPaymentMethodByID(updatedSale.PaymentMethodID); err == nil && pm != nil {
+		pmName = pm.Name
+	}
+
+	type SaleView struct {
+		ID            int64
+		PaymentMethod string
+		Total         string
+		Date          string
+		IsVoided      bool
+	}
+
+	view := SaleView{
+		ID:            updatedSale.ID,
+		PaymentMethod: pmName,
+		Total:         updatedSale.Total,
+		Date:          updatedSale.CreatedAt.Format("02/01/2006 15:04"),
+		IsVoided:      updatedSale.DeletedAt != nil,
+	}
+
+	if err := h.renderer.RenderBlock(w, "local_sales_list.html", "sale_row", view); err != nil {
+		h.logger.Error("rendering sale row block", "error", err)
 	}
 }

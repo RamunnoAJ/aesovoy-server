@@ -99,6 +99,11 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 				r.Patch("/{id}/state", app.OrderHandler.HandleUpdateOrderState)
 			})
 
+			r.Route("/invoices", func(r chi.Router) {
+				r.Get("/", app.InvoiceHandler.List)
+				r.Get("/download/{filename}", app.InvoiceHandler.Download)
+			})
+
 			r.Route("/payment_methods", func(r chi.Router) {
 				r.Get("/", app.PaymentMethodHandler.HandleGetPaymentMethods)
 				r.Get("/{id}", app.PaymentMethodHandler.HandleGetPaymentMethodByID)
@@ -202,6 +207,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/local-sales/new", app.WebHandler.HandleCreateLocalSaleView)
 		r.Post("/local-sales/new", app.WebHandler.HandleCreateLocalSale)
 		r.Get("/local-sales/{id}", app.WebHandler.HandleGetLocalSaleView)
+		r.Delete("/local-sales/{id}", app.WebHandler.HandleRevokeLocalSale)
 
 		// Production Calculator (Employee and Admin)
 		r.Get("/production-calculator", app.WebHandler.HandleShowProductionCalculator)

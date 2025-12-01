@@ -191,14 +191,14 @@ func TestProductStore_Ingredients(t *testing.T) {
 	assert.Equal(t, "Ing 1", got.Recipe[0].Name)
 
 	// 2. Update
-	_, err = s.UpdateProductIngredient(product.ID, pi.ID, 20, "kg")
+	_, err = s.UpdateProductIngredient(product.ID, pi.ID, 20, "g")
 	require.NoError(t, err)
 
 	got, err = s.GetProductByID(product.ID)
 	require.NoError(t, err)
 	require.Len(t, got.Recipe, 1)
 	assert.Equal(t, 20.0, got.Recipe[0].Quantity)
-	assert.Equal(t, "kg", got.Recipe[0].Unit)
+	assert.Equal(t, "g", got.Recipe[0].Unit)
 
 	// 3. Remove
 	err = s.RemoveIngredientFromProduct(product.ID, pi.ID)
@@ -256,15 +256,15 @@ func TestProductStore_Search(t *testing.T) {
 			wantName: "Torta de Vainilla",
 		},
 		{
-			name:     "search multiple match",
-			query:    "Torta",
-			limit:    10,
-			offset:   0,
-			wantLen:  2,
-			// Order is by rank then name. "Torta" appears in both name (A) and description (B) for both? 
-			// Actually 'Torta' is in Name (weight A) for both. 
+			name:    "search multiple match",
+			query:   "Torta",
+			limit:   10,
+			offset:  0,
+			wantLen: 2,
+			// Order is by rank then name. "Torta" appears in both name (A) and description (B) for both?
+			// Actually 'Torta' is in Name (weight A) for both.
 			// Sorting by name should put Chocolate before Vainilla.
-			wantName: "Torta de Chocolate", 
+			wantName: "Torta de Chocolate",
 		},
 		{
 			name:    "search no match",
@@ -357,46 +357,74 @@ func TestProductStore_GetTopSellingProducts(t *testing.T) {
 	assert.Equal(t, p1.ID, top[0].ID)
 	assert.Equal(t, 8.0, top[0].Quantity) // 5 local + 3 order
 
-		assert.Equal(t, p2.ID, top[1].ID)
+	assert.Equal(t, p2.ID, top[1].ID)
 
-		assert.Equal(t, 3.0, top[1].Quantity) // 2 local + 1 order
+	assert.Equal(t, 3.0, top[1].Quantity) // 2 local + 1 order
 
+	// Test Local
+
+	topLocal, err := ps.GetTopSellingProductsLocal(todayStart, todayEnd)
+
+	require.NoError(t, err)
+
+	require.Len(t, topLocal, 2)
+
+	assert.Equal(t, p1.ID, topLocal[0].ID)
+
+	assert.Equal(t, 5.0, topLocal[0].Quantity)
+
+	assert.Equal(t, p2.ID, topLocal[1].ID)
+
+	assert.Equal(t, 2.0, topLocal[1].Quantity)
+
+	// Test Distribution
+
+	topDistrib, err := ps.GetTopSellingProductsDistribution(todayStart, todayEnd)
+
+	require.NoError(t, err)
+
+	require.Len(t, topDistrib, 2)
+
+	assert.Equal(t, p1.ID, topDistrib[0].ID)
+
+	assert.Equal(t, 3.0, topDistrib[0].Quantity)
+
+	assert.Equal(t, p2.ID, topDistrib[1].ID)
+
+	assert.Equal(t, 1.0, topDistrib[1].Quantity)
+
+}
+
+func TestProductStore_SoftDelete(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	s := NewPostgresProductStore(db)
+	category := setupCategory(t, db)
+
+	p := &Product{CategoryID: category.ID, Name: "UniqueProduct", UnitPrice: 10}
+	require.NoError(t, s.CreateProduct(p))
+
+	// Verify exists
+	got, err := s.GetProductByID(p.ID)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+
+	// Delete
+	require.NoError(t, s.DeleteProduct(p.ID))
+
+	// Verify not found
+	gotDeleted, err := s.GetProductByID(p.ID)
+	require.NoError(t, err)
+	assert.Nil(t, gotDeleted)
+
+	// Create duplicate name should succeed
+	p2 := &Product{CategoryID: category.ID, Name: "UniqueProduct", UnitPrice: 20}
+	require.NoError(t, s.CreateProduct(p2))
 	
+	// Verify new product
+	gotNew, err := s.GetProductByID(p2.ID)
+	require.NoError(t, err)
+	require.NotNil(t, gotNew)
+	assert.Equal(t, 20.0, gotNew.UnitPrice)
+}
 
-		// Test Local
-
-		topLocal, err := ps.GetTopSellingProductsLocal(todayStart, todayEnd)
-
-		require.NoError(t, err)
-
-		require.Len(t, topLocal, 2)
-
-		assert.Equal(t, p1.ID, topLocal[0].ID)
-
-		assert.Equal(t, 5.0, topLocal[0].Quantity)
-
-		assert.Equal(t, p2.ID, topLocal[1].ID)
-
-		assert.Equal(t, 2.0, topLocal[1].Quantity)
-
-	
-
-		// Test Distribution
-
-		topDistrib, err := ps.GetTopSellingProductsDistribution(todayStart, todayEnd)
-
-		require.NoError(t, err)
-
-		require.Len(t, topDistrib, 2)
-
-		assert.Equal(t, p1.ID, topDistrib[0].ID)
-
-		assert.Equal(t, 3.0, topDistrib[0].Quantity)
-
-		assert.Equal(t, p2.ID, topDistrib[1].ID)
-
-		assert.Equal(t, 1.0, topDistrib[1].Quantity)
-
-	}
-
-	

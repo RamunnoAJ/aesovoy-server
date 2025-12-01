@@ -86,7 +86,7 @@ func (s *LocalSaleService) CreateLocalSale(req CreateLocalSaleRequest) (*store.L
 		if err != nil {
 			return nil, fmt.Errorf("error al verificar stock para producto %d: %w", itemReq.ProductID, err)
 		}
-		
+
 		currentQty := 0
 		if stock != nil {
 			currentQty = stock.Quantity
@@ -153,4 +153,46 @@ func (s *LocalSaleService) ListSalesByDate(date time.Time) ([]*store.LocalSale, 
 
 func (s *LocalSaleService) GetStats(start, end time.Time) (*store.DailySalesStats, error) {
 	return s.saleStore.GetStats(start, end)
+}
+
+func (s *LocalSaleService) RevokeLocalSale(id int64) error {
+	// 1. Get the sale details to know which items to return
+	sale, err := s.saleStore.GetByID(id)
+	if err != nil {
+		return fmt.Errorf("error al obtener la venta: %w", err)
+	}
+	if sale == nil {
+		return fmt.Errorf("venta no encontrada")
+	}
+
+	if sale.DeletedAt != nil {
+		return fmt.Errorf("la venta ya ha sido anulada")
+	}
+
+	// 2. Start Transaction
+	tx, err := s.db.Begin()
+	if err != nil {
+		return fmt.Errorf("error al iniciar transacción: %w", err)
+	}
+	defer tx.Rollback()
+
+	// 3. Restore Stock
+	for _, item := range sale.Items {
+		// We add the quantity back (positive value)
+		if _, err := s.stockStore.AdjustQuantityTx(tx, item.ProductID, item.Quantity); err != nil {
+			return fmt.Errorf("error al restaurar stock del producto %d: %w", item.ProductID, err)
+		}
+	}
+
+	// 4. Delete Sale
+	if err := s.saleStore.DeleteInTx(tx, id); err != nil {
+		return fmt.Errorf("error al eliminar la venta: %w", err)
+	}
+
+	// 5. Commit
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("error al confirmar anulación: %w", err)
+	}
+
+	return nil
 }

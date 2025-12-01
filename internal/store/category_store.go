@@ -16,10 +16,11 @@ func NewPostgresCategoryStore(db *sql.DB) *PostgresCategoryStore {
 }
 
 type Category struct {
-	ID          int64     `json:"id"`
-	Name        string    `json:"name"`
-	Description string    `json:"description,omitempty"`
-	CreatedAt   time.Time `json:"created_at"`
+	ID          int64      `json:"id"`
+	Name        string     `json:"name"`
+	Description string     `json:"description,omitempty"`
+	CreatedAt   time.Time  `json:"created_at"`
+	DeletedAt   *time.Time `json:"deleted_at"`
 }
 
 type CategoryStore interface {
@@ -52,9 +53,9 @@ func (s *PostgresCategoryStore) GetCategoryByID(id int64) (*Category, error) {
 	category := &Category{}
 
 	query := `
-	SELECT id, name, description, created_at 
+	SELECT id, name, description, created_at, deleted_at
 	FROM categories
-	WHERE id = $1
+	WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	err := s.db.QueryRow(query, id).Scan(
@@ -62,6 +63,7 @@ func (s *PostgresCategoryStore) GetCategoryByID(id int64) (*Category, error) {
 		&category.Name,
 		&category.Description,
 		&category.CreatedAt,
+		&category.DeletedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -79,7 +81,7 @@ func (s *PostgresCategoryStore) UpdateCategory(category *Category) error {
 	query := `
 	UPDATE categories
 	SET name = $1, description = $2 
-	WHERE id = $3
+	WHERE id = $3 AND deleted_at IS NULL
 	`
 
 	result, err := s.db.Exec(query, category.Name, category.Description, category.ID)
@@ -101,8 +103,9 @@ func (s *PostgresCategoryStore) UpdateCategory(category *Category) error {
 
 func (s *PostgresCategoryStore) DeleteCategory(id int64) error {
 	query := `
-	DELETE FROM categories
-	WHERE id = $1
+	UPDATE categories
+	SET deleted_at = NOW()
+	WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	result, err := s.db.Exec(query, id)
@@ -124,8 +127,9 @@ func (s *PostgresCategoryStore) DeleteCategory(id int64) error {
 
 func (s *PostgresCategoryStore) GetAllCategories() ([]*Category, error) {
 	query := `
-    SELECT id, name, description, created_at
+    SELECT id, name, description, created_at, deleted_at
     FROM categories
+	WHERE deleted_at IS NULL
     ORDER BY name
     `
 
@@ -139,7 +143,7 @@ func (s *PostgresCategoryStore) GetAllCategories() ([]*Category, error) {
 
 	for rows.Next() {
 		c := &Category{}
-		if err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.CreatedAt); err != nil {
+		if err := rows.Scan(&c.ID, &c.Name, &c.Description, &c.CreatedAt, &c.DeletedAt); err != nil {
 			return nil, err
 		}
 		categories = append(categories, c)

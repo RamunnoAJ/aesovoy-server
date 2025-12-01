@@ -25,6 +25,7 @@ type Product struct {
 	UnitPrice         float64              `json:"unit_price"`
 	DistributionPrice float64              `json:"distribution_price"`
 	CreatedAt         time.Time            `json:"created_at"`
+	DeletedAt         *time.Time           `json:"deleted_at"`
 	CurrentStock      float64              `json:"current_stock"`
 	Recipe            []*ProductIngredient `json:"recipe,omitempty"`
 }
@@ -90,14 +91,14 @@ func (s *PostgresProductStore) CreateProduct(product *Product) error {
 func (s *PostgresProductStore) GetProductByID(id int64) (*Product, error) {
 	const q = `
 	SELECT p.id, p.category_id, c.name AS category_name,
-	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at, p.deleted_at
 	FROM products p
 	JOIN categories c ON c.id = p.category_id
-	WHERE p.id = $1`
+	WHERE p.id = $1 AND p.deleted_at IS NULL`
 	pr := &Product{}
 	err := s.db.QueryRow(q, id).Scan(
 		&pr.ID, &pr.CategoryID, &pr.CategoryName,
-		&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
+		&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt, &pr.DeletedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -137,7 +138,7 @@ func (s *PostgresProductStore) UpdateProduct(product *Product) error {
 	query := `
 	UPDATE products
 	SET category_id = $1, name = $2, description = $3, unit_price = $4, distribution_price = $5
-	WHERE id = $6
+	WHERE id = $6 AND deleted_at IS NULL
 	`
 
 	result, err := s.db.Exec(
@@ -167,8 +168,9 @@ func (s *PostgresProductStore) UpdateProduct(product *Product) error {
 
 func (s *PostgresProductStore) DeleteProduct(id int64) error {
 	query := `
-	DELETE FROM products
-	WHERE id = $1
+	UPDATE products
+	SET deleted_at = NOW()
+	WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	result, err := s.db.Exec(query, id)
@@ -191,9 +193,10 @@ func (s *PostgresProductStore) DeleteProduct(id int64) error {
 func (s *PostgresProductStore) GetAllProduct() ([]*Product, error) {
 	const q = `
 	SELECT p.id, p.category_id, c.name AS category_name,
-	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at, p.deleted_at
 	FROM products p
 	JOIN categories c ON c.id = p.category_id
+	WHERE p.deleted_at IS NULL
 	ORDER BY p.name`
 	rows, err := s.db.Query(q)
 	if err != nil {
@@ -206,7 +209,7 @@ func (s *PostgresProductStore) GetAllProduct() ([]*Product, error) {
 		pr := &Product{}
 		if err := rows.Scan(
 			&pr.ID, &pr.CategoryID, &pr.CategoryName,
-			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
+			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt, &pr.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -221,10 +224,10 @@ func (s *PostgresProductStore) GetAllProduct() ([]*Product, error) {
 func (s *PostgresProductStore) GetProductsByCategoryID(categoryID int64) ([]*Product, error) {
 	const query = `
     SELECT p.id, p.category_id, c.name AS category_name,
-           p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+           p.name, p.description, p.unit_price, p.distribution_price, p.created_at, p.deleted_at
     FROM products p
     JOIN categories c ON c.id = p.category_id
-    WHERE p.category_id = $1
+    WHERE p.category_id = $1 AND p.deleted_at IS NULL
     ORDER BY p.name`
 	rows, err := s.db.Query(query, categoryID)
 	if err != nil {
@@ -237,7 +240,7 @@ func (s *PostgresProductStore) GetProductsByCategoryID(categoryID int64) ([]*Pro
 		pr := &Product{}
 		if err := rows.Scan(
 			&pr.ID, &pr.CategoryID, &pr.CategoryName,
-			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
+			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt, &pr.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -309,10 +312,10 @@ func (s *PostgresProductStore) RemoveIngredientFromProduct(productID, ingredient
 func (s *PostgresProductStore) GetProductsByIDs(ids []int64) (map[int64]*Product, error) {
 	const q = `
 	SELECT p.id, p.category_id, c.name AS category_name,
-	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at
+	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at, p.deleted_at
 	FROM products p
 	JOIN categories c ON c.id = p.category_id
-	WHERE p.id = ANY($1)`
+	WHERE p.id = ANY($1) AND p.deleted_at IS NULL`
 
 	rows, err := s.db.Query(q, ids)
 	if err != nil {
@@ -325,7 +328,7 @@ func (s *PostgresProductStore) GetProductsByIDs(ids []int64) (map[int64]*Product
 		pr := &Product{}
 		if err := rows.Scan(
 			&pr.ID, &pr.CategoryID, &pr.CategoryName,
-			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
+			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt, &pr.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -351,6 +354,7 @@ func (s *PostgresProductStore) list(query string, args ...any) ([]*Product, erro
 			&pr.ID, &pr.CategoryID, &pr.CategoryName,
 			&pr.Name, &pr.Description, &pr.UnitPrice, &pr.DistributionPrice, &pr.CreatedAt,
 			&pr.CurrentStock,
+			&pr.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -374,10 +378,11 @@ func (s *PostgresProductStore) SearchProductsFTS(q string, limit, offset int) ([
 		const allq = `
 		SELECT p.id, p.category_id, c.name AS category_name,
 		       p.name, p.description, p.unit_price, p.distribution_price, p.created_at,
-		       COALESCE(ls.quantity, 0) as current_stock
+		       COALESCE(ls.quantity, 0) as current_stock, p.deleted_at
 		FROM products p
 		JOIN categories c ON c.id = p.category_id
 		LEFT JOIN local_stock ls ON ls.product_id = p.id
+		WHERE p.deleted_at IS NULL
 		ORDER BY p.name
 		LIMIT $1 OFFSET $2`
 		return s.list(allq, limit, offset)
@@ -395,10 +400,11 @@ func (s *PostgresProductStore) SearchProductsFTS(q string, limit, offset int) ([
 		const allq = `
 		SELECT p.id, p.category_id, c.name AS category_name,
 		       p.name, p.description, p.unit_price, p.distribution_price, p.created_at,
-		       COALESCE(ls.quantity, 0) as current_stock
+		       COALESCE(ls.quantity, 0) as current_stock, p.deleted_at
 		FROM products p
 		JOIN categories c ON c.id = p.category_id
 		LEFT JOIN local_stock ls ON ls.product_id = p.id
+		WHERE p.deleted_at IS NULL
 		ORDER BY p.name
 		LIMIT $1 OFFSET $2`
 		return s.list(allq, limit, offset)
@@ -413,11 +419,11 @@ func (s *PostgresProductStore) SearchProductsFTS(q string, limit, offset int) ([
 	const sqlq = `
 	SELECT p.id, p.category_id, c.name AS category_name,
 	       p.name, p.description, p.unit_price, p.distribution_price, p.created_at,
-	       COALESCE(ls.quantity, 0) as current_stock
+	       COALESCE(ls.quantity, 0) as current_stock, p.deleted_at
 	FROM products p
 	JOIN categories c ON c.id = p.category_id
 	LEFT JOIN local_stock ls ON ls.product_id = p.id
-	WHERE p.search_tsv @@ to_tsquery('spanish', unaccent($1))
+	WHERE p.search_tsv @@ to_tsquery('spanish', unaccent($1)) AND p.deleted_at IS NULL
 	ORDER BY ts_rank(p.search_tsv, to_tsquery('spanish', unaccent($1))) DESC, p.name
 	LIMIT $2 OFFSET $3`
 	return s.list(sqlq, formattedQuery, limit, offset)
@@ -428,15 +434,16 @@ func (s *PostgresProductStore) GetTopSellingProducts(start, end time.Time) ([]*T
 	WITH combined_sales AS (
 		SELECT product_id, quantity FROM local_sale_items lsi
 		JOIN local_sales ls ON ls.id = lsi.local_sale_id
-		WHERE ls.created_at >= $1 AND ls.created_at < $2
+		WHERE ls.created_at >= $1 AND ls.created_at < $2 AND ls.deleted_at IS NULL
 		UNION ALL
 		SELECT product_id, quantity FROM order_products op
 		JOIN orders o ON o.id = op.order_id
-		WHERE o.date >= $1 AND o.date < $2 AND o.state != 'cancelled'
+		WHERE o.date >= $1 AND o.date < $2 AND o.state != 'cancelled' AND o.deleted_at IS NULL
 	)
 	SELECT p.id, p.name, SUM(cs.quantity) as total_qty
 	FROM combined_sales cs
 	JOIN products p ON p.id = cs.product_id
+	WHERE p.deleted_at IS NULL
 	GROUP BY p.id, p.name
 	ORDER BY total_qty DESC
 	LIMIT 3
@@ -469,7 +476,7 @@ func (s *PostgresProductStore) GetTopSellingProductsLocal(start, end time.Time) 
 	FROM local_sale_items lsi
 	JOIN local_sales ls ON ls.id = lsi.local_sale_id
 	JOIN products p ON p.id = lsi.product_id
-	WHERE ls.created_at >= $1 AND ls.created_at < $2
+	WHERE ls.created_at >= $1 AND ls.created_at < $2 AND ls.deleted_at IS NULL AND p.deleted_at IS NULL
 	GROUP BY p.id, p.name
 	ORDER BY total_qty DESC
 	LIMIT 3
@@ -497,7 +504,7 @@ func (s *PostgresProductStore) GetTopSellingProductsDistribution(start, end time
 	FROM order_products op
 	JOIN orders o ON o.id = op.order_id
 	JOIN products p ON p.id = op.product_id
-	WHERE o.date >= $1 AND o.date < $2 AND o.state != 'cancelled'
+	WHERE o.date >= $1 AND o.date < $2 AND o.state != 'cancelled' AND o.deleted_at IS NULL AND p.deleted_at IS NULL
 	GROUP BY p.id, p.name
 	ORDER BY total_qty DESC
 	LIMIT 3

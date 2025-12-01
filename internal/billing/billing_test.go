@@ -71,7 +71,7 @@ func TestGenerateInvoice(t *testing.T) {
 	order := &store.Order{
 		ID:       123,
 		ClientID: client.ID,
-		Date:     time.Now(),
+		Date:     time.Date(2001, 2, 28, 8, 30, 0, 0, &time.Location{}),
 		State:    store.OrderTodo,
 		Items: []store.OrderItem{
 			{ProductID: product1.ID, Quantity: 2, Price: "150.50"},
@@ -120,4 +120,3 @@ func TestGenerateInvoice(t *testing.T) {
 		})
 	}
 }
-

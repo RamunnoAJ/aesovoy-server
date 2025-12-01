@@ -47,6 +47,7 @@ type User struct {
 	IsActive     bool      `json:"is_active"`
 	PasswordHash Password  `json:"-"`
 	CreatedAt    time.Time `json:"created_at"`
+	DeletedAt    *time.Time `json:"deleted_at"`
 }
 
 var AnonymousUser = &User{}
@@ -71,6 +72,7 @@ type UserStore interface {
 	GetUserByEmail(email string) (*User, error)
 	GetUserByID(id int64) (*User, error)
 	UpdateUser(*User) error
+	DeleteUser(id int64) error
 	GetUserToken(scope, tokenPlainText string) (*User, error)
 	GetAllUsers() ([]*User, error)
 	ToggleUserStatus(id int64) error
@@ -105,9 +107,9 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 	}
 
 	query := `
-	SELECT id, username, email, password_hash, role, is_active, created_at 
+	SELECT id, username, email, password_hash, role, is_active, created_at, deleted_at
 	FROM users
-	WHERE username = $1
+	WHERE username = $1 AND deleted_at IS NULL
 	`
 
 	err := s.db.QueryRow(query, username).Scan(
@@ -118,6 +120,7 @@ func (s *PostgresUserStore) GetUserByUsername(username string) (*User, error) {
 		&user.Role,
 		&user.IsActive,
 		&user.CreatedAt,
+		&user.DeletedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -137,9 +140,9 @@ func (s *PostgresUserStore) GetUserByEmail(email string) (*User, error) {
 	}
 
 	query := `
-	SELECT id, username, email, password_hash, role, is_active, created_at 
+	SELECT id, username, email, password_hash, role, is_active, created_at, deleted_at
 	FROM users
-	WHERE email = $1
+	WHERE email = $1 AND deleted_at IS NULL
 	`
 
 	err := s.db.QueryRow(query, email).Scan(
@@ -150,6 +153,7 @@ func (s *PostgresUserStore) GetUserByEmail(email string) (*User, error) {
 		&user.Role,
 		&user.IsActive,
 		&user.CreatedAt,
+		&user.DeletedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -169,9 +173,9 @@ func (s *PostgresUserStore) GetUserByID(id int64) (*User, error) {
 	}
 
 	query := `
-	SELECT id, username, email, password_hash, role, is_active, created_at 
+	SELECT id, username, email, password_hash, role, is_active, created_at, deleted_at
 	FROM users
-	WHERE id = $1
+	WHERE id = $1 AND deleted_at IS NULL
 	`
 
 	err := s.db.QueryRow(query, id).Scan(
@@ -182,6 +186,7 @@ func (s *PostgresUserStore) GetUserByID(id int64) (*User, error) {
 		&user.Role,
 		&user.IsActive,
 		&user.CreatedAt,
+		&user.DeletedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -199,7 +204,7 @@ func (s *PostgresUserStore) UpdateUser(user *User) error {
 	query := `
 	UPDATE users
 	SET username = $1, email = $2, role = $3, is_active = $4, password_hash = $5
-	WHERE id = $6
+	WHERE id = $6 AND deleted_at IS NULL
 	`
 
 	result, err := s.db.Exec(query, user.Username, user.Email, user.Role, user.IsActive, user.PasswordHash.hash, user.ID)
@@ -219,14 +224,30 @@ func (s *PostgresUserStore) UpdateUser(user *User) error {
 	return nil
 }
 
+func (s *PostgresUserStore) DeleteUser(id int64) error {
+	query := `UPDATE users SET deleted_at = NOW() WHERE id = $1 AND deleted_at IS NULL`
+	result, err := s.db.Exec(query, id)
+	if err != nil {
+		return err
+	}
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rowsAffected == 0 {
+		return sql.ErrNoRows
+	}
+	return nil
+}
+
 func (s *PostgresUserStore) GetUserToken(scope, plaintextPassword string) (*User, error) {
 	tokenHash := sha256.Sum256([]byte(plaintextPassword))
 
 	query := `
-	SELECT u.id, u.username, u.email, u.password_hash, u.role, u.is_active, u.created_at
+	SELECT u.id, u.username, u.email, u.password_hash, u.role, u.is_active, u.created_at, u.deleted_at
 	FROM users u
 	INNER JOIN tokens t ON t.user_id = u.id
-	WHERE t.hash = $1 AND t.scope = $2 and t.expiry > $3
+	WHERE t.hash = $1 AND t.scope = $2 and t.expiry > $3 AND u.deleted_at IS NULL
 	`
 
 	user := &User{
@@ -241,6 +262,7 @@ func (s *PostgresUserStore) GetUserToken(scope, plaintextPassword string) (*User
 		&user.Role,
 		&user.IsActive,
 		&user.CreatedAt,
+		&user.DeletedAt,
 	)
 
 	if err == sql.ErrNoRows {
@@ -256,8 +278,9 @@ func (s *PostgresUserStore) GetUserToken(scope, plaintextPassword string) (*User
 
 func (s *PostgresUserStore) GetAllUsers() ([]*User, error) {
 	query := `
-	SELECT id, username, email, role, is_active, created_at
+	SELECT id, username, email, role, is_active, created_at, deleted_at
 	FROM users
+	WHERE deleted_at IS NULL
 	ORDER BY username
 	`
 
@@ -270,7 +293,7 @@ func (s *PostgresUserStore) GetAllUsers() ([]*User, error) {
 	var users []*User
 	for rows.Next() {
 		u := &User{}
-		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Role, &u.IsActive, &u.CreatedAt); err != nil {
+		if err := rows.Scan(&u.ID, &u.Username, &u.Email, &u.Role, &u.IsActive, &u.CreatedAt, &u.DeletedAt); err != nil {
 			return nil, err
 		}
 		users = append(users, u)
@@ -287,7 +310,7 @@ func (s *PostgresUserStore) ToggleUserStatus(id int64) error {
 	query := `
 	UPDATE users
 	SET is_active = NOT is_active
-	WHERE id = $1
+	WHERE id = $1 AND deleted_at IS NULL
 	`
 	result, err := s.db.Exec(query, id)
 	if err != nil {

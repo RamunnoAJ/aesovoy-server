@@ -282,12 +282,12 @@ func TestGetPendingProductionRequirements(t *testing.T) {
 	// Create products
 	prod1 := &Product{CategoryID: cat1.ID, Name: "Product Alpha", UnitPrice: 10.0, DistributionPrice: 8.0}
 	require.NoError(t, productStore.CreateProduct(prod1))
-	_, err := productStore.AddIngredientToProduct(prod1.ID, ing1.ID, 0.5, "kg")
+	_, err := productStore.AddIngredientToProduct(prod1.ID, ing1.ID, 0.5, "g")
 	require.NoError(t, err)
 
 	prod2 := &Product{CategoryID: cat1.ID, Name: "Product Beta", UnitPrice: 15.0, DistributionPrice: 12.0}
 	require.NoError(t, productStore.CreateProduct(prod2))
-	_, err = productStore.AddIngredientToProduct(prod2.ID, ing1.ID, 0.1, "kg")
+	_, err = productStore.AddIngredientToProduct(prod2.ID, ing1.ID, 0.1, "g")
 	require.NoError(t, err)
 	_, err = productStore.AddIngredientToProduct(prod2.ID, ing2.ID, 20, "gr")
 	require.NoError(t, err)
