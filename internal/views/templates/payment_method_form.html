@@ -4,7 +4,7 @@
         <h1 class="text-2xl font-bold text-gray-800">{{if .PaymentMethod.ID}}Editar Método de Pago{{else}}Nuevo Método de Pago{{end}}</h1>
     </div>
     
-    <form action="{{if .PaymentMethod.ID}}/payment_methods/{{.PaymentMethod.ID}}/edit{{else}}/payment_methods/new{{end}}" method="POST" class="p-6 space-y-6">
+    <form action="{{if .PaymentMethod.ID}}/payment_methods/{{.PaymentMethod.ID}}/edit{{else}}/payment_methods/new{{end}}" method="POST" class="p-6 space-y-6" hx-post="{{if .PaymentMethod.ID}}/payment_methods/{{.PaymentMethod.ID}}/edit{{else}}/payment_methods/new{{end}}" hx-target="body" hx-swap="outerHTML">
         
         <div>
             <label for="name" class="block text-base font-medium leading-6 text-gray-900">Nombre</label>

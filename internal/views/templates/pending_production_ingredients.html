@@ -1,0 +1,49 @@
+{{define "content"}}
+<div class="container mx-auto p-4">
+    <div class="flex items-center gap-4 mb-4">
+        <a href="/" class="text-gray-500 hover:text-gray-700">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+            </svg>
+        </a>
+        <h1 class="text-2xl font-bold text-gray-800">Ingredientes Totales para Producción Pendiente</h1>
+    </div>
+
+    <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+        {{if .AggregatedIngredients}}
+            <h2 class="text-xl font-semibold mb-3">Resumen de Ingredientes:</h2>
+            <ul class="list-disc list-inside space-y-1">
+                {{range $ingredientName, $quantity := .AggregatedIngredients}}
+                    <li>{{printf "%.2f" $quantity}} {{index $.IngredientUnits $ingredientName}} de {{$ingredientName}}</li>
+                {{end}}
+            </ul>
+        {{else}}
+            <p class="text-gray-600">No hay producción pendiente o no se encontraron ingredientes.</p>
+        {{end}}
+    </div>
+
+    {{if .Requirements}}
+    <div class="bg-white shadow-md rounded-lg p-6">
+        <h2 class="text-xl font-semibold mb-3">Detalle de Producción Pendiente:</h2>
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead>
+                    <tr>
+                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
+                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad Requerida</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {{range .Requirements}}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{{.ProductName}}</td>
+                        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{{.Quantity}}</td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    {{end}}
+</div>
+{{end}}

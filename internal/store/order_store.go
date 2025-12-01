@@ -17,6 +17,12 @@ const (
 	OrderDelivered OrderState = "delivered"
 )
 
+type ProductionRequirement struct {
+	ProductID   int64  `json:"product_id"`
+	ProductName string `json:"product_name"`
+	Quantity    int    `json:"quantity"`
+}
+
 type Money = string
 
 type Order struct {
@@ -46,6 +52,7 @@ type OrderStore interface {
 	GetOrderByID(id int64) (*Order, error)
 	ListOrders(f OrderFilter) ([]*Order, error)
 	GetStats(start, end time.Time) (*DailyOrderStats, error)
+	GetPendingProductionRequirements() ([]*ProductionRequirement, error)
 }
 
 type DailyOrderStats struct {
@@ -242,4 +249,34 @@ func (s *PostgresOrderStore) ListOrders(f OrderFilter) ([]*Order, error) {
 		out = append(out, o)
 	}
 	return out, rows.Err()
+}
+
+func (s *PostgresOrderStore) GetPendingProductionRequirements() ([]*ProductionRequirement, error) {
+	const q = `
+		SELECT 
+			p.id, 
+			p.name, 
+			SUM(op.quantity) as total_quantity
+		FROM order_products op
+		JOIN orders o ON o.id = op.order_id
+		JOIN products p ON p.id = op.product_id
+		WHERE o.state = 'todo'
+		GROUP BY p.id, p.name
+		ORDER BY total_quantity DESC
+	`
+	rows, err := s.db.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var requirements []*ProductionRequirement
+	for rows.Next() {
+		pr := &ProductionRequirement{}
+		if err := rows.Scan(&pr.ProductID, &pr.ProductName, &pr.Quantity); err != nil {
+			return nil, err
+		}
+		requirements = append(requirements, pr)
+	}
+	return requirements, rows.Err()
 }

@@ -16,9 +16,10 @@ type DashboardView struct {
 	OrderStats            *store.DailyOrderStats
 	CombinedTotal         float64
 	CombinedCount         int
-	TopProducts           []*store.TopProduct
-	TopProductsLocal      []*store.TopProduct
-	TopProductsDistrib    []*store.TopProduct
+	TopProducts            []*store.TopProduct
+	TopProductsLocal       []*store.TopProduct
+	TopProductsDistrib     []*store.TopProduct
+	ProductionRequirements []*store.ProductionRequirement
 }
 
 func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
@@ -99,33 +100,37 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		localStats = &store.DailySalesStats{ByMethod: make(map[string]float64)}
 	}
 
-	var orderStats *store.DailyOrderStats
-	var topProducts []*store.TopProduct
-	var topProductsDistrib []*store.TopProduct
+	var orderStats *store.DailyOrderStats = &store.DailyOrderStats{}
+	var topProducts []*store.TopProduct = []*store.TopProduct{}
+	var topProductsDistrib []*store.TopProduct = []*store.TopProduct{}
+	var pendingProduction []*store.ProductionRequirement = []*store.ProductionRequirement{}
 
 	if user.Role == "administrator" {
 		orderStats, err = h.orderStore.GetStats(start, end)
 		if err != nil {
 			h.logger.Error("getting order stats", "error", err)
-			orderStats = &store.DailyOrderStats{}
+			// Assign empty struct if error, already initialized above
 		}
 
 		topProducts, err = h.productStore.GetTopSellingProducts(start, end)
 		if err != nil {
 			h.logger.Error("getting top products", "error", err)
-			topProducts = []*store.TopProduct{}
+			// Assign empty slice if error, already initialized above
 		}
 
 		topProductsDistrib, err = h.productStore.GetTopSellingProductsDistribution(start, end)
 		if err != nil {
 			h.logger.Error("getting top products distribution", "error", err)
-			topProductsDistrib = []*store.TopProduct{}
+			// Assign empty slice if error, already initialized above
+		}
+
+		pendingProduction, err = h.orderStore.GetPendingProductionRequirements()
+		if err != nil {
+			h.logger.Error("getting pending production requirements", "error", err)
+			// Assign empty slice if error, already initialized above
 		}
 	} else {
-		// Initialize empty/zero for employee
-		orderStats = &store.DailyOrderStats{}
-		topProducts = []*store.TopProduct{}
-		topProductsDistrib = []*store.TopProduct{}
+		// No need to initialize if not admin, they are already initialized as empty/zero above.
 	}
 
 	topProductsLocal, err := h.productStore.GetTopSellingProductsLocal(start, end)
@@ -143,15 +148,16 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 	}
 
 	stats := DashboardView{
-		Date:               dateStr,
-		ViewType:           viewType,
-		LocalStats:         localStats,
-		OrderStats:         orderStats,
-		CombinedTotal:      combinedTotal,
-		CombinedCount:      combinedCount,
-		TopProducts:        topProducts,
-		TopProductsLocal:   topProductsLocal,
-		TopProductsDistrib: topProductsDistrib,
+		Date:                   dateStr,
+		ViewType:               viewType,
+		LocalStats:             localStats,
+		OrderStats:             orderStats,
+		CombinedTotal:          combinedTotal,
+		CombinedCount:          combinedCount,
+		TopProducts:            topProducts,
+		TopProductsLocal:       topProductsLocal,
+		TopProductsDistrib:     topProductsDistrib,
+		ProductionRequirements: pendingProduction,
 	}
 
 	data := map[string]any{

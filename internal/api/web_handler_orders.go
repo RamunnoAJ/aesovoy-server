@@ -44,6 +44,12 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 		if t, err := time.Parse("2006-01-02", startDateStr); err == nil {
 			filter.StartDate = &t
 		}
+	} else {
+		// Default to today's start if no start_date is provided
+		now := time.Now()
+		todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
+		filter.StartDate = &todayStart
+		startDateStr = todayStart.Format("2006-01-02")
 	}
 
 	endDateStr := r.URL.Query().Get("end_date")
@@ -53,6 +59,12 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 			t = t.Add(23*time.Hour + 59*time.Minute + 59*time.Second)
 			filter.EndDate = &t
 		}
+	} else {
+		// Default to today's end if no end_date is provided
+		now := time.Now()
+		todayEnd := time.Date(now.Year(), now.Month(), now.Day(), 23, 59, 59, 0, now.Location())
+		filter.EndDate = &todayEnd
+		endDateStr = todayEnd.Format("2006-01-02")
 	}
 
 	orders, err := h.orderStore.ListOrders(filter)

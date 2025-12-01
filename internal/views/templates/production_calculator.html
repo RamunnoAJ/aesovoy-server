@@ -1,0 +1,38 @@
+{{define "content"}}
+<div class="container mx-auto p-4">
+    <h1 class="text-2xl font-bold mb-4">Calculadora de Producción</h1>
+
+    <div class="bg-white shadow-md rounded-lg p-6 mb-8">
+        <form hx-post="/production-calculator" hx-target="#calculation-results" hx-swap="innerHTML" class="space-y-4">
+            <div>
+                <label for="product_id" class="block text-sm font-medium text-gray-700">Producto:</label>
+                <select id="product_id" name="product_id" class="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md">
+                    <option value="">Seleccione un producto</option>
+                    {{range .Products}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                    {{end}}
+                </select>
+            </div>
+            <div>
+                <label for="quantity" class="block text-sm font-medium text-gray-700">Cantidad a Producir:</label>
+                <input type="number" id="quantity" name="quantity" min="1" value="1" required class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm">
+            </div>
+            <button type="submit" class="inline-flex justify-center py-2 px-4 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Calcular
+            </button>
+        </form>
+    </div>
+
+    <div id="calculation-results">
+        {{if .Result}}
+            {{template "production_calculator_results.html" .Result}}
+        {{end}}
+        {{if .Error}}
+            <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+                <strong class="font-bold">Error!</strong>
+                <span class="block sm:inline">{{.Error}}</span>
+            </div>
+        {{end}}
+    </div>
+</div>
+{{end}}

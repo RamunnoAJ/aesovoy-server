@@ -1,0 +1,14 @@
+{{define "production_calculator_results.html"}}
+<div class="bg-white shadow-md rounded-lg p-6">
+    <h2 class="text-xl font-semibold mb-3">Ingredientes Necesarios para {{.RequestedQuantity}} unidades de {{.Product.Name}}</h2>
+    {{if .Ingredients}}
+        <ul class="list-disc list-inside space-y-1">
+            {{range $ingredientName, $quantity := .Ingredients}}
+                <li>{{printf "%.2f" $quantity}} {{index $.IngredientUnits $ingredientName}} de {{$ingredientName}}</li>
+            {{end}}
+        </ul>
+    {{else}}
+        <p>No se encontraron ingredientes para este producto.</p>
+    {{end}}
+</div>
+{{end}}

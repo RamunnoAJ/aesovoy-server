@@ -15,9 +15,12 @@
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <!-- Current Recipe List -->
-        <div class="{{if eq .User.Role "administrator"}}md:col-span-2{{else}}md:col-span-3{{end}} bg-white rounded-lg shadow-lg overflow-hidden">
+        <div id="recipe-list" class="{{if eq .User.Role "administrator"}}md:col-span-2{{else}}md:col-span-3{{end}} bg-white rounded-lg shadow-lg overflow-hidden">
             <div class="p-4 border-b border-gray-200">
                 <h2 class="font-semibold text-gray-700">Ingredientes Actuales</h2>
+                <div id="recipe-list-indicator" class="htmx-indicator">
+                    Cargando...
+                </div>
             </div>
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
@@ -64,7 +67,7 @@
             <div class="p-4 border-b border-gray-200">
                 <h2 class="font-semibold text-gray-700 text-base">Agregar Ingrediente</h2>
             </div>
-            <form action="/products/{{.Product.ID}}/recipe" method="POST" class="p-4 space-y-4">
+            <form action="/products/{{.Product.ID}}/recipe" method="POST" class="p-4 space-y-4" hx-post="/products/{{.Product.ID}}/recipe" hx-target="#recipe-list" hx-swap="outerHTML" hx-indicator="#recipe-list-indicator">
                 <div>
                     <label for="ingredient_id" class="block text-base font-medium text-gray-700">Ingrediente</label>
                     <select id="ingredient_id" name="ingredient_id" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-base">

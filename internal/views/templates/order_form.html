@@ -4,7 +4,7 @@
         <h1 class="text-2xl font-bold text-gray-800">Nueva Orden</h1>
     </div>
     
-    <form action="/orders/new" method="POST" class="p-6 space-y-6" x-data="orderForm()">
+    <form action="/orders/new" method="POST" class="p-6 space-y-6" x-data="orderForm()" hx-post="/orders/new" hx-target="body" hx-swap="outerHTML">
         
         <!-- Client Selection -->
         <div>

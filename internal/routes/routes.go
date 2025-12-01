@@ -202,6 +202,17 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/local-sales/new", app.WebHandler.HandleCreateLocalSaleView)
 		r.Post("/local-sales/new", app.WebHandler.HandleCreateLocalSale)
 		r.Get("/local-sales/{id}", app.WebHandler.HandleGetLocalSaleView)
+
+		// Production Calculator (Employee and Admin)
+		r.Get("/production-calculator", app.WebHandler.HandleShowProductionCalculator)
+		r.Post("/production-calculator", app.WebHandler.HandleCalculateProduction)
+
+		// Pending Production Ingredients (Admin Only)
+		r.Group(func(r chi.Router) {
+			r.Use(app.Middleware.RequireAdmin)
+			r.Get("/pending-production-ingredients", app.WebHandler.HandleShowPendingProductionIngredients)
+		})
+
 	})
 
 	r.Post("/users", app.UserHandler.HandleRegisterUser)
