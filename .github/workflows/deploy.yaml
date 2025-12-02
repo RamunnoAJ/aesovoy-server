@@ -30,7 +30,7 @@ jobs:
           --health-retries=5
 
     env:
-      DB_HOST: postgres        # nombre del service
+      DB_HOST: 127.0.0.1        # nombre del service
       DB_NAME: test_db
       DB_USER: postgres
       DB_PASSWORD: postgres
