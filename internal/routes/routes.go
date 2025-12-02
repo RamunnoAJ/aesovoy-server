@@ -1,12 +1,15 @@
 package routes
 
 import (
+	"time"
+
 	"github.com/RamunnoAJ/aesovoy-server/internal/app"
 	mymw "github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	_ "github.com/RamunnoAJ/aesovoy-server/swagger"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
+	"github.com/go-chi/httprate"
 	httpSwagger "github.com/swaggo/http-swagger"
 )
 
@@ -27,7 +30,14 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		MaxAge:           300,
 	}))
 
-	r.Group(func(r chi.Router) {
+	// Global Rate Limiter: 100 requests per minute per IP
+	r.Use(httprate.Limit(
+		100,
+		1*time.Minute,
+		httprate.WithKeyFuncs(httprate.KeyByIP),
+	))
+
+	r.Route("/api/v1", func(r chi.Router) {
 		r.Use(app.Middleware.Authenticate)
 		r.Use(app.Middleware.RequireUser)
 
@@ -45,7 +55,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 			r.Get("/{id}", app.LocalSaleHandler.HandleGetLocalSale)
 		})
 
-		// Admin Only
+		// Admin Only API
 		r.Group(func(r chi.Router) {
 			r.Use(app.Middleware.RequireAdmin)
 
@@ -99,12 +109,6 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 				r.Patch("/{id}/state", app.OrderHandler.HandleUpdateOrderState)
 			})
 
-			r.Route("/invoices", func(r chi.Router) {
-				r.Get("/", app.InvoiceHandler.List)
-				r.Get("/download/{filename}", app.InvoiceHandler.Download)
-				r.Delete("/{filename}", app.InvoiceHandler.Delete)
-			})
-
 			r.Route("/payment_methods", func(r chi.Router) {
 				r.Get("/", app.PaymentMethodHandler.HandleGetPaymentMethods)
 				r.Get("/{id}", app.PaymentMethodHandler.HandleGetPaymentMethodByID)
@@ -112,9 +116,9 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 				r.Delete("/{id}", app.PaymentMethodHandler.HandleDeletePaymentMethod)
 			})
 
-			// Web Users Management
-			r.Get("/users", app.WebHandler.HandleListUsers)
-			r.Patch("/users/{id}/toggle-status", app.WebHandler.HandleToggleUserStatus)
+			// API Tokens
+			r.Post("/users", app.UserHandler.HandleRegisterUser)
+			r.Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)
 		})
 	})
 
@@ -123,7 +127,12 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 
 	// Public Web Views
 	r.Get("/login", app.WebHandler.HandleShowLogin)
-	r.Post("/login", app.WebHandler.HandleWebLogin)
+	r.With(httprate.Limit(
+		10,
+		1*time.Minute,
+		httprate.WithKeyFuncs(httprate.KeyByIP),
+	)).Post("/login", app.WebHandler.HandleWebLogin)
+
 	r.Get("/forgot-password", app.WebHandler.HandleShowForgotPassword)
 	r.Post("/forgot-password", app.WebHandler.HandleSendPasswordResetEmail)
 	r.Get("/reset-password", app.WebHandler.HandleShowResetPassword)
@@ -137,6 +146,20 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/", app.WebHandler.HandleHome)
 		r.Get("/time", app.WebHandler.HandleTime)
 		r.Post("/logout", app.WebHandler.HandleLogout)
+
+		// Invoices (Web View)
+		r.Route("/invoices", func(r chi.Router) {
+			r.Get("/", app.InvoiceHandler.List)
+			r.Get("/download/{filename}", app.InvoiceHandler.Download)
+			r.Delete("/{filename}", app.InvoiceHandler.Delete)
+		})
+
+		// Web Users Management (Admin)
+		r.Group(func(r chi.Router) {
+			r.Use(app.Middleware.RequireAdmin)
+			r.Get("/users", app.WebHandler.HandleListUsers)
+			r.Patch("/users/{id}/toggle-status", app.WebHandler.HandleToggleUserStatus)
+		})
 
 		// Products
 		r.Get("/products", app.WebHandler.HandleListProducts)
@@ -221,7 +244,5 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 
 	})
 
-	r.Post("/users", app.UserHandler.HandleRegisterUser)
-	r.Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)
 	return r
 }

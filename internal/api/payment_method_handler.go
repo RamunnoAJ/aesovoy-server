@@ -46,7 +46,7 @@ func (h *PaymentMethodHandler) validateRequest(req *registerPaymentMethodRequest
 // @Failure      400   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /payment_methods [post]
+// @Router       /api/v1/payment_methods [post]
 func (h *PaymentMethodHandler) HandleCreatePaymentMethod(w http.ResponseWriter, r *http.Request) {
 	var req registerPaymentMethodRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -88,7 +88,7 @@ func (h *PaymentMethodHandler) HandleCreatePaymentMethod(w http.ResponseWriter, 
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /payment_methods/{id} [get]
+// @Router       /api/v1/payment_methods/{id} [get]
 func (h *PaymentMethodHandler) HandleGetPaymentMethodByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -118,7 +118,7 @@ func (h *PaymentMethodHandler) HandleGetPaymentMethodByID(w http.ResponseWriter,
 // @Success      200  {object}  PaymentMethodsResponse
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /payment_methods [get]
+// @Router       /api/v1/payment_methods [get]
 func (h *PaymentMethodHandler) HandleGetPaymentMethods(w http.ResponseWriter, r *http.Request) {
 	pms, err := h.store.GetAllPaymentMethods()
 	if err != nil {
@@ -140,7 +140,7 @@ func (h *PaymentMethodHandler) HandleGetPaymentMethods(w http.ResponseWriter, r 
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /payment_methods/{id} [delete]
+// @Router       /api/v1/payment_methods/{id} [delete]
 func (h *PaymentMethodHandler) HandleDeletePaymentMethod(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {

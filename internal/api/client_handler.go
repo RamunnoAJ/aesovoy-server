@@ -70,7 +70,7 @@ func (h *ClientHandler) validateRegisterRequest(req *registerClientRequest) erro
 // @Failure      400   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /clients [post]
+// @Router       /api/v1/clients [post]
 func (h *ClientHandler) HandleRegisterClient(w http.ResponseWriter, r *http.Request) {
 	var req registerClientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -115,7 +115,7 @@ func (h *ClientHandler) HandleRegisterClient(w http.ResponseWriter, r *http.Requ
 // @Failure      404   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /clients/{id} [patch]
+// @Router       /api/v1/clients/{id} [patch]
 func (h *ClientHandler) HandleUpdateClient(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -191,7 +191,7 @@ func (h *ClientHandler) HandleUpdateClient(w http.ResponseWriter, r *http.Reques
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /clients/{id} [get]
+// @Router       /api/v1/clients/{id} [get]
 func (h *ClientHandler) HandleGetClientByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -223,7 +223,7 @@ func (h *ClientHandler) HandleGetClientByID(w http.ResponseWriter, r *http.Reque
 // @Success      200    {object}  ClientsResponse
 // @Failure      500    {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /clients [get]
+// @Router       /api/v1/clients [get]
 func (h *ClientHandler) HandleGetClients(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	limit := parseIntDefault(r.URL.Query().Get("limit"), 50)

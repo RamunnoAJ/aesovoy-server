@@ -224,7 +224,7 @@ definitions:
     type: object
   api.registerPaymentMethodRequest:
     properties:
-      owner:
+      name:
         type: string
       reference:
         type: string
@@ -263,6 +263,8 @@ definitions:
         type: string
       password:
         type: string
+      role:
+        type: string
       username:
         type: string
     type: object
@@ -276,6 +278,8 @@ definitions:
   store.Category:
     properties:
       created_at:
+        type: string
+      deleted_at:
         type: string
       description:
         type: string
@@ -291,6 +295,8 @@ definitions:
       created_at:
         type: string
       cuit:
+        type: string
+      deleted_at:
         type: string
       email:
         type: string
@@ -317,6 +323,8 @@ definitions:
     properties:
       created_at:
         type: string
+      deleted_at:
+        type: string
       id:
         type: integer
       name:
@@ -327,6 +335,8 @@ definitions:
   store.LocalSale:
     properties:
       created_at:
+        type: string
+      deleted_at:
         type: string
       id:
         type: integer
@@ -375,9 +385,13 @@ definitions:
     properties:
       client_id:
         type: integer
+      client_name:
+        type: string
       created_at:
         type: string
       date:
+        type: string
+      deleted_at:
         type: string
       id:
         type: integer
@@ -402,6 +416,8 @@ definitions:
         type: string
       product_id:
         type: integer
+      product_name:
+        type: string
       quantity:
         type: integer
     type: object
@@ -421,9 +437,11 @@ definitions:
     properties:
       created_at:
         type: string
+      deleted_at:
+        type: string
       id:
         type: integer
-      owner:
+      name:
         type: string
       reference:
         type: string
@@ -437,6 +455,10 @@ definitions:
       category_name:
         type: string
       created_at:
+        type: string
+      current_stock:
+        type: number
+      deleted_at:
         type: string
       description:
         type: string
@@ -478,6 +500,8 @@ definitions:
         type: string
       cuit:
         type: string
+      deleted_at:
+        type: string
       email:
         type: string
       id:
@@ -493,10 +517,16 @@ definitions:
     properties:
       created_at:
         type: string
+      deleted_at:
+        type: string
       email:
         type: string
       id:
         type: integer
+      is_active:
+        type: boolean
+      role:
+        type: string
       username:
         type: string
     type: object
@@ -528,7 +558,7 @@ info:
   title: A Eso Voy API
   version: "1.0"
 paths:
-  /categories:
+  /api/v1/categories:
     get:
       description: Responds with a list of all categories
       produces:
@@ -578,7 +608,7 @@ paths:
       summary: Creates a category
       tags:
       - categories
-  /categories/{id}:
+  /api/v1/categories/{id}:
     delete:
       description: Deletes a category with a given ID
       parameters:
@@ -671,7 +701,7 @@ paths:
       summary: Updates a category
       tags:
       - categories
-  /categories/{id}/products:
+  /api/v1/categories/{id}/products:
     get:
       description: Responds with a list of all products that belong to a given category
       parameters:
@@ -700,7 +730,7 @@ paths:
       summary: Gets all products from a category
       tags:
       - categories
-  /clients:
+  /api/v1/clients:
     get:
       consumes:
       - application/json
@@ -767,7 +797,7 @@ paths:
       summary: Creates a client
       tags:
       - clients
-  /clients/{id}:
+  /api/v1/clients/{id}:
     get:
       description: Responds with a single client with a given ID
       parameters:
@@ -840,7 +870,7 @@ paths:
       summary: Updates a client
       tags:
       - clients
-  /ingredients:
+  /api/v1/ingredients:
     get:
       description: Responds with a list of all ingredients
       produces:
@@ -890,7 +920,7 @@ paths:
       summary: Creates an ingredient
       tags:
       - ingredients
-  /ingredients/{id}:
+  /api/v1/ingredients/{id}:
     delete:
       description: Deletes an ingredient with a given ID
       parameters:
@@ -991,7 +1021,7 @@ paths:
       summary: Updates an ingredient
       tags:
       - ingredients
-  /local_sales:
+  /api/v1/local_sales:
     get:
       description: Responds with a list of all local sales.
       produces:
@@ -1045,7 +1075,7 @@ paths:
       summary: Create a new local sale
       tags:
       - local_sales
-  /local_sales/{id}:
+  /api/v1/local_sales/{id}:
     get:
       description: Retrieves the details of a single local sale by its ID.
       parameters:
@@ -1074,7 +1104,7 @@ paths:
       summary: Get a single local sale
       tags:
       - local_sales
-  /local_stock:
+  /api/v1/local_stock:
     get:
       description: Responds with a list of all local stock records
       produces:
@@ -1133,7 +1163,7 @@ paths:
       summary: Create initial stock for a product
       tags:
       - local_stock
-  /local_stock/{product_id}:
+  /api/v1/local_stock/{product_id}:
     get:
       description: Responds with the local stock quantity for a given product ID
       parameters:
@@ -1162,7 +1192,7 @@ paths:
       summary: Get stock for a single product
       tags:
       - local_stock
-  /local_stock/{product_id}/adjust:
+  /api/v1/local_stock/{product_id}/adjust:
     patch:
       consumes:
       - application/json
@@ -1200,7 +1230,7 @@ paths:
       summary: Adjust stock for a product
       tags:
       - local_stock
-  /orders:
+  /api/v1/orders:
     get:
       description: Responds with a list of orders, with optional filters
       parameters:
@@ -1267,7 +1297,7 @@ paths:
       summary: Creates an order
       tags:
       - orders
-  /orders/{id}:
+  /api/v1/orders/{id}:
     get:
       description: Responds with a single order with a given ID
       parameters:
@@ -1300,7 +1330,7 @@ paths:
       summary: Gets an order
       tags:
       - orders
-  /orders/{id}/state:
+  /api/v1/orders/{id}/state:
     patch:
       consumes:
       - application/json
@@ -1344,7 +1374,7 @@ paths:
       summary: Updates an order's state
       tags:
       - orders
-  /payment_methods:
+  /api/v1/payment_methods:
     get:
       description: Responds with a list of all payment methods
       produces:
@@ -1394,7 +1424,7 @@ paths:
       summary: Creates a payment method
       tags:
       - payment_methods
-  /payment_methods/{id}:
+  /api/v1/payment_methods/{id}:
     delete:
       description: Deletes a payment method with a given ID
       parameters:
@@ -1455,7 +1485,7 @@ paths:
       summary: Gets a payment method
       tags:
       - payment_methods
-  /products:
+  /api/v1/products:
     get:
       description: Responds with a list of all products
       produces:
@@ -1506,7 +1536,7 @@ paths:
       summary: Creates a product
       tags:
       - products
-  /products/{id}:
+  /api/v1/products/{id}:
     delete:
       description: Deletes a product with a given ID
       parameters:
@@ -1607,7 +1637,7 @@ paths:
       summary: Updates a product
       tags:
       - products
-  /products/{productID}/ingredients:
+  /api/v1/products/{productID}/ingredients:
     post:
       consumes:
       - application/json
@@ -1644,7 +1674,7 @@ paths:
       summary: Adds an ingredient to a product
       tags:
       - products
-  /products/{productID}/ingredients/{ingredientID}:
+  /api/v1/products/{productID}/ingredients/{ingredientID}:
     delete:
       description: Removes an ingredient from a product's recipe
       parameters:
@@ -1729,7 +1759,7 @@ paths:
       summary: Updates a product's ingredient
       tags:
       - products
-  /providers:
+  /api/v1/providers:
     get:
       consumes:
       - application/json
@@ -1796,7 +1826,7 @@ paths:
       summary: Creates a provider
       tags:
       - providers
-  /providers/{id}:
+  /api/v1/providers/{id}:
     get:
       description: Responds with a single provider with a given ID
       parameters:
@@ -1869,7 +1899,7 @@ paths:
       summary: Updates a provider
       tags:
       - providers
-  /tokens/authentication:
+  /api/v1/tokens/authentication:
     post:
       consumes:
       - application/json
@@ -1903,7 +1933,7 @@ paths:
       summary: Creates an authentication token
       tags:
       - tokens
-  /users:
+  /api/v1/users:
     post:
       consumes:
       - application/json

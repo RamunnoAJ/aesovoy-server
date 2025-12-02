@@ -65,7 +65,7 @@ func (h *ProductHandler) validateRegisterRequest(req *registerProductRequest) er
 // @Failure      400   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /products [post]
+// @Router       /api/v1/products [post]
 func (h *ProductHandler) HandleRegisterProduct(w http.ResponseWriter, r *http.Request) {
 	var req registerProductRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -111,7 +111,7 @@ func (h *ProductHandler) HandleRegisterProduct(w http.ResponseWriter, r *http.Re
 // @Failure      404   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /products/{id} [patch]
+// @Router       /api/v1/products/{id} [patch]
 func (h *ProductHandler) HandleUpdateProduct(w http.ResponseWriter, r *http.Request) {
 	productID, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -179,7 +179,7 @@ func (h *ProductHandler) HandleUpdateProduct(w http.ResponseWriter, r *http.Requ
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /products/{id} [get]
+// @Router       /api/v1/products/{id} [get]
 func (h *ProductHandler) HandleGetProductByID(w http.ResponseWriter, r *http.Request) {
 	productID, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -210,7 +210,7 @@ func (h *ProductHandler) HandleGetProductByID(w http.ResponseWriter, r *http.Req
 // @Success      200  {object}  ProductsResponse
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /products [get]
+// @Router       /api/v1/products [get]
 func (h *ProductHandler) HandleGetProducts(w http.ResponseWriter, r *http.Request) {
 	prs, err := h.productStore.GetAllProduct()
 	if err != nil {
@@ -231,7 +231,7 @@ func (h *ProductHandler) HandleGetProducts(w http.ResponseWriter, r *http.Reques
 // @Failure      400  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /categories/{id}/products [get]
+// @Router       /api/v1/categories/{id}/products [get]
 func (h *ProductHandler) HandleGetProductsByCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -258,7 +258,7 @@ func (h *ProductHandler) HandleGetProductsByCategory(w http.ResponseWriter, r *h
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /products/{id} [delete]
+// @Router       /api/v1/products/{id} [delete]
 func (h *ProductHandler) HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 	productID, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -298,7 +298,7 @@ type productIngredientRequest struct {
 // @Failure      400        {object}  utils.HTTPError
 // @Failure      500        {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /products/{productID}/ingredients [post]
+// @Router       /api/v1/products/{productID}/ingredients [post]
 func (h *ProductHandler) HandleAddIngredientToProduct(w http.ResponseWriter, r *http.Request) {
 	productID, err := strconv.ParseInt(chi.URLParam(r, "productID"), 10, 64)
 	if err != nil {
@@ -338,7 +338,7 @@ func (h *ProductHandler) HandleAddIngredientToProduct(w http.ResponseWriter, r *
 // @Failure      404           {object}  utils.HTTPError
 // @Failure      500           {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /products/{productID}/ingredients/{ingredientID} [patch]
+// @Router       /api/v1/products/{productID}/ingredients/{ingredientID} [patch]
 func (h *ProductHandler) HandleUpdateProductIngredient(w http.ResponseWriter, r *http.Request) {
 	productID, err := strconv.ParseInt(chi.URLParam(r, "productID"), 10, 64)
 	if err != nil {
@@ -388,7 +388,7 @@ func (h *ProductHandler) HandleUpdateProductIngredient(w http.ResponseWriter, r 
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /products/{productID}/ingredients/{ingredientID} [delete]
+// @Router       /api/v1/products/{productID}/ingredients/{ingredientID} [delete]
 func (h *ProductHandler) HandleRemoveIngredientFromProduct(w http.ResponseWriter, r *http.Request) {
 	productID, err := strconv.ParseInt(chi.URLParam(r, "productID"), 10, 64)
 	if err != nil {

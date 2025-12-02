@@ -47,7 +47,7 @@ func (h *CategoryHandler) validateRegisterRequest(req *registerCategoryRequest) 
 // @Failure      400   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /categories [post]
+// @Router       /api/v1/categories [post]
 func (h *CategoryHandler) HandleRegisterCategory(w http.ResponseWriter, r *http.Request) {
 	var req registerCategoryRequest
 
@@ -91,7 +91,7 @@ func (h *CategoryHandler) HandleRegisterCategory(w http.ResponseWriter, r *http.
 // @Failure      400   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /categories/{id} [patch]
+// @Router       /api/v1/categories/{id} [patch]
 func (h *CategoryHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -145,7 +145,7 @@ func (h *CategoryHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Re
 // @Failure      400  {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /categories/{id} [get]
+// @Router       /api/v1/categories/{id} [get]
 func (h *CategoryHandler) HandleGetCategoryByID(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -172,7 +172,7 @@ func (h *CategoryHandler) HandleGetCategoryByID(w http.ResponseWriter, r *http.R
 // @Success      200  {object}  CategoriesResponse
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /categories [get]
+// @Router       /api/v1/categories [get]
 func (h *CategoryHandler) HandleGetCategories(w http.ResponseWriter, r *http.Request) {
 	categories, err := h.categoryStore.GetAllCategories()
 	if err != nil {
@@ -194,7 +194,7 @@ func (h *CategoryHandler) HandleGetCategories(w http.ResponseWriter, r *http.Req
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /categories/{id} [delete]
+// @Router       /api/v1/categories/{id} [delete]
 func (h *CategoryHandler) HandleDeleteCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := utils.ReadIDParam(r)
 	if err != nil {

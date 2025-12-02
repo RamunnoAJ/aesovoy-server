@@ -45,7 +45,7 @@ func (h *IngredientHandler) validateRequest(req *ingredientRequest) error {
 // @Failure      400   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /ingredients [post]
+// @Router       /api/v1/ingredients [post]
 func (h *IngredientHandler) HandleCreateIngredient(w http.ResponseWriter, r *http.Request) {
 	var req ingredientRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -85,7 +85,7 @@ func (h *IngredientHandler) HandleCreateIngredient(w http.ResponseWriter, r *htt
 // @Failure      404   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /ingredients/{id} [patch]
+// @Router       /api/v1/ingredients/{id} [patch]
 func (h *IngredientHandler) HandleUpdateIngredient(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -138,7 +138,7 @@ func (h *IngredientHandler) HandleUpdateIngredient(w http.ResponseWriter, r *htt
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /ingredients/{id} [get]
+// @Router       /api/v1/ingredients/{id} [get]
 func (h *IngredientHandler) HandleGetIngredientByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -169,7 +169,7 @@ func (h *IngredientHandler) HandleGetIngredientByID(w http.ResponseWriter, r *ht
 // @Success      200  {object}  IngredientsResponse
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /ingredients [get]
+// @Router       /api/v1/ingredients [get]
 func (h *IngredientHandler) HandleGetAllIngredients(w http.ResponseWriter, r *http.Request) {
 	ingredients, err := h.ingredientStore.GetAllIngredients()
 	if err != nil {
@@ -191,7 +191,7 @@ func (h *IngredientHandler) HandleGetAllIngredients(w http.ResponseWriter, r *ht
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /ingredients/{id} [delete]
+// @Router       /api/v1/ingredients/{id} [delete]
 func (h *IngredientHandler) HandleDeleteIngredient(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {

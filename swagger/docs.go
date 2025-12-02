@@ -15,7 +15,7 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
-        "/categories": {
+        "/api/v1/categories": {
             "get": {
                 "security": [
                     {
@@ -95,7 +95,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/categories/{id}": {
+        "/api/v1/categories/{id}": {
             "get": {
                 "security": [
                     {
@@ -241,7 +241,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/categories/{id}/products": {
+        "/api/v1/categories/{id}/products": {
             "get": {
                 "security": [
                     {
@@ -287,7 +287,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/clients": {
+        "/api/v1/clients": {
             "get": {
                 "security": [
                     {
@@ -390,7 +390,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/clients/{id}": {
+        "/api/v1/clients/{id}": {
             "get": {
                 "security": [
                     {
@@ -504,7 +504,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/ingredients": {
+        "/api/v1/ingredients": {
             "get": {
                 "security": [
                     {
@@ -584,7 +584,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/ingredients/{id}": {
+        "/api/v1/ingredients/{id}": {
             "get": {
                 "security": [
                     {
@@ -742,7 +742,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/local_sales": {
+        "/api/v1/local_sales": {
             "get": {
                 "security": [
                     {
@@ -828,7 +828,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/local_sales/{id}": {
+        "/api/v1/local_sales/{id}": {
             "get": {
                 "security": [
                     {
@@ -874,7 +874,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/local_stock": {
+        "/api/v1/local_stock": {
             "get": {
                 "security": [
                     {
@@ -966,7 +966,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/local_stock/{product_id}": {
+        "/api/v1/local_stock/{product_id}": {
             "get": {
                 "security": [
                     {
@@ -1012,7 +1012,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/local_stock/{product_id}/adjust": {
+        "/api/v1/local_stock/{product_id}/adjust": {
             "patch": {
                 "security": [
                     {
@@ -1070,7 +1070,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/orders": {
+        "/api/v1/orders": {
             "get": {
                 "security": [
                     {
@@ -1176,7 +1176,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/orders/{id}": {
+        "/api/v1/orders/{id}": {
             "get": {
                 "security": [
                     {
@@ -1228,7 +1228,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/orders/{id}/state": {
+        "/api/v1/orders/{id}/state": {
             "patch": {
                 "security": [
                     {
@@ -1297,7 +1297,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/payment_methods": {
+        "/api/v1/payment_methods": {
             "get": {
                 "security": [
                     {
@@ -1377,7 +1377,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/payment_methods/{id}": {
+        "/api/v1/payment_methods/{id}": {
             "get": {
                 "security": [
                     {
@@ -1473,7 +1473,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/products": {
+        "/api/v1/products": {
             "get": {
                 "security": [
                     {
@@ -1553,7 +1553,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/products/{id}": {
+        "/api/v1/products/{id}": {
             "get": {
                 "security": [
                     {
@@ -1711,7 +1711,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/products/{productID}/ingredients": {
+        "/api/v1/products/{productID}/ingredients": {
             "post": {
                 "security": [
                     {
@@ -1769,7 +1769,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/products/{productID}/ingredients/{ingredientID}": {
+        "/api/v1/products/{productID}/ingredients/{ingredientID}": {
             "delete": {
                 "security": [
                     {
@@ -1900,7 +1900,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/providers": {
+        "/api/v1/providers": {
             "get": {
                 "security": [
                     {
@@ -2003,7 +2003,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/providers/{id}": {
+        "/api/v1/providers/{id}": {
             "get": {
                 "security": [
                     {
@@ -2117,7 +2117,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/tokens/authentication": {
+        "/api/v1/tokens/authentication": {
             "post": {
                 "description": "Creates a new authentication token for a user",
                 "consumes": [
@@ -2169,7 +2169,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/users": {
+        "/api/v1/users": {
             "post": {
                 "description": "Creates a new user with a username, email, and password",
                 "consumes": [
@@ -2569,7 +2569,7 @@ const docTemplate = `{
         "api.registerPaymentMethodRequest": {
             "type": "object",
             "properties": {
-                "owner": {
+                "name": {
                     "type": "string"
                 },
                 "reference": {
@@ -2629,6 +2629,9 @@ const docTemplate = `{
                 "password": {
                     "type": "string"
                 },
+                "role": {
+                    "type": "string"
+                },
                 "username": {
                     "type": "string"
                 }
@@ -2649,6 +2652,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
                     "type": "string"
                 },
                 "description": {
@@ -2672,6 +2678,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "cuit": {
+                    "type": "string"
+                },
+                "deleted_at": {
                     "type": "string"
                 },
                 "email": {
@@ -2711,6 +2720,9 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "deleted_at": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
@@ -2726,6 +2738,9 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "created_at": {
+                    "type": "string"
+                },
+                "deleted_at": {
                     "type": "string"
                 },
                 "id": {
@@ -2800,10 +2815,16 @@ const docTemplate = `{
                 "client_id": {
                     "type": "integer"
                 },
+                "client_name": {
+                    "type": "string"
+                },
                 "created_at": {
                     "type": "string"
                 },
                 "date": {
+                    "type": "string"
+                },
+                "deleted_at": {
                     "type": "string"
                 },
                 "id": {
@@ -2841,6 +2862,9 @@ const docTemplate = `{
                 "product_id": {
                     "type": "integer"
                 },
+                "product_name": {
+                    "type": "string"
+                },
                 "quantity": {
                     "type": "integer"
                 }
@@ -2867,10 +2891,13 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "deleted_at": {
+                    "type": "string"
+                },
                 "id": {
                     "type": "integer"
                 },
-                "owner": {
+                "name": {
                     "type": "string"
                 },
                 "reference": {
@@ -2891,6 +2918,12 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "created_at": {
+                    "type": "string"
+                },
+                "current_stock": {
+                    "type": "number"
+                },
+                "deleted_at": {
                     "type": "string"
                 },
                 "description": {
@@ -2954,6 +2987,9 @@ const docTemplate = `{
                 "cuit": {
                     "type": "string"
                 },
+                "deleted_at": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
@@ -2977,11 +3013,20 @@ const docTemplate = `{
                 "created_at": {
                     "type": "string"
                 },
+                "deleted_at": {
+                    "type": "string"
+                },
                 "email": {
                     "type": "string"
                 },
                 "id": {
                     "type": "integer"
+                },
+                "is_active": {
+                    "type": "boolean"
+                },
+                "role": {
+                    "type": "string"
                 },
                 "username": {
                     "type": "string"

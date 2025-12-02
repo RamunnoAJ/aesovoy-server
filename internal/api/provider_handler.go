@@ -57,7 +57,7 @@ func (h *ProviderHandler) validateRegister(req *registerProviderRequest) error {
 // @Failure      400   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /providers [post]
+// @Router       /api/v1/providers [post]
 func (h *ProviderHandler) HandleRegisterProvider(w http.ResponseWriter, r *http.Request) {
 	var req registerProviderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -97,7 +97,7 @@ func (h *ProviderHandler) HandleRegisterProvider(w http.ResponseWriter, r *http.
 // @Failure      404   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /providers/{id} [patch]
+// @Router       /api/v1/providers/{id} [patch]
 func (h *ProviderHandler) HandleUpdateProvider(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -164,7 +164,7 @@ func (h *ProviderHandler) HandleUpdateProvider(w http.ResponseWriter, r *http.Re
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /providers/{id} [get]
+// @Router       /api/v1/providers/{id} [get]
 func (h *ProviderHandler) HandleGetProviderByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -196,7 +196,7 @@ func (h *ProviderHandler) HandleGetProviderByID(w http.ResponseWriter, r *http.R
 // @Success      200    {object}  ProvidersResponse
 // @Failure      500    {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /providers [get]
+// @Router       /api/v1/providers [get]
 func (h *ProviderHandler) HandleGetProviders(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	limit := parseIntDefault(r.URL.Query().Get("limit"), 50)

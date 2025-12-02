@@ -41,7 +41,7 @@ func NewTokenHandler(tokenStore store.TokenStore, userStore store.UserStore, log
 // @Failure      400   {object}  utils.HTTPError
 // @Failure      401   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
-// @Router       /tokens/authentication [post]
+// @Router       /api/v1/tokens/authentication [post]
 func (h *TokenHandler) HandleCreateToken(w http.ResponseWriter, r *http.Request) {
 	var req createTokenRequest
 	err := json.NewDecoder(r.Body).Decode(&req)

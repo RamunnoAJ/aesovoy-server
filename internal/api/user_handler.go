@@ -77,7 +77,7 @@ func (h *UserHandler) validateRegisterRequest(req *registerUserRequest) error {
 // @Success      201   {object}  UserResponse
 // @Failure      400   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
-// @Router       /users [post]
+// @Router       /api/v1/users [post]
 func (h *UserHandler) HandleRegisterUser(w http.ResponseWriter, r *http.Request) {
 	var req registerUserRequest
 

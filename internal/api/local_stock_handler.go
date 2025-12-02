@@ -46,7 +46,7 @@ func NewLocalStockHandler(s *services.LocalStockService, l *slog.Logger) *LocalS
 // @Failure      404  {object}  utils.HTTPError "Stock record not found"
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /local_stock/{product_id} [get]
+// @Router       /api/v1/local_stock/{product_id} [get]
 func (h *LocalStockHandler) HandleGetLocalStock(w http.ResponseWriter, r *http.Request) {
 	productID, err := strconv.ParseInt(chi.URLParam(r, "product_id"), 10, 64)
 	if err != nil {
@@ -77,7 +77,7 @@ func (h *LocalStockHandler) HandleGetLocalStock(w http.ResponseWriter, r *http.R
 // @Success      200  {object}  LocalStocksResponse
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /local_stock [get]
+// @Router       /api/v1/local_stock [get]
 func (h *LocalStockHandler) HandleListLocalStock(w http.ResponseWriter, r *http.Request) {
 	stocks, err := h.service.ListStock()
 	if err != nil {
@@ -102,7 +102,7 @@ func (h *LocalStockHandler) HandleListLocalStock(w http.ResponseWriter, r *http.
 // @Failure      409   {object}  utils.HTTPError "Stock record already exists"
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /local_stock [post]
+// @Router       /api/v1/local_stock [post]
 func (h *LocalStockHandler) HandleCreateInitialStock(w http.ResponseWriter, r *http.Request) {
 	var req CreateInitialStockRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -141,7 +141,7 @@ func (h *LocalStockHandler) HandleCreateInitialStock(w http.ResponseWriter, r *h
 // @Failure      400          {object}  utils.HTTPError "Invalid input or insufficient stock"
 // @Failure      500          {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /local_stock/{product_id}/adjust [patch]
+// @Router       /api/v1/local_stock/{product_id}/adjust [patch]
 func (h *LocalStockHandler) HandleAdjustStock(w http.ResponseWriter, r *http.Request) {
 	productID, err := strconv.ParseInt(chi.URLParam(r, "product_id"), 10, 64)
 	if err != nil {

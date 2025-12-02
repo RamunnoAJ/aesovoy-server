@@ -38,7 +38,7 @@ func NewLocalSaleHandler(s *services.LocalSaleService, l *slog.Logger) *LocalSal
 // @Failure      404   {object}  utils.HTTPError "Resource not found (e.g., product, payment method)"
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /local_sales [post]
+// @Router       /api/v1/local_sales [post]
 func (h *LocalSaleHandler) HandleCreateLocalSale(w http.ResponseWriter, r *http.Request) {
 	var req services.CreateLocalSaleRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -75,7 +75,7 @@ func (h *LocalSaleHandler) HandleCreateLocalSale(w http.ResponseWriter, r *http.
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /local_sales/{id} [get]
+// @Router       /api/v1/local_sales/{id} [get]
 func (h *LocalSaleHandler) HandleGetLocalSale(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
@@ -103,7 +103,7 @@ func (h *LocalSaleHandler) HandleGetLocalSale(w http.ResponseWriter, r *http.Req
 // @Success      200  {object}  LocalSalesResponse
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /local_sales [get]
+// @Router       /api/v1/local_sales [get]
 func (h *LocalSaleHandler) HandleListLocalSales(w http.ResponseWriter, r *http.Request) {
 	sales, err := h.service.ListSales()
 	if err != nil {

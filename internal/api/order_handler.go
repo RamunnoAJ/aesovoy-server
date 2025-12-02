@@ -69,7 +69,7 @@ func (h *OrderHandler) validateCreate(req *RegisterOrderRequest) []utils.FieldEr
 // @Failure      400   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /orders [post]
+// @Router       /api/v1/orders [post]
 func (h *OrderHandler) HandleRegisterOrder(w http.ResponseWriter, r *http.Request) {
 	var req RegisterOrderRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -142,7 +142,7 @@ func (h *OrderHandler) HandleRegisterOrder(w http.ResponseWriter, r *http.Reques
 // @Failure      404   {object}  utils.HTTPError
 // @Failure      500   {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /orders/{id}/state [patch]
+// @Router       /api/v1/orders/{id}/state [patch]
 func (h *OrderHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -183,7 +183,7 @@ func (h *OrderHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Req
 // @Failure      404  {object}  utils.HTTPError
 // @Failure      500  {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /orders/{id} [get]
+// @Router       /api/v1/orders/{id} [get]
 func (h *OrderHandler) HandleGetOrderByID(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
@@ -214,7 +214,7 @@ func (h *OrderHandler) HandleGetOrderByID(w http.ResponseWriter, r *http.Request
 // @Success      200        {object}  OrdersResponse
 // @Failure      500        {object}  utils.HTTPError
 // @Security     BearerAuth
-// @Router       /orders [get]
+// @Router       /api/v1/orders [get]
 func (h *OrderHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 	var (
 		clientID *int64
