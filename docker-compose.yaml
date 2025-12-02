@@ -3,7 +3,7 @@ services:
     container_name: "aesovoy_db"
     image: postgres:12.4-alpine
     volumes:
-      - "./database/postgres-data:/var/lib/postgresql/data:rw"
+      - postgres_data:/var/lib/postgresql/data
     ports:
       - "5432:5432"
     environment:
@@ -16,7 +16,7 @@ services:
     container_name: "aesovoy_db_test"
     image: postgres:12.4-alpine
     volumes:
-      - "./database/postgres-test-data:/var/lib/postgresql/data:rw"
+      - postgres_test_data:/var/lib/postgresql/data
     ports:
       - "5433:5432"
     environment:
@@ -40,3 +40,7 @@ services:
       LOG_FILE: "${LOG_FILE}"
     ports:
       - "8080:8080"
+
+volumes:
+  postgres_data:
+  postgres_test_data:
