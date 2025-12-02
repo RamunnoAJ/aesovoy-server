@@ -1,6 +1,8 @@
 # Reemplaza 'localhost' con tu dominio (ej. mi-negocio.com) para HTTPS automático.
 # Si solo usas IP, pon la IP o ':80'.
 
-:80 {
+aesovoy.com, www.aesovoy.com {
+	encode gzip
+
     reverse_proxy api:8080
 }
