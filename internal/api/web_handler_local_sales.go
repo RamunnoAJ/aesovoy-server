@@ -9,7 +9,7 @@ import (
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/services"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 )
 
 func (h *WebHandler) HandleListLocalSales(w http.ResponseWriter, r *http.Request) {

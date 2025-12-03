@@ -6,7 +6,7 @@ import (
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 )
 
 // --- Providers ---
@@ -40,7 +40,7 @@ func (h *WebHandler) HandleListProviders(w http.ResponseWriter, r *http.Request)
 		"User":      user,
 		"Providers": providers,
 		"Query":     q,
-		"Page":     page,
+		"Page":      page,
 		"HasNext":   hasNext,
 		"PrevPage":  page - 1,
 		"NextPage":  page + 1,

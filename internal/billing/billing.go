@@ -14,7 +14,7 @@ import (
 	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
-	"github.com/xuri/excelize/v2"
+	excelize "github.com/xuri/excelize/v2"
 	_ "golang.org/x/image/webp"
 )
 

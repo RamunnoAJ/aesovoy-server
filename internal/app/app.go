@@ -15,7 +15,7 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 	"github.com/RamunnoAJ/aesovoy-server/internal/views"
 	"github.com/RamunnoAJ/aesovoy-server/migrations"
-	"gopkg.in/natefinch/lumberjack.v2"
+	lumberjack "gopkg.in/natefinch/lumberjack.v2"
 )
 
 type Application struct {

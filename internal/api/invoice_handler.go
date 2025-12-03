@@ -8,7 +8,7 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/billing"
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/views"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 )
 
 type InvoiceHandler struct {
@@ -46,7 +46,7 @@ func (h *InvoiceHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	data := struct {
 		Invoices    []billing.InvoiceFile
-		User        interface{}
+		User        any
 		CurrentPage int
 		TotalPages  int
 		CurrentDate string

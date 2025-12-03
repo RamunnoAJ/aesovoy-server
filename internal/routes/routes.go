@@ -6,7 +6,7 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/app"
 	mymw "github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	_ "github.com/RamunnoAJ/aesovoy-server/swagger"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/cors"
 	"github.com/go-chi/httprate"

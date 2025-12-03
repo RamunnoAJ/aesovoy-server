@@ -8,7 +8,7 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/billing"
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 )
 
 // --- Orders ---
@@ -81,16 +81,16 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]any{
-		"User":       user,
-		"Orders":     orders,
-		"Page":       page,
-		"HasNext":    hasNext,
-		"PrevPage":   page - 1,
-		"NextPage":   page + 1,
-		"State":      stateStr,
-		"Q":          q,
-		"StartDate":  startDateStr,
-		"EndDate":    endDateStr,
+		"User":      user,
+		"Orders":    orders,
+		"Page":      page,
+		"HasNext":   hasNext,
+		"PrevPage":  page - 1,
+		"NextPage":  page + 1,
+		"State":     stateStr,
+		"Q":         q,
+		"StartDate": startDateStr,
+		"EndDate":   endDateStr,
 	}
 
 	if err := h.renderer.Render(w, "orders_list.html", data); err != nil {

@@ -5,7 +5,7 @@ import (
 	"strconv"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 )
 
 // --- Users Management (Admin) ---

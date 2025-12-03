@@ -9,13 +9,13 @@ import (
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/services"
 	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
-	"github.com/go-chi/chi/v5"
+	chi "github.com/go-chi/chi/v5"
 )
 
 // --- DTOs for Requests ---
 
 type CreateInitialStockRequest struct {
-	ProductID      int64 `json:"product_id"`
+	ProductID       int64 `json:"product_id"`
 	InitialQuantity int   `json:"initial_quantity"`
 }
 
@@ -161,7 +161,7 @@ func (h *LocalStockHandler) HandleAdjustStock(w http.ResponseWriter, r *http.Req
 		case errors.Is(err, services.ErrInsufficientStock):
 			utils.Error(w, http.StatusBadRequest, err.Error())
 		case errors.Is(err, services.ErrStockRecordNotFound):
-             // This case may not be hit if the service auto-creates the record.
+			// This case may not be hit if the service auto-creates the record.
 			utils.Error(w, http.StatusNotFound, err.Error())
 		default:
 			h.logger.Error("adjusting stock", "error", err)
