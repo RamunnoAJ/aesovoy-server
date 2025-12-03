@@ -30,7 +30,8 @@ jobs:
           --health-retries=5
 
     env:
-      DB_HOST: 127.0.0.1        # nombre del service
+      DB_HOST: 127.0.0.1
+      DB_PORT: 5432
       DB_NAME: test_db
       DB_USER: postgres
       DB_PASSWORD: postgres
@@ -56,6 +57,7 @@ jobs:
           key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
           restore-keys: |
             ${{ runner.os }}-go-
+
       - name: Install netcat
         run: |
           if command -v nc >/dev/null 2>&1; then
@@ -74,12 +76,18 @@ jobs:
       - name: Wait for Postgres
         run: |
           for i in {1..20}; do
-            nc -z "$DB_HOST" 5432 && echo "Postgres is up" && exit 0
-            echo "Waiting for Postgres..."
+            nc -z "$DB_HOST" "$DB_PORT" && echo "Postgres is up" && exit 0
+            echo "Waiting for Postgres on $DB_HOST:$DB_PORT..."
             sleep 3
           done
           echo "Postgres did not become ready in time" >&2
           exit 1
+
+      - name: Run DB migrations
+        run: |
+          go install github.com/pressly/goose/v3/cmd/goose@latest
+          goose -dir ./migrations \
+            postgres "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}?sslmode=disable" up
 
       - name: Run tests
         run: go test ./internal/store ./internal/services ./internal/billing
@@ -111,9 +119,9 @@ jobs:
         uses: appleboy/ssh-action@v1.2.0
         with:
           host: ${{ secrets.VPS_HOST }}
-          username: ${{ secrets.VPS_USER }}      # por ejemplo "root"
-          key: ${{ secrets.VPS_SSH_KEY }}        # tu clave privada
-          port: ${{ secrets.VPS_PORT }}          # ej. 22 o el que uses
+          username: ${{ secrets.VPS_USER }}
+          key: ${{ secrets.VPS_SSH_KEY }}
+          port: ${{ secrets.VPS_PORT }}
           script: |
             cd /aesovoy
             git fetch origin
