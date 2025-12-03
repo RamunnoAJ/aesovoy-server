@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sync"
 	"testing"
 	"time"
 
@@ -13,6 +14,11 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
 	_ "golang.org/x/image/webp"
+)
+
+var (
+	once sync.Once
+	db   *sql.DB
 )
 
 func setupTestDB(t *testing.T) *sql.DB {
@@ -28,10 +34,15 @@ func setupTestDB(t *testing.T) *sql.DB {
 		host, user, pass, name, port,
 	)
 
-	db, err := sql.Open("pgx", dsn)
+	var err error
+	once.Do(func() {
+		db, err = sql.Open("pgx", dsn)
+		require.NoError(t, err)
+
+		require.NoError(t, store.Migrate(db, "../../migrations/"))
+	})
 	require.NoError(t, err)
 
-	require.NoError(t, store.Migrate(db, "../../migrations/"))
 	_, err = db.Exec(`TRUNCATE order_products, orders, product_ingredients, products, categories, providers, clients, tokens, users, ingredients, payment_methods, local_stock, local_sales, local_sale_items RESTART IDENTITY CASCADE`)
 	require.NoError(t, err)
 	return db
