@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 
@@ -113,4 +114,11 @@ func Tern(cond bool, a, b string) string {
 		return a
 	}
 	return b
+}
+
+func Getenv(key, def string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return def
 }

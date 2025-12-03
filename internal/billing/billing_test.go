@@ -9,27 +9,31 @@ import (
 	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/stretchr/testify/require"
 	_ "golang.org/x/image/webp"
 )
 
-// setupTestDB is a helper function to set up a test database.
-// It connects to the database, runs migrations, and truncates tables.
 func setupTestDB(t *testing.T) *sql.DB {
 	t.Helper()
-	// IMPORTANT: Ensure this connection string points to your TEST database.
-	db, err := sql.Open("pgx", "host=localhost user=postgres password=postgres dbname=postgres port=5433 sslmode=disable")
+	host := utils.Getenv("DB_TEST_HOST", "localhost")
+	port := utils.Getenv("DB_TEST_PORT", "5433")
+	name := utils.Getenv("DB_TEST_NAME", "test_db")
+	user := utils.Getenv("DB_TEST_USER", "postgres")
+	pass := utils.Getenv("DB_TEST_PASSWORD", "postgres")
+
+	dsn := fmt.Sprintf(
+		"host=%s user=%s password=%s dbname=%s port=%s sslmode=disable",
+		host, user, pass, name, port,
+	)
+
+	db, err := sql.Open("pgx", dsn)
 	require.NoError(t, err)
 
-	// Run migrations
-	err = store.Migrate(db, "../../migrations/")
+	require.NoError(t, store.Migrate(db, "../../migrations/"))
+	_, err = db.Exec(`TRUNCATE order_products, orders, product_ingredients, products, categories, providers, clients, tokens, users, ingredients, payment_methods, local_stock, local_sales, local_sale_items RESTART IDENTITY CASCADE`)
 	require.NoError(t, err)
-
-	// Truncate all tables to ensure a clean state
-	_, err = db.Exec(`TRUNCATE order_products, orders, product_ingredients, products, categories, providers, clients, tokens, users, ingredients, payment_methods, local_stock RESTART IDENTITY CASCADE`)
-	require.NoError(t, err)
-
 	return db
 }
 

@@ -20,9 +20,9 @@ services:
     ports:
       - "5433:5432"
     environment:
-      POSTGRES_DB: "postgres"
-      POSTGRES_USER: "postgres"
-      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: "${DB_TEST_NAME}"
+      POSTGRES_USER: "${DB_TEST_USER}"
+      POSTGRES_PASSWORD: "${DB_TEST_PASSWORD}"
     restart: unless-stopped
 
   api:
