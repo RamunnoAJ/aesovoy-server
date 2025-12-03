@@ -84,7 +84,7 @@ jobs:
           exit 1
 
       - name: Run tests
-        run: go test ./internal/store ./internal/services ./internal/billing
+        run: go test -p 1 ./internal/store ./internal/services ./internal/billing
 
       - name: Run go vet
         run: go vet ./...
