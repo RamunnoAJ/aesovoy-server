@@ -14,7 +14,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 	t.Helper()
 	host := utils.Getenv("DB_TEST_HOST", "localhost")
 	port := utils.Getenv("DB_TEST_PORT", "5433")
-	name := utils.Getenv("DB_TEST_NAME", "postgres")
+	name := utils.Getenv("DB_TEST_NAME", "test_db")
 	user := utils.Getenv("DB_TEST_USER", "postgres")
 	pass := utils.Getenv("DB_TEST_PASSWORD", "postgres")
 
