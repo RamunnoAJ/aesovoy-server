@@ -8,11 +8,11 @@ import (
 )
 
 var (
-	ErrStockRecordExists      = errors.New("Ya existe un stock asignado para este producto")
-	ErrStockRecordNotFound    = errors.New("No se encontró stock para este producto")
-	ErrProductNotFound        = errors.New("Producto no encontrado")
-	ErrInsufficientStock      = errors.New("No hay stock suficiente")
-	ErrInitialQuantityInvalid = errors.New("Cantidad inicial debe ser 0 o mayor")
+	ErrStockRecordExists      = errors.New("ya existe un stock asignado para este producto")
+	ErrStockRecordNotFound    = errors.New("no se encontró stock para este producto")
+	ErrProductNotFound        = errors.New("producto no encontrado")
+	ErrInsufficientStock      = errors.New("no hay stock suficiente")
+	ErrInitialQuantityInvalid = errors.New("cantidad inicial debe ser 0 o mayor")
 )
 
 type LocalStockService struct {
