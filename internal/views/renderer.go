@@ -20,7 +20,7 @@ type Renderer struct {
 func NewRenderer() *Renderer {
 	return &Renderer{
 		funcMap: template.FuncMap{
-			"jsToJson": func(v interface{}) string {
+			"jsToJson": func(v any) string {
 				b, err := json.Marshal(v)
 				if err != nil {
 					return "{}"
@@ -34,7 +34,7 @@ func NewRenderer() *Renderer {
 				}
 				return fmt.Sprintf("%.2f", p*float64(qty))
 			},
-			"formatMoney": func(v interface{}) string {
+			"formatMoney": func(v any) string {
 				var val float64
 				switch i := v.(type) {
 				case float64:
@@ -81,7 +81,7 @@ func NewRenderer() *Renderer {
 				}
 				return prefix + string(result) + "," + decimalPart
 			},
-			"formatQuantity": func(q interface{}, unit string) string {
+			"formatQuantity": func(q any, unit string) string {
 				var val float64
 				switch v := q.(type) {
 				case float64:
@@ -112,31 +112,19 @@ func (r *Renderer) Render(w io.Writer, page string, data any) error {
 }
 
 func (r *Renderer) RenderPartial(w io.Writer, page string, data any) error {
-
 	tmpl, err := template.New(page).Funcs(r.funcMap).ParseFS(fs, "templates/"+page)
-
 	if err != nil {
-
 		return err
-
 	}
 
 	return tmpl.Execute(w, data)
-
 }
 
-
-
 func (r *Renderer) RenderBlock(w io.Writer, page string, blockName string, data any) error {
-
 	tmpl, err := template.New(page).Funcs(r.funcMap).ParseFS(fs, "templates/"+page)
-
 	if err != nil {
-
 		return err
-
 	}
 
 	return tmpl.ExecuteTemplate(w, blockName, data)
-
 }

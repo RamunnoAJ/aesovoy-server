@@ -8,11 +8,17 @@
     <script src="https://unpkg.com/alpinejs@3.13.3/dist/cdn.min.js" defer></script>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body class="bg-gray-100 font-sans leading-normal tracking-normal flex flex-col min-h-screen">
+<body class="bg-gray-100 font-sans leading-normal tracking-normal flex flex-col min-h-screen" x-data="{ mobileMenuOpen: false }">
     {{if .User}}
-    <nav class="bg-blue-600 p-4 text-white z-10 shadow-md">
+    <nav class="bg-blue-600 p-4 text-white z-20 shadow-md relative">
         <div class="container mx-auto flex justify-between items-center">
             <div class="flex items-center gap-4">
+                <button @click="mobileMenuOpen = !mobileMenuOpen" class="md:hidden focus:outline-none hover:text-gray-200">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"></path>
+                    </svg>
+                </button>
+                
                 <a href="/" class="font-bold text-xl">A Eso Voy</a>
             </div>
             <div class="flex items-center gap-4">
@@ -28,11 +34,35 @@
     </nav>
     {{end}}
 
-    <div class="flex flex-1">
+    <div class="flex flex-1 relative overflow-hidden">
         {{if .User}}
-        <aside class="w-64 bg-gray-800 text-white flex-shrink-0 hidden md:block">
-            <div class="p-4">
-                <h2 class="text-xs uppercase text-gray-400 font-semibold mb-4">Menu</h2>
+        <div x-show="mobileMenuOpen" 
+             @click="mobileMenuOpen = false"
+             x-transition:enter="transition-opacity ease-linear duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-linear duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-900 bg-opacity-50 z-20 md:hidden"
+             style="display: none;">
+        </div>
+
+        <aside :class="mobileMenuOpen ? 'translate-x-0' : '-translate-x-full'" 
+               class="fixed inset-y-0 left-0 z-30 w-64 bg-gray-800 text-white transition-transform duration-300 ease-in-out transform md:translate-x-0 md:static md:inset-auto md:flex-shrink-0">
+            
+            <div class="p-4 h-full overflow-y-auto">
+                <div class="flex justify-between items-center mb-4 md:hidden">
+                    <h2 class="text-xs uppercase text-gray-400 font-semibold">Menu</h2>
+                    <button @click="mobileMenuOpen = false" class="text-gray-400 hover:text-white focus:outline-none">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+                
+                <h2 class="text-xs uppercase text-gray-400 font-semibold mb-4 hidden md:block">Menu</h2>
+                
                 <nav class="space-y-2">
                     <a href="/" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Inicio
@@ -85,15 +115,13 @@
         </aside>
         {{end}}
 
-        <main class="flex-1 p-6 overflow-y-auto">
+        <main class="flex-1 p-6 overflow-y-auto w-full">
             {{block "content" .}}{{end}}
         </main>
     </div>
 
-    <!-- Toast Notification -->
     <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2"></div>
 
-    <!-- Confirmation Modal -->
     <div id="confirmation-modal" class="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full hidden z-50 flex items-center justify-center">
         <div class="relative p-5 border w-96 shadow-lg rounded-md bg-white">
             <div class="mt-3 text-center">
