@@ -1,0 +1,14 @@
+# Session Log
+
+## 2025-12-12
+- Verified feature "Can't login with wrong credentials".
+  - Confirmed that logging in with incorrect credentials displays "Credenciales incorrectas".
+  - Verified visually (screenshots were not persisted due to environment limitation).
+- Updated feature_list.json to mark the test as passing.
+- Found uncommitted changes for "Fix User Creation" and committed them.
+- Environment setup:
+  - Database user determined to be "ignacio@aesovoy" (persisted in volume).
+  - Server runs on port 8080.
+- Next steps:
+  - Proceed to the next feature in feature_list.json.
+  - Investigate why puppeteer screenshots are not saving.

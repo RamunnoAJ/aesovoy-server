@@ -1,0 +1,15 @@
+{
+    "keep": {
+        "days": true,
+        "amount": 14
+    },
+    "auditLog": "/home/pop/personal/a-eso-voy/server/logs/.474fd3219002da7ccccd0102181c0923d12ab042-audit.json",
+    "files": [
+        {
+            "date": 1765550952139,
+            "name": "/home/pop/personal/a-eso-voy/server/logs/mcp-puppeteer-2025-12-12.log",
+            "hash": "87b89e0e10cbc5cb47015f5c3a0318add8f818b572a19ba431a175b3b520b46b"
+        }
+    ],
+    "hashType": "sha256"
+}

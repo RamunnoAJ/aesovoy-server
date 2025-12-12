@@ -3,3 +3,8 @@
 database
 logs/*.log
 facturas/*.xlsx
+server.log
+server.pid
+.gemini/
+tmp/
+init.log

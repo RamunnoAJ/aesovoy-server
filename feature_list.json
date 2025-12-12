@@ -1,0 +1,24 @@
+[
+  {
+    "category": "functional",
+    "description": "Fix User Creation: Update internal/views/templates/users_list.html to send POST requests to /api/v1/users instead of /users.",
+    "steps": [
+      "Step 1: Open internal/views/templates/users_list.html",
+      "Step 2: Locate the fetch call in the createUser function",
+      "Step 3: Change the URL from '/users' to '/api/v1/users'",
+      "Step 4: Verify no other 'POST' calls to '/users' exist in the file"
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Can't login with wrong credentials",
+    "steps": [
+      "Step 1: Open the app",
+      "Step 2: Navigate to the login page",
+      "Step 3: Insert incorrect credentials",
+      "Step 4: Take a screenshot of the error shown"
+    ],
+    "passes": true
+  }
+]

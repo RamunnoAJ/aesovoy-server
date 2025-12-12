@@ -1,0 +1,188 @@
+<project_specification>
+  <project_name>A Eso Voy</project_name>
+
+  <overview>
+    A Eso Voy is a production management and point-of-sale system for a food business. 
+    It operates as a monolithic application providing both a JSON API and a Server-Side Rendered (SSR) web interface.
+    The system handles inventory, recipes, production calculation, client/provider management, orders, and local sales.
+  </overview>
+
+  <technology_stack>
+    <frontend>
+      <framework>Server-Side Rendering (Go html/template)</framework>
+      <interactivity>Alpine.js (v3) + HTMX</interactivity>
+      <styling>Tailwind CSS (via CDN)</styling>
+      <build_tool>None (No Node.js build step required)</build_tool>
+    </frontend>
+    <backend>
+      <language>Go 1.24</language>
+      <router>chi v5</router>
+      <database>PostgreSQL 12+</database>
+      <driver>pgx v5 (Raw SQL, No ORM)</driver>
+      <migrations>goose</migrations>
+      <excel_generation>xuri/excelize</excel_generation>
+    </backend>
+    <deployment>
+      <containerization>Docker & Docker Compose</containerization>
+      <target>Linux VPS</target>
+    </deployment>
+  </technology_stack>
+
+  <prerequisites>
+    <environment_setup>
+      - Go 1.24+ installed
+      - Docker & Docker Compose running
+      - .env file configured (see .env.example)
+      - PostgreSQL database initialized
+    </environment_setup>
+    <constraints>
+      - Work strictly within the /home/pop/personal/a-eso-voy/server directory.
+      - Do not introduce complex frontend build tools (webpack/vite).
+      - Maintain Clean Architecture (internal/api, internal/store, internal/services).
+      - Use environment variables for secrets.
+    </constraints>
+  </prerequisites>
+
+  <core_features>
+    <product_management>
+      - CRUD for Products and Categories
+      - Recipe management (ingredients per product)
+      - Pricing (Unit vs Distribution)
+      - Soft deletes for products
+    </product_management>
+
+    <inventory_production>
+      - Ingredient management
+      - Production Calculator (calculate required ingredients for a batch)
+      - Local Stock tracking
+      - Pending production ingredients report
+    </inventory_production>
+
+    <sales_orders>
+      - Client Order management (States: todo, done, cancelled, delivered)
+      - Local Point-of-Sale (Local Sales) with Payment Methods
+      - Invoice/Remito generation (Excel export)
+      - Order status tracking
+    </sales_orders>
+
+    <crm>
+      - Client management with full-text search
+      - Provider management with full-text search
+    </crm>
+
+    <authentication>
+      - Dual Auth: Bearer Token (API) & Session Cookies (Web)
+      - Roles: Administrator, Employee
+      - Password reset flow (Email)
+    </authentication>
+  </core_features>
+
+  <database_schema>
+    <tables>
+      <users>
+        - id, username, email, password_hash
+        - role (admin/employee), is_active
+        - created_at
+      </users>
+      <categories>
+        - id, name, description
+      </categories>
+      <products>
+        - id, category_id, name, description
+        - unit_price, distribution_price
+        - deleted_at
+      </products>
+      <ingredients>
+        - id, name, unit
+      </ingredients>
+      <product_ingredients>
+        - id, product_id, ingredient_id, quantity
+      </product_ingredients>
+      <local_stock>
+        - id, product_id, quantity, updated_at
+      </local_stock>
+      <clients>
+        - id, name, email, phone, address
+        - deleted_at
+      </clients>
+      <orders>
+        - id, client_id, total, date
+        - state (enum: todo, done, cancelled, delivered)
+        - deleted_at
+      </orders>
+      <local_sales>
+        - id, payment_method_id, subtotal, total
+        - deleted_at
+      </local_sales>
+      <local_sale_items>
+        - id, local_sale_id, product_id, quantity
+        - unit_price, line_subtotal
+      </local_sale_items>
+    </tables>
+  </database_schema>
+
+  <api_endpoints_summary>
+    <api_v1 prefix="/api/v1">
+      <auth>
+        - POST /users (Register)
+        - POST /tokens/authentication (Login)
+      </auth>
+      <admin_resources>
+        - /categories, /products, /ingredients
+        - /clients, /providers, /payment_methods
+        - /orders
+      </admin_resources>
+      <local_operations>
+        - /local_stock (List, Adjust)
+        - /local_sales (List, Create)
+      </local_operations>
+    </api_v1>
+
+    <web_views prefix="/">
+      <public>
+        - GET /login, POST /login
+        - Password reset flows
+      </public>
+      <protected>
+        - GET / (Home)
+        - Resources: /products, /categories, /clients, /orders...
+        - Production Calculator
+        - Invoices download
+      </protected>
+    </web_views>
+  </api_endpoints_summary>
+
+  <implementation_steps>
+    <step number="1">
+      <title>Fix Frontend-API Drift</title>
+      <tasks>
+        - Update 'internal/views/templates/users_list.html' to send POST requests to '/api/v1/users'.
+        - Verify other templates for similar deprecated route usage (e.g., checking /products vs /api/v1/products).
+      </tasks>
+    </step>
+    <step number="2">
+      <title>Maintain & Refine</title>
+      <tasks>
+        - Ensure Swagger documentation matches the code.
+        - Run unit tests for store/services to ensure no regressions.
+      </tasks>
+    </step>
+  </implementation_steps>
+
+  <success_criteria>
+    <functionality>
+      - Web interface operates without 404/405 errors for key actions (Create User, etc.).
+      - JSON API remains accessible and documented.
+    </functionality>
+    <code_quality>
+      - Code formatted with gofmt.
+      - No linting errors.
+      - Unit tests pass.
+    </code_quality>
+    <compatibility>
+      - No breakage of existing SSR flows.
+      - Swagger documentation is valid and up-to-date.
+    </compatibility>
+  </success_criteria>
+
+</project_specification>
