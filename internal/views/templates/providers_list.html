@@ -116,14 +116,13 @@
         <div class="p-6">
             <form hx-post="/providers/categories/new" hx-target="#provider-categories-list" hx-swap="beforeend" hx-on::afterrequest="this.reset()" class="flex gap-2 mb-4">
                 <input type="text" name="name" placeholder="Nueva categoría" required class="flex-1 block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                <button type="submit" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded text-sm">Agregar Categoría</button>
+                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm">Agregar Categoría</button>
             </form>
 
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">ID</th>
                             <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
                             <th scope="col" class="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                         </tr>
@@ -131,15 +130,32 @@
                     <tbody id="provider-categories-list" class="bg-white divide-y divide-gray-200">
                         {{range .Categories}}
                         <tr hx-trigger='editCategory{{.ID}} from:body' hx-get='/providers/categories/{{.ID}}/edit-form' hx-swap='outerHTML'>
-                            <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{.ID}}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.Name}}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium">
-                                <button hx-get="/providers/categories/{{.ID}}/edit-form" hx-target="closest tr" hx-swap="outerHTML" class="text-blue-600 hover:text-blue-900 text-sm mr-4">
-                                    Editar
-                                </button>
-                                <button hx-delete="/providers/categories/{{.ID}}/delete" hx-confirm="¿Estás seguro de que deseas eliminar esta categoría?" hx-target="closest tr" hx-swap="outerHTML" class="text-red-600 hover:text-red-900 text-sm">
-                                    Eliminar
-                                </button>
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium relative">
+                                <div class="relative inline-block text-left" x-data="{ open: false }">
+                                    <div>
+                                        <button @click="open = !open" @click.away="open = false" type="button" class="flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    <div x-show="open" style="display: none;" class="origin-top-right absolute right-0 mt-2 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
+                                        <div class="py-1">
+                                            <button hx-get="/providers/categories/{{.ID}}/edit-form" hx-target="closest tr" hx-swap="outerHTML" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Editar
+                                            </button>
+                                            <button 
+                                                hx-delete="/providers/categories/{{.ID}}/delete"
+                                                hx-confirm="¿Estás seguro de que deseas eliminar esta categoría?"
+                                                hx-target="closest tr"
+                                                hx-swap="outerHTML"
+                                                class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
+                                                Eliminar
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
                             </td>
                         </tr>
                         {{else}}
@@ -152,4 +168,5 @@
             </div>
         </div>
     </div>
+{{end}}
     
