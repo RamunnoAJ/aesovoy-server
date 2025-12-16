@@ -20,5 +20,50 @@
       "Step 4: Take a screenshot of the error shown"
     ],
     "passes": true
+  },
+  {
+    "category": "feature",
+    "description": "Provider Categorization - Backend",
+    "steps": [
+      "Step 1: Create migration for 'provider_categories' table and add 'category_id' to 'providers' table with default value.",
+      "Step 2: Create 'ProviderCategory' struct in internal/api/provider_handler.go or internal/store.",
+      "Step 3: Implement Store methods (Create, List, Update, Delete) for provider categories.",
+      "Step 4: Implement API Handlers for provider categories (CRUD).",
+      "Step 5: Update Provider CRUD to handle 'category_id'."
+    ],
+    "passes": true
+  },
+  {
+    "category": "feature",
+    "description": "Provider Categorization - UI",
+    "steps": [
+      "Step 1: Create a new view/template for managing Provider Categories.",
+      "Step 2: Update the Provider Form (internal/views/templates/provider_form.html) to include a category dropdown.",
+      "Step 3: Update the Providers List (internal/views/templates/providers_list.html) to display the category.",
+      "Step 4: Verify creating/editing a provider correctly saves the category."
+    ],
+    "passes": false
+  },
+  {
+    "category": "feature",
+    "description": "Expenses Management - Backend",
+    "steps": [
+      "Step 1: Create migration for 'expenses' table (fields: amount, image_path, provider_id, category, type [local/production], date, created_at).",
+      "Step 2: Create 'Expense' struct and Store methods.",
+      "Step 3: Implement Service/Handler for Expenses including file upload for images.",
+      "Step 4: Add Middleware or check to ensure only Admins can access these endpoints."
+    ],
+    "passes": false
+  },
+  {
+    "category": "feature",
+    "description": "Expenses Management - UI",
+    "steps": [
+      "Step 1: Create a new main navigation item 'Gastos' (visible only to Admins).",
+      "Step 2: Create a view with tabs for 'Gastos Local' and 'Gastos Producción'.",
+      "Step 3: Implement the 'Add Expense' form with file upload support.",
+      "Step 4: Implement the list view for expenses showing details and image thumbnails."
+    ],
+    "passes": false
   }
 ]

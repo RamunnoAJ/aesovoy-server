@@ -12,12 +12,17 @@ import (
 )
 
 type registerProviderRequest struct {
-	Name      string `json:"name"`
-	Address   string `json:"address"`
-	Phone     string `json:"phone"`
-	Reference string `json:"reference"`
-	Email     string `json:"email"`
-	CUIT      string `json:"cuit"`
+	Name       string `json:"name"`
+	Address    string `json:"address"`
+	Phone      string `json:"phone"`
+	Reference  string `json:"reference"`
+	Email      string `json:"email"`
+	CUIT       string `json:"cuit"`
+	CategoryID int64  `json:"category_id"`
+}
+
+type registerProviderCategoryRequest struct {
+	Name string `json:"name"`
 }
 
 type ProviderHandler struct {
@@ -75,6 +80,7 @@ func (h *ProviderHandler) HandleRegisterProvider(w http.ResponseWriter, r *http.
 	p := &store.Provider{
 		Name: req.Name, Address: req.Address, Phone: req.Phone,
 		Reference: req.Reference, Email: req.Email, CUIT: req.CUIT,
+		CategoryID: req.CategoryID,
 	}
 	if err := h.providerStore.CreateProvider(p); err != nil {
 		h.logger.Error("creating provider", "error", err)
@@ -117,6 +123,7 @@ func (h *ProviderHandler) HandleUpdateProvider(w http.ResponseWriter, r *http.Re
 
 	var req struct {
 		Name, Address, Phone, Reference, Email, CUIT *string
+		CategoryID                                   *int64 `json:"category_id"`
 	}
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		utils.Error(w, http.StatusBadRequest, "invalid request payload")
@@ -139,6 +146,9 @@ func (h *ProviderHandler) HandleUpdateProvider(w http.ResponseWriter, r *http.Re
 	}
 	if req.CUIT != nil {
 		p.CUIT = *req.CUIT
+	}
+	if req.CategoryID != nil {
+		p.CategoryID = *req.CategoryID
 	}
 
 	if err := h.providerStore.UpdateProvider(p); err != nil {
@@ -223,4 +233,86 @@ func (h *ProviderHandler) HandleGetProviders(w http.ResponseWriter, r *http.Requ
 		Offset: offset,
 		Total:  len(list),
 	})
+}
+
+// Category Handlers
+
+func (h *ProviderHandler) HandleCreateCategory(w http.ResponseWriter, r *http.Request) {
+	var req registerProviderCategoryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid request payload")
+		return
+	}
+	if strings.TrimSpace(req.Name) == "" {
+		utils.Error(w, http.StatusBadRequest, "name is required")
+		return
+	}
+	pc := &store.ProviderCategory{Name: req.Name}
+	if err := h.providerStore.CreateProviderCategory(pc); err != nil {
+		h.logger.Error("creating provider category", "error", err)
+		utils.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+	utils.OK(w, http.StatusCreated, utils.Envelope{"category": pc}, "", nil)
+}
+
+func (h *ProviderHandler) HandleGetCategories(w http.ResponseWriter, r *http.Request) {
+	list, err := h.providerStore.GetAllProviderCategories()
+	if err != nil {
+		h.logger.Error("listing provider categories", "error", err)
+		utils.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+	utils.OK(w, http.StatusOK, utils.Envelope{"categories": list}, "", nil)
+}
+
+func (h *ProviderHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Request) {
+	id, err := utils.ReadIDParam(r)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid category id")
+		return
+	}
+	var req registerProviderCategoryRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid request payload")
+		return
+	}
+	if strings.TrimSpace(req.Name) == "" {
+		utils.Error(w, http.StatusBadRequest, "name is required")
+		return
+	}
+	pc := &store.ProviderCategory{ID: id, Name: req.Name}
+	if err := h.providerStore.UpdateProviderCategory(pc); err != nil {
+		if err == sql.ErrNoRows {
+			utils.Error(w, http.StatusNotFound, "category not found")
+			return
+		}
+		h.logger.Error("updating provider category", "error", err)
+		utils.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+	utils.OK(w, http.StatusOK, utils.Envelope{"category": pc}, "", nil)
+}
+
+func (h *ProviderHandler) HandleDeleteCategory(w http.ResponseWriter, r *http.Request) {
+	id, err := utils.ReadIDParam(r)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid category id")
+		return
+	}
+	if err := h.providerStore.DeleteProviderCategory(id); err != nil {
+		if err == sql.ErrNoRows {
+			utils.Error(w, http.StatusNotFound, "category not found")
+			return
+		}
+		// Check for FK violation
+		if strings.Contains(err.Error(), "foreign key constraint") {
+			utils.Error(w, http.StatusConflict, "cannot delete category used by providers")
+			return
+		}
+		h.logger.Error("deleting provider category", "error", err)
+		utils.Error(w, http.StatusInternalServerError, "internal server error")
+		return
+	}
+	utils.OK(w, http.StatusOK, utils.Envelope{"message": "category deleted"}, "", nil)
 }

@@ -9,6 +9,11 @@
             "date": 1765550952139,
             "name": "/home/pop/personal/a-eso-voy/server/logs/mcp-puppeteer-2025-12-12.log",
             "hash": "87b89e0e10cbc5cb47015f5c3a0318add8f818b572a19ba431a175b3b520b46b"
+        },
+        {
+            "date": 1765915166059,
+            "name": "/home/pop/personal/a-eso-voy/server/logs/mcp-puppeteer-2025-12-16.log",
+            "hash": "961f78b47d3e9c4711c5d9f228d696e051e55dfed68a7088d00cba6e9ce65fcc"
         }
     ],
     "hashType": "sha256"

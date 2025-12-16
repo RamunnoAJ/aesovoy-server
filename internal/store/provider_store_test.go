@@ -13,6 +13,18 @@ func TestCreateProvider(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
 
+	// Ensure default category exists because TRUNCATE wipes it
+	// In real app, migration inserts it. In tests, TRUNCATE removes it.
+	// We need to re-insert it to satisfy DEFAULT 1 constraint if used, 
+	// or ensure we pass a valid category ID.
+	// However, the DB constraint DEFAULT 1 doesn't check existence at DDL time, but at insert time.
+	// If row 1 doesn't exist, insert with default will fail FK.
+	// Let's manually insert ID 1 for tests or let the test handle it.
+	// Since CreateProvider uses ID 1 if 0 is passed, we MUST have ID 1.
+	
+	db.Exec("INSERT INTO provider_categories (id, name) VALUES (1, 'Sin Categoría') ON CONFLICT (id) DO NOTHING; SELECT setval('provider_categories_id_seq', (SELECT MAX(id) FROM provider_categories));")
+	// Reset sequence to avoid collision if needed, but we force ID 1.
+
 	store := NewPostgresProviderStore(db)
 
 	tests := []struct {
@@ -58,6 +70,7 @@ func TestCreateProvider(t *testing.T) {
 func TestGetProviderByID(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
+	db.Exec("INSERT INTO provider_categories (id, name) VALUES (1, 'Sin Categoría') ON CONFLICT (id) DO NOTHING; SELECT setval('provider_categories_id_seq', (SELECT MAX(id) FROM provider_categories));")
 
 	store := NewPostgresProviderStore(db)
 
@@ -111,6 +124,7 @@ func TestGetProviderByID(t *testing.T) {
 func TestUpdateProvider(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
+	db.Exec("INSERT INTO provider_categories (id, name) VALUES (1, 'Sin Categoría') ON CONFLICT (id) DO NOTHING; SELECT setval('provider_categories_id_seq', (SELECT MAX(id) FROM provider_categories));")
 
 	store := NewPostgresProviderStore(db)
 
@@ -159,6 +173,7 @@ func TestUpdateProvider(t *testing.T) {
 func TestGetAllProviders(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
+	db.Exec("INSERT INTO provider_categories (id, name) VALUES (1, 'Sin Categoría') ON CONFLICT (id) DO NOTHING; SELECT setval('provider_categories_id_seq', (SELECT MAX(id) FROM provider_categories));")
 
 	store := NewPostgresProviderStore(db)
 
@@ -200,6 +215,7 @@ func TestGetAllProviders(t *testing.T) {
 func TestSearchProvidersFTS(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
+	db.Exec("INSERT INTO provider_categories (id, name) VALUES (1, 'Sin Categoría') ON CONFLICT (id) DO NOTHING; SELECT setval('provider_categories_id_seq', (SELECT MAX(id) FROM provider_categories));")
 
 	store := NewPostgresProviderStore(db)
 
@@ -244,4 +260,77 @@ func TestSearchProvidersFTS(t *testing.T) {
 			assert.Len(t, results, tt.wantCount)
 		})
 	}
+}
+
+func TestProviderCategories(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	// Re-insert default category just in case, though tests below create their own
+	db.Exec("INSERT INTO provider_categories (id, name) VALUES (1, 'Sin Categoría') ON CONFLICT (id) DO NOTHING; SELECT setval('provider_categories_id_seq', (SELECT MAX(id) FROM provider_categories));")
+
+	store := NewPostgresProviderStore(db)
+
+	t.Run("Create Category", func(t *testing.T) {
+		pc := &ProviderCategory{Name: "Lacteos"}
+		err := store.CreateProviderCategory(pc)
+		require.NoError(t, err)
+		assert.NotZero(t, pc.ID)
+		assert.Equal(t, "Lacteos", pc.Name)
+	})
+
+	t.Run("Get All Categories", func(t *testing.T) {
+		list, err := store.GetAllProviderCategories()
+		require.NoError(t, err)
+		assert.NotEmpty(t, list)
+	})
+
+	t.Run("Update Category", func(t *testing.T) {
+		pc := &ProviderCategory{Name: "ToUpdate"}
+		require.NoError(t, store.CreateProviderCategory(pc))
+		pc.Name = "Updated"
+		err := store.UpdateProviderCategory(pc)
+		require.NoError(t, err)
+
+		updated, err := store.GetProviderCategoryByID(pc.ID)
+		require.NoError(t, err)
+		assert.Equal(t, "Updated", updated.Name)
+	})
+
+	t.Run("Delete Category", func(t *testing.T) {
+		pc := &ProviderCategory{Name: "ToDelete"}
+		require.NoError(t, store.CreateProviderCategory(pc))
+		err := store.DeleteProviderCategory(pc.ID)
+		require.NoError(t, err)
+
+		deleted, err := store.GetProviderCategoryByID(pc.ID)
+		require.NoError(t, err) 
+		assert.Nil(t, deleted)
+	})
+}
+
+func TestProviderWithCategory(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	db.Exec("INSERT INTO provider_categories (id, name) VALUES (1, 'Sin Categoría') ON CONFLICT (id) DO NOTHING; SELECT setval('provider_categories_id_seq', (SELECT MAX(id) FROM provider_categories));")
+
+	store := NewPostgresProviderStore(db)
+
+	// Create a category
+	cat := &ProviderCategory{Name: "Carnes"}
+	require.NoError(t, store.CreateProviderCategory(cat))
+
+	// Create provider with category
+	p := &Provider{
+		Name: "Proveedor Carnes",
+		Reference: "Ref",
+		CUIT: "123",
+		CategoryID: cat.ID,
+	}
+	require.NoError(t, store.CreateProvider(p))
+
+	// Get provider and check category
+	saved, err := store.GetProviderByID(p.ID)
+	require.NoError(t, err)
+	assert.Equal(t, cat.ID, saved.CategoryID)
+	assert.Equal(t, "Carnes", saved.Category)
 }

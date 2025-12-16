@@ -35,13 +35,7 @@ for the application you're building.
 
 ### STEP 2: START SERVERS (IF NOT RUNNING)
 
-If `init.sh` exists, run it:
-```bash
-chmod +x init.sh
-./init.sh
-```
-
-Otherwise, start servers manually and document the process.
+Assume server is running on port :8080
 
 ### STEP 3: VERIFICATION TEST (CRITICAL!)
 
@@ -147,15 +141,6 @@ Update `gemini-progress.txt` with:
 - Any issues discovered or fixed
 - What should be worked on next
 - Current completion status (e.g., "45/200 tests passing")
-
-### STEP 10: END SESSION CLEANLY
-
-Before context fills up:
-1. Commit all working code
-2. Update gemini-progress.txt
-3. Update feature_list.json if tests verified
-4. Ensure no uncommitted changes
-5. Leave app in working state (no broken features)
 
 ---
 
