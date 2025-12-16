@@ -1,0 +1,12 @@
+{{define "provider-category-edit-row"}}
+<tr hx-put="/providers/categories/{{.Category.ID}}/edit" hx-target="closest tr" hx-swap="outerHTML">
+    <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{.Category.ID}}</td>
+    <td class="px-6 py-4 whitespace-nowrap">
+        <input type="text" name="name" value="{{.Category.Name}}" class="block w-full border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+    </td>
+    <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium">
+        <button type="submit" class="text-green-600 hover:text-green-900 text-sm mr-4">Guardar</button>
+        <button hx-get="/providers/categories/{{.Category.ID}}/edit-form" hx-target="closest tr" hx-swap="outerHTML" hx-trigger="click" class="text-gray-600 hover:text-gray-900 text-sm">Cancelar</button>
+    </td>
+</tr>
+{{end}}

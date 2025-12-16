@@ -71,30 +71,23 @@ It's ok if you only complete one feature in this session, as there will be more 
 
 Implement the chosen feature thoroughly:
 1. Write the code (frontend and/or backend as needed)
-2. Test manually using browser automation (see Step 6)
+2. Test through code (see Step 6)
 3. Fix any issues discovered
-4. Verify the feature works end-to-end
+4. Verify the feature works 
 
-### STEP 6: VERIFY WITH BROWSER AUTOMATION
+### STEP 6: VERIFY WITH INTEGRATION TESTING
 
-**CRITICAL:** You MUST verify features through the actual UI.
+**CRITICAL:** You MUST verify features through code by using integration tests like the ones already made on the services, store and billing layers.
 
-Use browser automation tools:
-- Navigate to the app in a real browser
-- Interact like a human user (click, type, scroll)
-- Take screenshots at each step
-- Verify both functionality AND visual appearance
+Use go test:
+- Run `go test -p 1 ./internal/store ./internal/billing ./internal/services` and any other directory that contains tests
+- Verify functionality 
 
 **DO:**
-- Test through the UI with clicks and keyboard input
-- Take screenshots to verify visual appearance
-- Check for console errors in browser
+- Check for failing errors
 - Verify complete user workflows end-to-end
 
 **DON'T:**
-- Only test with curl commands (backend testing alone is insufficient)
-- Use JavaScript evaluation to bypass UI (no shortcuts)
-- Skip visual verification
 - Mark tests passing without thorough verification
 
 ### STEP 7: UPDATE feature_list.json (CAREFULLY!)
@@ -144,22 +137,6 @@ Update `gemini-progress.txt` with:
 
 ---
 
-## TESTING REQUIREMENTS
-
-**ALL testing must use browser automation tools.**
-
-Available tools:
-- puppeteer_navigate - Start browser and go to URL
-- puppeteer_screenshot - Capture screenshot
-- puppeteer_click - Click elements
-- puppeteer_fill - Fill form inputs
-- puppeteer_evaluate - Execute JavaScript (use sparingly, only for debugging)
-
-Test like a human user with mouse and keyboard. Don't take shortcuts by using JavaScript evaluation.
-Don't use the puppeteer "active tab" tool.
-
----
-
 ## IMPORTANT REMINDERS
 
 **Your Goal:** Production-quality application with all 200+ tests passing
@@ -171,7 +148,7 @@ Don't use the puppeteer "active tab" tool.
 **Quality Bar:**
 - Zero console errors
 - Polished UI matching the design specified in app_spec.txt
-- All features work end-to-end through the UI
+- All features work end-to-end 
 - Fast, responsive, professional
 
 **You have unlimited time.** Take as long as needed to get it right. The most important thing is that you

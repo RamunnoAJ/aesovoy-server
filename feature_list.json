@@ -35,14 +35,36 @@
   },
   {
     "category": "feature",
-    "description": "Provider Categorization - UI",
+    "description": "Provider Categorization - UI: Integrated Category Management into Providers List",
     "steps": [
-      "Step 1: Create a new view/template for managing Provider Categories.",
-      "Step 2: Update the Provider Form (internal/views/templates/provider_form.html) to include a category dropdown.",
-      "Step 3: Update the Providers List (internal/views/templates/providers_list.html) to display the category.",
-      "Step 4: Verify creating/editing a provider correctly saves the category."
+      "Step 1: Verify that Provider Categories can be listed on the /providers page.",
+      "Step 2: Verify that new Provider Categories can be created directly from the /providers page.",
+      "Step 3: Verify that existing Provider Categories can be edited directly from the /providers page using an inline form.",
+      "Step 4: Verify that Provider Categories can be deleted directly from the /providers page.",
+      "Step 5: Verify that the Provider Form (internal/views/templates/provider_form.html) still correctly includes a category dropdown and saves the category for a provider.",
+      "Step 6: Verify that the Providers List (internal/views/templates/providers_list.html) correctly displays the provider's category."
     ],
-    "passes": false
+    "passes": true
+  },
+  {
+    "category": "feature",
+    "description": "Provider Category Row (HTMX Partial)",
+    "steps": [
+      "Step 1: This HTMX partial is rendered when a new provider category is created or updated.",
+      "Step 2: It displays the category ID, name, and provides 'Edit' and 'Delete' buttons.",
+      "Step 3: Verify that it correctly triggers hx-get and hx-delete requests."
+    ],
+    "passes": true
+  },
+  {
+    "category": "feature",
+    "description": "Provider Category Edit Row (HTMX Partial)",
+    "steps": [
+      "Step 1: This HTMX partial is rendered when the 'Edit' button for a provider category is clicked.",
+      "Step 2: It displays an input field for the category name and 'Guardar' (Save) and 'Cancelar' (Cancel) buttons.",
+      "Step 3: Verify that it correctly triggers hx-put for saving and hx-get for canceling."
+    ],
+    "passes": true
   },
   {
     "category": "feature",

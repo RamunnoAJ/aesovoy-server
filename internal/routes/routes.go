@@ -201,6 +201,14 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Post("/providers/{id}/edit", app.WebHandler.HandleUpdateProvider)
 		r.Delete("/providers/{id}/delete", app.WebHandler.HandleDeleteProvider)
 
+		// Provider Categories (integrated into Providers UI)
+		r.Route("/providers/categories", func(r chi.Router) {
+			r.Post("/new", app.WebHandler.HandleCreateProviderCategory)
+			r.Delete("/{id}/delete", app.WebHandler.HandleDeleteProviderCategory)
+			r.Get("/{id}/edit-form", app.WebHandler.HandleGetProviderCategoryEditForm)
+			r.Put("/{id}/edit", app.WebHandler.HandleUpdateProviderCategory)
+		})
+
 		// Recipes
 		r.Get("/products/{id}/recipe", app.WebHandler.HandleManageRecipeView)
 		r.Get("/products/{id}/recipe-modal", app.WebHandler.HandleGetRecipeModal)
