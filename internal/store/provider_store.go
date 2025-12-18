@@ -2,6 +2,7 @@ package store
 
 import (
 	"database/sql"
+	"fmt"
 	"strings"
 	"time"
 )
@@ -32,7 +33,7 @@ type ProviderStore interface {
 	DeleteProvider(id int64) error
 	GetProviderByID(id int64) (*Provider, error)
 	GetAllProviders() ([]*Provider, error)
-	SearchProvidersFTS(q string, limit, offset int) ([]*Provider, error)
+	SearchProvidersFTS(q string, categoryID *int64, limit, offset int) ([]*Provider, error)
 
 	CreateProviderCategory(*ProviderCategory) error
 	UpdateProviderCategory(*ProviderCategory) error
@@ -154,7 +155,7 @@ func (s *PostgresProviderStore) GetAllProviders() ([]*Provider, error) {
 	return s.list(q)
 }
 
-func (s *PostgresProviderStore) SearchProvidersFTS(q string, limit, offset int) ([]*Provider, error) {
+func (s *PostgresProviderStore) SearchProvidersFTS(q string, categoryID *int64, limit, offset int) ([]*Provider, error) {
 	if limit <= 0 {
 		limit = 50
 	}
@@ -162,16 +163,32 @@ func (s *PostgresProviderStore) SearchProvidersFTS(q string, limit, offset int) 
 		offset = 0
 	}
 
-	const baseQuery = `
+	baseQuery := `
 	SELECT p.id, p.name, p.address, p.phone, p.reference, p.email, p.cuit, p.created_at, p.deleted_at,
 	       p.category_id, pc.name
 	FROM providers p
 	LEFT JOIN provider_categories pc ON p.category_id = pc.id
 	WHERE p.deleted_at IS NULL`
 
+	args := []any{}
+	argCount := 0
+
+	if categoryID != nil {
+		argCount++
+		baseQuery += fmt.Sprintf(" AND p.category_id = $%d", argCount)
+		args = append(args, *categoryID)
+	}
+
 	if q == "" {
-		const allq = baseQuery + ` ORDER BY p.name LIMIT $1 OFFSET $2`
-		return s.list(allq, limit, offset)
+		argCount++
+		baseQuery += fmt.Sprintf(" ORDER BY p.name LIMIT $%d", argCount)
+		args = append(args, limit)
+		
+		argCount++
+		baseQuery += fmt.Sprintf(" OFFSET $%d", argCount)
+		args = append(args, offset)
+		
+		return s.list(baseQuery, args...)
 	}
 
 	// Sanitize and format query for prefix matching
@@ -184,8 +201,16 @@ func (s *PostgresProviderStore) SearchProvidersFTS(q string, limit, offset int) 
 
 	terms := strings.Fields(safeQ)
 	if len(terms) == 0 {
-		const allq = baseQuery + ` ORDER BY p.name LIMIT $1 OFFSET $2`
-		return s.list(allq, limit, offset)
+		// Just order by name if sanitized query is empty
+		argCount++
+		baseQuery += fmt.Sprintf(" ORDER BY p.name LIMIT $%d", argCount)
+		args = append(args, limit)
+
+		argCount++
+		baseQuery += fmt.Sprintf(" OFFSET $%d", argCount)
+		args = append(args, offset)
+
+		return s.list(baseQuery, args...)
 	}
 
 	var queryParts []string
@@ -194,11 +219,21 @@ func (s *PostgresProviderStore) SearchProvidersFTS(q string, limit, offset int) 
 	}
 	formattedQuery := strings.Join(queryParts, " & ")
 
-	const sqlq = baseQuery + `
-	AND p.search_tsv @@ to_tsquery('spanish', unaccent($1))
-	ORDER BY ts_rank(p.search_tsv, to_tsquery('spanish', unaccent($1))) DESC, p.name
-	LIMIT $2 OFFSET $3`
-	return s.list(sqlq, formattedQuery, limit, offset)
+	argCount++
+	sqlq := baseQuery + fmt.Sprintf(`
+	AND p.search_tsv @@ to_tsquery('spanish', unaccent($%d))
+	ORDER BY ts_rank(p.search_tsv, to_tsquery('spanish', unaccent($%d))) DESC, p.name`, argCount, argCount)
+	args = append(args, formattedQuery)
+
+	argCount++
+	sqlq += fmt.Sprintf(" LIMIT $%d", argCount)
+	args = append(args, limit)
+
+	argCount++
+	sqlq += fmt.Sprintf(" OFFSET $%d", argCount)
+	args = append(args, offset)
+
+	return s.list(sqlq, args...)
 }
 
 // Category Methods
