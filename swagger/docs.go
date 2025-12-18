@@ -1235,7 +1235,7 @@ const docTemplate = `{
                         "BearerAuth": []
                     }
                 ],
-                "description": "Updates the state of an order (e.g., \"todo\", \"in_progress\", \"done\")",
+                "description": "Updates the state of an order (e.g., \"todo\", \"done\", \"delivered\")",
                 "consumes": [
                     "application/json"
                 ],

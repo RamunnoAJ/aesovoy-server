@@ -1334,7 +1334,7 @@ paths:
     patch:
       consumes:
       - application/json
-      description: Updates the state of an order (e.g., "todo", "in_progress", "done")
+      description: Updates the state of an order (e.g., "todo", "done", "delivered")
       parameters:
       - description: Order ID
         in: path

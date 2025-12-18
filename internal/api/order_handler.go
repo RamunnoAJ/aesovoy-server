@@ -131,7 +131,7 @@ func (h *OrderHandler) HandleRegisterOrder(w http.ResponseWriter, r *http.Reques
 
 // HandleUpdateOrderState godoc
 // @Summary      Updates an order's state
-// @Description  Updates the state of an order (e.g., "todo", "in_progress", "done")
+// @Description  Updates the state of an order (e.g., "todo", "done", "delivered")
 // @Tags         orders
 // @Accept       json
 // @Produce      json
