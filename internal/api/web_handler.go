@@ -25,6 +25,7 @@ type WebHandler struct {
 	expenseStore       store.ExpenseStore
 	localStockService  *services.LocalStockService
 	localSaleService   *services.LocalSaleService
+	shiftService       *services.ShiftService
 	mailer             *mailer.Mailer
 	renderer           *views.Renderer
 	logger             *slog.Logger
@@ -43,6 +44,7 @@ func NewWebHandler(
 	expenseStore store.ExpenseStore,
 	localStockService *services.LocalStockService,
 	localSaleService *services.LocalSaleService,
+	shiftService *services.ShiftService,
 	mailer *mailer.Mailer,
 	logger *slog.Logger,
 ) *WebHandler {
@@ -59,6 +61,7 @@ func NewWebHandler(
 		expenseStore:       expenseStore,
 		localStockService:  localStockService,
 		localSaleService:   localSaleService,
+		shiftService:       shiftService,
 		mailer:             mailer,
 		renderer:           views.NewRenderer(),
 		logger:             logger,

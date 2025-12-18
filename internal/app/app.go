@@ -76,13 +76,14 @@ func NewApplication() (*Application, error) {
 	orderStore := store.NewPostgresOrderStore(pgDB)
 	ingredientStore := store.NewPostgresIngredientStore(pgDB)
 	paymentMethodStore := store.NewPostgresPaymentMethodStore(pgDB)
-	localStockStore := store.NewPostgresLocalStockStore(pgDB)
-	localSaleStore := store.NewPostgresLocalSaleStore(pgDB)
+	LocalSaleStore := store.NewPostgresLocalSaleStore(pgDB)
 	expenseStore := store.NewPostgresExpenseStore(pgDB)
+	shiftStore := store.NewPostgresShiftStore(pgDB)
 
 	// our services will go here
 	localStockService := services.NewLocalStockService(localStockStore, productStore)
 	localSaleService := services.NewLocalSaleService(pgDB, localSaleStore, localStockStore, paymentMethodStore, productStore)
+	shiftService := services.NewShiftService(shiftStore, localSaleStore)
 
 	mailer := mailer.New(
 		os.Getenv("SMTP_HOST"),
@@ -111,7 +112,7 @@ func NewApplication() (*Application, error) {
 	webHandler := api.NewWebHandler(
 		userStore, tokenStore, productStore, categoryStore, ingredientStore,
 		clientStore, providerStore, paymentMethodStore, orderStore, expenseStore,
-		localStockService, localSaleService, mailer, logger,
+		localStockService, localSaleService, shiftService, mailer, logger,
 	)
 
 	app := &Application{

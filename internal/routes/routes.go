@@ -253,6 +253,11 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/local-sales/{id}", app.WebHandler.HandleGetLocalSaleView)
 		r.Delete("/local-sales/{id}", app.WebHandler.HandleRevokeLocalSale)
 
+		// Shift Management (Admin/Employee)
+		r.Get("/shifts", app.WebHandler.HandleShiftManagement)
+		r.Post("/shifts/open", app.WebHandler.HandleOpenShift)
+		r.Post("/shifts/close", app.WebHandler.HandleCloseShift)
+
 		// Production Calculator (Employee and Admin)
 		r.Get("/production-calculator", app.WebHandler.HandleShowProductionCalculator)
 		r.Post("/production-calculator", app.WebHandler.HandleCalculateProduction)

@@ -119,6 +119,12 @@ func NewRenderer() *Renderer {
 				}
 				return *a == b
 			},
+			"derefFloat": func(f *float64) float64 {
+				if f == nil {
+					return 0.0
+				}
+				return *f
+			},
 		},
 	}
 }

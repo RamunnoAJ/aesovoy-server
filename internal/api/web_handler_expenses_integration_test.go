@@ -40,7 +40,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 	// We use the migrations FS to migrate
 	require.NoError(t, store.MigrateFS(db, migrations.FS, "."))
 
-	_, err = db.Exec(`TRUNCATE expenses, expense_categories, providers, provider_categories RESTART IDENTITY CASCADE`)
+	_, err = db.Exec(`TRUNCATE expenses, expense_categories, providers, provider_categories, shifts RESTART IDENTITY CASCADE`)
 	require.NoError(t, err)
 	return db
 }
@@ -56,7 +56,7 @@ func TestWebHandler_Expenses(t *testing.T) {
 	// Create a minimal WebHandler with necessary stores
 	// We only need expenseStore and providerStore for this test
 	webHandler := api.NewWebHandler(
-		nil, nil, nil, nil, nil, nil, providerStore, nil, nil, expenseStore, nil, nil, nil, logger,
+		nil, nil, nil, nil, nil, nil, providerStore, nil, nil, expenseStore, nil, nil, nil, nil, logger,
 	)
 
 	// Create a provider category

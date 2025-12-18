@@ -1,4 +1,4 @@
-- Current completion status: 10 tests passing
+- Current completion status: 11 tests passing
 
 ## Session 2025-12-18
 - Implemented "Expenses Management - Backend".
@@ -25,7 +25,12 @@
 - Added Low Stock Alerts widget and backend logic.
 - Integrated Chart.js for 7-day sales visualization.
 - Restructured home page with responsive widgets for better business monitoring.
+- Implemented "Cash Management (Cierre de Caja)".
+- Created `shifts` table and `ShiftStore`.
+- Implemented `ShiftService` for opening/closing shifts and calculating cash differences.
+- Created `shifts.html` view with history and management modals.
+- Verified with integration tests.
 
 ## Next Steps
 - Implement "Stock Movement History (Audit Log)".
-- Implement "Cash Management (Cierre de Caja)".
+- Consider adding "Shift ID" to `local_sales` for stricter data integrity (optional optimization).
