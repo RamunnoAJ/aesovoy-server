@@ -29,8 +29,8 @@
 - Created `shifts` table and `ShiftStore`.
 - Implemented `ShiftService` for opening/closing shifts and calculating cash differences.
 - Created `shifts.html` view with history and management modals.
+- Added "Caja" navigation link to sidebar for Admins and Employees.
 - Verified with integration tests.
 
 ## Next Steps
 - Implement "Stock Movement History (Audit Log)".
-- Consider adding "Shift ID" to `local_sales` for stricter data integrity (optional optimization).

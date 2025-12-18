@@ -76,7 +76,8 @@ func NewApplication() (*Application, error) {
 	orderStore := store.NewPostgresOrderStore(pgDB)
 	ingredientStore := store.NewPostgresIngredientStore(pgDB)
 	paymentMethodStore := store.NewPostgresPaymentMethodStore(pgDB)
-	LocalSaleStore := store.NewPostgresLocalSaleStore(pgDB)
+	localStockStore := store.NewPostgresLocalStockStore(pgDB)
+	localSaleStore := store.NewPostgresLocalSaleStore(pgDB)
 	expenseStore := store.NewPostgresExpenseStore(pgDB)
 	shiftStore := store.NewPostgresShiftStore(pgDB)
 

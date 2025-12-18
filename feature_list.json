@@ -130,6 +130,6 @@
       "Step 3: Add UI for 'Open Shift' (asking for initial cash) and 'Close Shift' (asking for final count).",
       "Step 4: Generate a 'Shift Report' showing expected cash vs declared cash."
     ],
-    "passes": false
+    "passes": true
   }
 ]
