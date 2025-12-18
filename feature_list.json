@@ -86,7 +86,7 @@
       "Step 3: Implement Service/Handler for Expenses including file upload for images.",
       "Step 4: Add Middleware or check to ensure only Admins can access these endpoints."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "feature",

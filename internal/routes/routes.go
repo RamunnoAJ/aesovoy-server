@@ -1,6 +1,7 @@
 package routes
 
 import (
+	"net/http"
 	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/app"
@@ -116,11 +117,21 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 				r.Delete("/{id}", app.PaymentMethodHandler.HandleDeletePaymentMethod)
 			})
 
+			r.Route("/expenses", func(r chi.Router) {
+				r.Get("/", app.ExpenseHandler.HandleGetExpenses)
+				r.Post("/", app.ExpenseHandler.HandleCreateExpense)
+				r.Get("/{id}", app.ExpenseHandler.HandleGetExpenseByID)
+				r.Delete("/{id}", app.ExpenseHandler.HandleDeleteExpense)
+			})
+
 			// API Tokens
 			r.Post("/users", app.UserHandler.HandleRegisterUser)
 			r.Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)
 		})
 	})
+
+	// Serve uploaded files
+	r.Handle("/uploads/*", http.StripPrefix("/uploads", http.FileServer(http.Dir("uploads"))))
 
 	r.Get("/swagger/*", httpSwagger.Handler(httpSwagger.URL("http://localhost:8080/swagger/doc.json")))
 	r.Get("/health", app.HealthCheck)

@@ -32,6 +32,7 @@ type Application struct {
 	LocalStockHandler    *api.LocalStockHandler
 	LocalSaleHandler     *api.LocalSaleHandler
 	InvoiceHandler       *api.InvoiceHandler
+	ExpenseHandler       *api.ExpenseHandler
 	WebHandler           *api.WebHandler
 	Middleware           middleware.UserMiddleware
 	DB                   *sql.DB
@@ -77,6 +78,7 @@ func NewApplication() (*Application, error) {
 	paymentMethodStore := store.NewPostgresPaymentMethodStore(pgDB)
 	localStockStore := store.NewPostgresLocalStockStore(pgDB)
 	localSaleStore := store.NewPostgresLocalSaleStore(pgDB)
+	expenseStore := store.NewPostgresExpenseStore(pgDB)
 
 	// our services will go here
 	localStockService := services.NewLocalStockService(localStockStore, productStore)
@@ -105,6 +107,7 @@ func NewApplication() (*Application, error) {
 	localStockHandler := api.NewLocalStockHandler(localStockService, logger)
 	localSaleHandler := api.NewLocalSaleHandler(localSaleService, logger)
 	invoiceHandler := api.NewInvoiceHandler(renderer)
+	expenseHandler := api.NewExpenseHandler(expenseStore, logger)
 	webHandler := api.NewWebHandler(
 		userStore, tokenStore, productStore, categoryStore, ingredientStore,
 		clientStore, providerStore, paymentMethodStore, orderStore,
@@ -126,6 +129,7 @@ func NewApplication() (*Application, error) {
 		LocalStockHandler:    localStockHandler,
 		LocalSaleHandler:     localSaleHandler,
 		InvoiceHandler:       invoiceHandler,
+		ExpenseHandler:       expenseHandler,
 		WebHandler:           webHandler,
 		DB:                   pgDB,
 	}
