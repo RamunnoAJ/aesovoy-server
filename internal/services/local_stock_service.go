@@ -86,3 +86,7 @@ func (s *LocalStockService) HasSufficientStock(productID int64, quantityNeeded i
 	}
 	return stock.Quantity >= quantityNeeded, nil
 }
+
+func (s *LocalStockService) GetLowStockAlerts(threshold int) ([]*store.ProductStock, error) {
+	return s.stockStore.GetLowStockAlerts(threshold)
+}

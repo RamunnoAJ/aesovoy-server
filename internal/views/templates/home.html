@@ -18,7 +18,7 @@
     </div>
 
     <!-- Summary Cards -->
-    <div class="grid grid-cols-1 {{if eq .User.Role "administrator"}}md:grid-cols-3{{else}}md:grid-cols-1{{end}} gap-6">
+    <div class="grid grid-cols-1 {{if eq .User.Role "administrator"}}md:grid-cols-4{{else}}md:grid-cols-1{{end}} gap-6">
         <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-blue-500 transform hover:scale-[1.02] transition-transform">
             <h3 class="text-sm font-medium text-gray-500 uppercase">
                 {{if eq .User.Role "administrator"}}Total Facturado{{else}}Ventas Totales{{end}}
@@ -33,26 +33,43 @@
         <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-green-500 transform hover:scale-[1.02] transition-transform">
             <h3 class="text-sm font-medium text-gray-500 uppercase">Ventas Local</h3>
             <div class="mt-2 flex items-baseline">
-                <span class="text-3xl font-bold text-gray-900">${{printf "%.2f" .Stats.LocalStats.TotalAmount}}</span>
+                <span class="text-3xl font-bold text-gray-900">{{formatMoney .Stats.LocalStats.TotalAmount}}</span>
                 <span class="ml-2 text-sm text-gray-500">{{.Stats.LocalStats.TotalCount}} ventas</span>
             </div>
         </div>
         <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 border-purple-500 transform hover:scale-[1.02] transition-transform">
             <h3 class="text-sm font-medium text-gray-500 uppercase">Ordenes</h3>
             <div class="mt-2 flex items-baseline">
-                <span class="text-3xl font-bold text-gray-900">${{printf "%.2f" .Stats.OrderStats.TotalAmount}}</span>
+                <span class="text-3xl font-bold text-gray-900">{{formatMoney .Stats.OrderStats.TotalAmount}}</span>
                 <span class="ml-2 text-sm text-gray-500">{{.Stats.OrderStats.TotalCount}} ordenes</span>
+            </div>
+        </div>
+        <div class="bg-white p-6 rounded-lg shadow-lg border-l-4 {{if .Stats.LowStockAlerts}}border-red-500{{else}}border-gray-200{{end}} transform hover:scale-[1.02] transition-transform">
+            <h3 class="text-sm font-medium text-gray-500 uppercase">Alertas Stock</h3>
+            <div class="mt-2 flex items-baseline">
+                <span class="text-3xl font-bold {{if .Stats.LowStockAlerts}}text-red-600{{else}}text-gray-900{{end}}">{{len .Stats.LowStockAlerts}}</span>
+                <span class="ml-2 text-sm text-gray-500">items bajos</span>
             </div>
         </div>
         {{end}}
     </div>
+
+    {{if eq .User.Role "administrator"}}
+    <!-- Sales Chart -->
+    <div class="bg-white p-6 rounded-lg shadow-lg">
+        <h3 class="text-lg font-bold text-gray-800 mb-4">Ventas Últimos 7 Días</h3>
+        <div class="h-64">
+            <canvas id="salesChart"></canvas>
+        </div>
+    </div>
+    {{end}}
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Local Sales Breakdown (Visible for all) -->
         <div class="bg-white rounded-lg shadow-lg overflow-hidden h-full">
             <div class="p-4 border-b border-gray-200 bg-gray-50">
                 <h3 class="text-lg font-bold text-gray-800 flex items-center gap-2">
-                    Medios de pago utilizados en el local
+                    Medios de pago local
                 </h3>
             </div>
             <div class="p-4">
@@ -167,42 +184,114 @@
         </div>
     </div>
 
-    {{if and (eq .User.Role "administrator") .Stats.ProductionRequirements}}
-    <div class="bg-white p-6 rounded-lg shadow-lg">
-        <h2 class="text-xl font-bold text-gray-800 mb-4 flex items-center justify-between">
-            <span class="flex items-center gap-2">
-                Producción Pendiente
-            </span>
-            <a href="/pending-production-ingredients" class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500">
-                Ver Ingredientes
-                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="ml-2 -mr-0.5 h-4 w-4">
-                    <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
-                </svg>
-            </a>
-        </h2>
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead>
-                    <tr>
-                        <th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Producto</th>
-                        <th class="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Cantidad</th>
-                    </tr>
-                </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
-                    {{range .Stats.ProductionRequirements}}
-                    <tr class="hover:bg-gray-50">
-                        <td class="px-4 py-2 whitespace-nowrap text-sm font-medium text-gray-900">{{.ProductName}}</td>
-                        <td class="px-4 py-2 whitespace-nowrap text-sm text-gray-900 text-right">{{.Quantity}}</td>
-                    </tr>
-                    {{end}}
-                </tbody>
-            </table>
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Low Stock Table -->
+        {{if and (eq .User.Role "administrator") .Stats.LowStockAlerts}}
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden h-full">
+            <div class="p-4 border-b border-gray-200 bg-red-50">
+                <h3 class="text-lg font-bold text-red-800 flex items-center gap-2">
+                    Alertas de Stock Bajo
+                </h3>
+            </div>
+            <div class="p-4">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Producto</th>
+                            <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Actual</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {{range .Stats.LowStockAlerts}}
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-2 text-sm text-gray-900 font-medium">{{.ProductName}}</td>
+                            <td class="py-2 text-sm text-red-600 text-right font-bold">{{.Quantity}}</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                <div class="mt-4 text-right">
+                    <a href="/products" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Gestionar Stock &rarr;</a>
+                </div>
+            </div>
         </div>
+        {{end}}
+
+        <!-- Pending Production (Restored and limited) -->
+        {{if and (eq .User.Role "administrator") .Stats.ProductionRequirements}}
+        <div class="bg-white rounded-lg shadow-lg overflow-hidden h-full">
+            <div class="p-4 border-b border-gray-200 bg-purple-50">
+                <h3 class="text-lg font-bold text-purple-800 flex items-center gap-2">
+                    Producción Pendiente
+                </h3>
+            </div>
+            <div class="p-4">
+                <table class="min-w-full divide-y divide-gray-200">
+                    <thead>
+                        <tr>
+                            <th class="text-left text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Producto</th>
+                            <th class="text-right text-xs font-medium text-gray-500 uppercase tracking-wider py-2">Pendiente</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-200">
+                        {{range .Stats.ProductionRequirements}}
+                        <tr class="hover:bg-gray-50">
+                            <td class="py-2 text-sm text-gray-900 font-medium">{{.ProductName}}</td>
+                            <td class="py-2 text-sm text-gray-900 text-right font-bold">{{.Quantity}}</td>
+                        </tr>
+                        {{end}}
+                    </tbody>
+                </table>
+                <div class="mt-4 text-right">
+                    <a href="/pending-production-ingredients" class="text-sm text-blue-600 hover:text-blue-800 font-medium">Ver Ingredientes &rarr;</a>
+                </div>
+            </div>
+        </div>
+        {{end}}
     </div>
-    {{end}}
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
+    {{if eq .User.Role "administrator"}}
+    const salesData = {{jsToJson .Stats.SalesHistory}};
+    if (salesData && salesData.length > 0) {
+        const ctx = document.getElementById('salesChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: salesData.map(d => {
+                    const [year, month, day] = d.date.split('-');
+                    return `${day}/${month}`;
+                }),
+                datasets: [{
+                    label: 'Ventas ($)',
+                    data: salesData.map(d => d.amount),
+                    borderColor: 'rgb(59, 130, 246)',
+                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: value => '$' + value.toLocaleString()
+                        }
+                    }
+                }
+            }
+        });
+    }
+    {{end}}
+
     function updateDateInput() {
         const viewSelect = document.getElementById('view-select');
         const dateInput = document.getElementById('date-input');

@@ -19,6 +19,7 @@ type LocalStockStore interface {
 	ListAll() ([]*LocalStock, error)
 	ListStockWithProductDetails() ([]*ProductStock, error)
 	AdjustQuantity(productID int64, delta int) (*LocalStock, error)
+	GetLowStockAlerts(threshold int) ([]*ProductStock, error)
 
 	// Transactional methods
 	CreateInTx(tx *sql.Tx, productID int64, quantity int) (*LocalStock, error)
@@ -160,4 +161,29 @@ func (s *PostgresLocalStockStore) AdjustQuantityTx(tx *sql.Tx, productID int64, 
 		return nil, err
 	}
 	return &stock, nil
+}
+
+func (s *PostgresLocalStockStore) GetLowStockAlerts(threshold int) ([]*ProductStock, error) {
+	query := `
+		SELECT p.id, p.name, p.unit_price, ls.quantity
+		FROM products p
+		JOIN local_stock ls ON p.id = ls.product_id
+		WHERE ls.quantity <= $1 AND p.deleted_at IS NULL
+		ORDER BY ls.quantity ASC`
+
+	rows, err := s.DB.Query(query, threshold)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var stocks []*ProductStock
+	for rows.Next() {
+		var ps ProductStock
+		if err := rows.Scan(&ps.ProductID, &ps.ProductName, &ps.Price, &ps.Quantity); err != nil {
+			return nil, err
+		}
+		stocks = append(stocks, &ps)
+	}
+	return stocks, nil
 }

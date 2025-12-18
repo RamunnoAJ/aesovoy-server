@@ -98,5 +98,38 @@
       "Step 4: Implement the list view for expenses showing details and image thumbnails."
     ],
     "passes": true
+  },
+  {
+    "category": "core_feature",
+    "description": "Business Dashboard",
+    "steps": [
+      "Step 1: Create a Dashboard View (replacing or enhancing the current Home).",
+      "Step 2: Implement widgets for 'Sales Today', 'Pending Production', 'Low Stock Alerts'.",
+      "Step 3: Create backend queries to aggregate this data efficiently.",
+      "Step 4: Add a chart (using Chart.js or similar light lib) for 'Sales last 7 days'."
+    ],
+    "passes": true
+  },
+  {
+    "category": "core_feature",
+    "description": "Stock Movement History (Audit Log)",
+    "steps": [
+      "Step 1: Create migration for 'stock_movements' table (product_id, change_amount, reason, user_id, created_at).",
+      "Step 2: Create StockMovementStore and methods.",
+      "Step 3: Update LocalStockService to record a movement whenever stock is created, adjusted, or sold.",
+      "Step 4: Create a view to list stock history for a specific product (accessible via Product details)."
+    ],
+    "passes": false
+  },
+  {
+    "category": "core_feature",
+    "description": "Cash Management (Cierre de Caja)",
+    "steps": [
+      "Step 1: Create migration for 'shifts' table (start_time, end_time, start_cash, end_cash_declared, user_id, status).",
+      "Step 2: Implement Shift Store and Service.",
+      "Step 3: Add UI for 'Open Shift' (asking for initial cash) and 'Close Shift' (asking for final count).",
+      "Step 4: Generate a 'Shift Report' showing expected cash vs declared cash."
+    ],
+    "passes": false
   }
 ]
