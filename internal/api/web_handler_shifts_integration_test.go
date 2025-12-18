@@ -24,8 +24,8 @@ func TestWebHandler_Shifts(t *testing.T) {
 	logger := slog.New(slog.NewTextHandler(os.Stdout, nil))
 	shiftStore := store.NewPostgresShiftStore(db)
 	saleStore := store.NewPostgresLocalSaleStore(db)
-	// Mock other stores as nil since we focused on shifts
-	shiftService := services.NewShiftService(shiftStore, saleStore)
+	cashMovementStore := store.NewPostgresCashMovementStore(db)
+	shiftService := services.NewShiftService(shiftStore, saleStore, cashMovementStore)
 	userStore := store.NewPostgresUserStore(db)
 
 	webHandler := api.NewWebHandler(

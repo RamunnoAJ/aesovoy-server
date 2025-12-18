@@ -1,4 +1,4 @@
-- Current completion status: 11 tests passing
+- Current completion status: 12 tests passing
 
 ## Session 2025-12-18
 - Implemented "Expenses Management - Backend".
@@ -32,6 +32,11 @@
 - Added "Caja" navigation link to sidebar for Admins and Employees.
 - Verified with integration tests.
 - Fixed CSRF issue in Shift Management by using HTMX forms.
+- Implemented "Cash Movements" (Ingresos/Egresos).
+- Added `cash_movements` table and store.
+- Integrated movements into shift closing calculation.
+- Refactored Shifts UI to match unified style (Header + Actions + Table).
+- Added integration tests for full cash flow (Sales + Movements).
 
 ## Next Steps
 - Implement "Stock Movement History (Audit Log)".

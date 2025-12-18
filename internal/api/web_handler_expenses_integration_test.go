@@ -40,7 +40,15 @@ func setupTestDB(t *testing.T) *sql.DB {
 	// We use the migrations FS to migrate
 	require.NoError(t, store.MigrateFS(db, migrations.FS, "."))
 
-	_, err = db.Exec(`TRUNCATE expenses, expense_categories, providers, provider_categories, shifts, users, tokens RESTART IDENTITY CASCADE`)
+	_, err = db.Exec(`TRUNCATE 
+		expenses, expense_categories, 
+		providers, provider_categories, 
+		shifts, cash_movements, 
+		users, tokens,
+		products, categories, ingredients, product_ingredients,
+		local_stock, local_sales, local_sale_items,
+		payment_methods, orders, order_products, clients
+		RESTART IDENTITY CASCADE`)
 	require.NoError(t, err)
 	return db
 }

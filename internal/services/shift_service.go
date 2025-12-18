@@ -12,17 +12,24 @@ var (
 	ErrShiftAlreadyOpen   = errors.New("ya hay un turno abierto para este usuario")
 	ErrNoOpenShift        = errors.New("no hay un turno abierto para cerrar")
 	ErrShiftAlreadyClosed = errors.New("este turno ya está cerrado")
+	ErrInvalidAmount      = errors.New("el monto debe ser mayor a 0")
 )
 
 type ShiftService struct {
-	shiftStore store.ShiftStore
-	saleStore  store.LocalSaleStore
+	shiftStore    store.ShiftStore
+	saleStore     store.LocalSaleStore
+	movementStore store.CashMovementStore
 }
 
-func NewShiftService(shiftStore store.ShiftStore, saleStore store.LocalSaleStore) *ShiftService {
+func NewShiftService(
+	shiftStore store.ShiftStore,
+	saleStore store.LocalSaleStore,
+	movementStore store.CashMovementStore,
+) *ShiftService {
 	return &ShiftService{
-		shiftStore: shiftStore,
-		saleStore:  saleStore,
+		shiftStore:    shiftStore,
+		saleStore:     saleStore,
+		movementStore: movementStore,
 	}
 }
 
@@ -74,15 +81,17 @@ func (s *ShiftService) CloseShift(userID int64, declaredCash float64, notes stri
 	if err != nil {
 		return nil, fmt.Errorf("error calculating sales stats: %w", err)
 	}
+	
+	// 2. Get movements total
+	totalIn, totalOut, err := s.movementStore.GetTotalByShiftID(shift.ID)
+	if err != nil {
+		return nil, fmt.Errorf("error calculating movement stats: %w", err)
+	}
 
 	// Assuming "Efectivo" is the payment method name for cash.
-	// Ideally we should look up ID or have a constant/config.
-	// For now, let's sum up everything but ideally filtering by cash.
-	// Since GetStats returns map[string]float64 by method name, we can lookup "Efectivo".
+	cashSales := sales.ByMethod["Efectivo"]
 	
-
-cashSales := sales.ByMethod["Efectivo"]
-	expected := shift.StartCash + cashSales
+	expected := shift.StartCash + cashSales + totalIn - totalOut
 	diff := declaredCash - expected
 
 	shift.EndCashExpected = &expected
@@ -103,4 +112,35 @@ func (s *ShiftService) ListUserShifts(userID int64, page int) ([]*store.Shift, e
 	limit := 20
 	offset := (page - 1) * limit
 	return s.shiftStore.ListByUserID(userID, limit, offset)
+}
+
+func (s *ShiftService) RegisterMovement(userID int64, amount float64, typeStr string, reason string) (*store.CashMovement, error) {
+	if amount <= 0 {
+		return nil, ErrInvalidAmount
+	}
+
+	shift, err := s.shiftStore.GetOpenShiftByUserID(userID)
+	if err != nil {
+		return nil, fmt.Errorf("error getting open shift: %w", err)
+	}
+	if shift == nil {
+		return nil, ErrNoOpenShift
+	}
+
+	movement := &store.CashMovement{
+		ShiftID: shift.ID,
+		Amount:  amount,
+		Type:    store.CashMovementType(typeStr),
+		Reason:  reason,
+	}
+
+	if err := s.movementStore.Create(movement); err != nil {
+		return nil, fmt.Errorf("error creating movement: %w", err)
+	}
+
+	return movement, nil
+}
+
+func (s *ShiftService) ListMovements(shiftID int64) ([]*store.CashMovement, error) {
+	return s.movementStore.ListByShiftID(shiftID)
 }

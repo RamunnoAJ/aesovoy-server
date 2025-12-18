@@ -257,6 +257,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/shifts", app.WebHandler.HandleShiftManagement)
 		r.Post("/shifts/open", app.WebHandler.HandleOpenShift)
 		r.Post("/shifts/close", app.WebHandler.HandleCloseShift)
+		r.Post("/shifts/movements", app.WebHandler.HandleRegisterMovement)
 
 		// Production Calculator (Employee and Admin)
 		r.Get("/production-calculator", app.WebHandler.HandleShowProductionCalculator)
