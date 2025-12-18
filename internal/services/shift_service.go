@@ -3,6 +3,7 @@ package services
 import (
 	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
@@ -88,8 +89,13 @@ func (s *ShiftService) CloseShift(userID int64, declaredCash float64, notes stri
 		return nil, fmt.Errorf("error calculating movement stats: %w", err)
 	}
 
-	// Assuming "Efectivo" is the payment method name for cash.
-	cashSales := sales.ByMethod["Efectivo"]
+	// Calculate cash sales by looking for "Efectivo" (case-insensitive)
+	var cashSales float64
+	for method, amount := range sales.ByMethod {
+		if strings.EqualFold(method, "Efectivo") {
+			cashSales += amount
+		}
+	}
 	
 	expected := shift.StartCash + cashSales + totalIn - totalOut
 	diff := declaredCash - expected
