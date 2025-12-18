@@ -110,7 +110,7 @@ func NewApplication() (*Application, error) {
 	expenseHandler := api.NewExpenseHandler(expenseStore, logger)
 	webHandler := api.NewWebHandler(
 		userStore, tokenStore, productStore, categoryStore, ingredientStore,
-		clientStore, providerStore, paymentMethodStore, orderStore,
+		clientStore, providerStore, paymentMethodStore, orderStore, expenseStore,
 		localStockService, localSaleService, mailer, logger,
 	)
 

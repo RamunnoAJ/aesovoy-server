@@ -22,6 +22,7 @@ type WebHandler struct {
 	providerStore      store.ProviderStore
 	paymentMethodStore store.PaymentMethodStore
 	orderStore         store.OrderStore
+	expenseStore       store.ExpenseStore
 	localStockService  *services.LocalStockService
 	localSaleService   *services.LocalSaleService
 	mailer             *mailer.Mailer
@@ -39,6 +40,7 @@ func NewWebHandler(
 	providerStore store.ProviderStore,
 	paymentMethodStore store.PaymentMethodStore,
 	orderStore store.OrderStore,
+	expenseStore store.ExpenseStore,
 	localStockService *services.LocalStockService,
 	localSaleService *services.LocalSaleService,
 	mailer *mailer.Mailer,
@@ -54,6 +56,7 @@ func NewWebHandler(
 		providerStore:      providerStore,
 		paymentMethodStore: paymentMethodStore,
 		orderStore:         orderStore,
+		expenseStore:       expenseStore,
 		localStockService:  localStockService,
 		localSaleService:   localSaleService,
 		mailer:             mailer,

@@ -97,6 +97,6 @@
       "Step 3: Implement the 'Add Expense' form with file upload support.",
       "Step 4: Implement the list view for expenses showing details and image thumbnails."
     ],
-    "passes": false
+    "passes": true
   }
 ]

@@ -263,6 +263,18 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 			r.Get("/pending-production-ingredients", app.WebHandler.HandleShowPendingProductionIngredients)
 		})
 
+		// Expenses (Admin Only)
+		r.Group(func(r chi.Router) {
+			r.Use(app.Middleware.RequireAdmin)
+			r.Route("/expenses", func(r chi.Router) {
+				r.Get("/", app.WebHandler.HandleListExpenses)
+				r.Get("/new", app.WebHandler.HandleCreateExpenseView)
+				r.Post("/new", app.WebHandler.HandleCreateExpense)
+				r.Delete("/{id}", app.WebHandler.HandleDeleteExpense)
+				r.Get("/{id}/image", app.WebHandler.HandleGetExpenseImage)
+			})
+		})
+
 	})
 
 	return r

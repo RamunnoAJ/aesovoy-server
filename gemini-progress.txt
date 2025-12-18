@@ -1,4 +1,4 @@
-- Current completion status: 8 tests passing
+- Current completion status: 9 tests passing
 
 ## Session 2025-12-18
 - Implemented "Expenses Management - Backend".
@@ -7,8 +7,12 @@
 - Implemented `ExpenseHandler` for API with file upload support using `multipart/form-data`.
 - Integrated routes in `internal/routes/routes.go` under the Admin-only group.
 - Verified the Store layer with comprehensive unit tests.
+- Implemented "Expenses Management - UI".
+- Created `expenses_list.html` and `expense_form.html` templates using HTMX and Tailwind CSS.
+- Added "Gastos" navigation item to the sidebar (Admin only).
+- Implemented Web handlers for Expenses in `internal/api/web_handler_expenses.go`.
+- Verified UI rendering and functionality (including Navbar/Sidebar) with integration tests.
 
 ## Next Steps
-- Implement "Expenses Management - UI" (Templates, Views, HTMX integration).
-- Add specific views for "Gastos Local" and "Gastos Producción".
-- Integrate "Add Expense" form into the UI.
+- Continue with other features in `feature_list.json`.
+- Monitor for any bugs in the newly implemented expenses feature.
