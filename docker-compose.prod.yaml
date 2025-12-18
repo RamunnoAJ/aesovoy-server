@@ -24,26 +24,20 @@ services:
       DB_USER: "${DB_USER}"
       DB_PASSWORD: "${DB_PASSWORD}"
       # Production specific envs
-      GIN_MODE: "release" # If using Gin (using Chi here but good practice)
+      GIN_MODE: "release" # If using Chi here but good practice
       PORT: "8080"
       DOMAIN: "${DOMAIN}" # Used for cookie security if needed
+      PROJECT_ROOT: "/app"
+    volumes:
+      - facturas_data:/app/facturas
+      - uploads_data:/app/uploads
     restart: always
 
   caddy:
-    image: caddy:2-alpine
-    container_name: "aesovoy_caddy"
-    restart: always
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./Caddyfile:/etc/caddy/Caddyfile
-      - caddy_data:/data
-      - caddy_config:/config
-    depends_on:
-      - api
-
+---
 volumes:
   postgres_data:
   caddy_data:
   caddy_config:
+  facturas_data:
+  uploads_data:

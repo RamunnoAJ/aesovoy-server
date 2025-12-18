@@ -19,11 +19,23 @@ import (
 )
 
 var (
-	_, b, _, _   = runtime.Caller(0)
-	projectRoot  = filepath.Join(filepath.Dir(b), "..", "..")
-	templatePath = filepath.Join(projectRoot, "docs", "Plantilla.xlsx")
-	invoiceDir   = filepath.Join(projectRoot, "facturas")
+	projectRoot  string
+	templatePath string
+	invoiceDir   string
 )
+
+func init() {
+	_, b, _, _ := runtime.Caller(0)
+	defaultRoot := filepath.Join(filepath.Dir(b), "..", "..")
+
+	projectRoot = os.Getenv("PROJECT_ROOT")
+	if projectRoot == "" {
+		projectRoot = defaultRoot
+	}
+
+	templatePath = filepath.Join(projectRoot, "docs", "Plantilla.xlsx")
+	invoiceDir = filepath.Join(projectRoot, "facturas")
+}
 
 const (
 	templateSheet = "Hoja1"
