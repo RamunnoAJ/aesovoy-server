@@ -89,6 +89,27 @@ func (h *WebHandler) HandleCreateProviderCategory(w http.ResponseWriter, r *http
 	}
 }
 
+func (h *WebHandler) HandleQuickCreateProviderCategory(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	category := &store.ProviderCategory{
+		Name: r.FormValue("name"),
+	}
+
+	if err := h.providerStore.CreateProviderCategory(category); err != nil {
+		h.logger.Error("creating provider category", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	html := "<option value=\"" + strconv.FormatInt(category.ID, 10) + "\" selected>" + category.Name + "</option>"
+	w.Write([]byte(html))
+}
+
 func (h *WebHandler) HandleUpdateProviderCategory(w http.ResponseWriter, r *http.Request) {
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {

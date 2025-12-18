@@ -67,6 +67,17 @@
     "passes": true
   },
   {
+    "category": "enhancement",
+    "description": "Quick Create Categories in Forms",
+    "steps": [
+      "Step 1: Create reusable modal template (quick_category_modal.html) using Alpine.js and HTMX.",
+      "Step 2: Add 'Create New Category' option to Product and Provider forms' category select.",
+      "Step 3: Implement backend handlers HandleQuickCreateCategory and HandleQuickCreateProviderCategory to return HTML options.",
+      "Step 4: Verify modal opens, submits, and updates the select dropdown with the new category automatically."
+    ],
+    "passes": true
+  },
+  {
     "category": "feature",
     "description": "Expenses Management - Backend",
     "steps": [

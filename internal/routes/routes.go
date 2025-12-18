@@ -173,6 +173,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/categories", app.WebHandler.HandleListCategories)
 		r.Get("/categories/new", app.WebHandler.HandleCreateCategoryView)
 		r.Post("/categories/new", app.WebHandler.HandleCreateCategory)
+		r.Post("/categories/quick", app.WebHandler.HandleQuickCreateCategory)
 		r.Get("/categories/{id}/edit", app.WebHandler.HandleEditCategoryView)
 		r.Post("/categories/{id}/edit", app.WebHandler.HandleUpdateCategory)
 		r.Delete("/categories/{id}/delete", app.WebHandler.HandleDeleteCategory)
@@ -204,6 +205,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		// Provider Categories (integrated into Providers UI)
 		r.Route("/providers/categories", func(r chi.Router) {
 			r.Post("/new", app.WebHandler.HandleCreateProviderCategory)
+			r.Post("/quick", app.WebHandler.HandleQuickCreateProviderCategory)
 			r.Delete("/{id}/delete", app.WebHandler.HandleDeleteProviderCategory)
 			r.Get("/{id}/edit-form", app.WebHandler.HandleGetProviderCategoryEditForm)
 			r.Put("/{id}/edit", app.WebHandler.HandleUpdateProviderCategory)

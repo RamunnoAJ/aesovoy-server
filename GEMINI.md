@@ -17,65 +17,37 @@ ls -la
 # 3. Read the project specification to understand what you're building
 cat app_spec.txt
 
-# 4. Read the feature list to see all work
-cat feature_list.json | head -50
-
-# 5. Read progress notes from previous sessions
+# 4. Read progress notes from previous sessions
 cat gemini-progress.txt
 
-# 6. Check recent git history
+# 5. Check recent git history
 git log --oneline -20
-
-# 7. Count remaining tests
-cat feature_list.json | grep '"passes": false' | wc -l
 ```
 
 Understanding the `app_spec.txt` is critical - it contains the full requirements
 for the application you're building.
 
-### STEP 2: START SERVERS (IF NOT RUNNING)
-
-Assume server is running on port :8080
-
-### STEP 3: VERIFICATION TEST (CRITICAL!)
+### STEP 2: VERIFICATION TEST (CRITICAL!)
 
 **MANDATORY BEFORE NEW WORK:**
 
 The previous session may have introduced bugs. Before implementing anything
 new, you MUST run verification tests.
 
-Run 1-2 of the feature tests marked as `"passes": true` that are most core to the app's functionality to verify they still work.
-For example, if this were a chat app, you should perform a test that logs into the app, sends a message, and gets a response.
-
-**If you find ANY issues (functional or visual):**
+**If you find ANY issues (functional):**
 - Mark that feature as "passes": false immediately
 - Add issues to a list
 - Fix all issues BEFORE moving to new features
-- This includes UI bugs like:
-  * White-on-white text or poor contrast
-  * Random characters displayed
-  * Incorrect timestamps
-  * Layout issues or overflow
-  * Buttons too close together
-  * Missing hover states
-  * Console errors
 
-### STEP 4: CHOOSE ONE FEATURE TO IMPLEMENT
-
-Look at feature_list.json and find the highest-priority feature with "passes": false.
-
-Focus on completing one feature perfectly and completing its testing steps in this session before moving on to other features.
-It's ok if you only complete one feature in this session, as there will be more sessions later that continue to make progress.
-
-### STEP 5: IMPLEMENT THE FEATURE
+### STEP 3: IMPLEMENT THE FEATURE ASKED
 
 Implement the chosen feature thoroughly:
 1. Write the code (frontend and/or backend as needed)
-2. Test through code (see Step 6)
+2. Test through code
 3. Fix any issues discovered
 4. Verify the feature works 
 
-### STEP 6: VERIFY WITH INTEGRATION TESTING
+### STEP 4: VERIFY WITH INTEGRATION TESTING
 
 **CRITICAL:** You MUST verify features through code by using integration tests like the ones already made on the services, store and billing layers.
 
@@ -90,19 +62,6 @@ Use go test:
 **DON'T:**
 - Mark tests passing without thorough verification
 
-### STEP 7: UPDATE feature_list.json (CAREFULLY!)
-
-**YOU CAN ONLY MODIFY ONE FIELD: "passes"**
-
-After thorough verification, change:
-```json
-"passes": false
-```
-to:
-```json
-"passes": true
-```
-
 **NEVER:**
 - Remove tests
 - Edit test descriptions
@@ -110,9 +69,8 @@ to:
 - Combine or consolidate tests
 - Reorder tests
 
-**ONLY CHANGE "passes" FIELD AFTER VERIFICATION WITH SCREENSHOTS.**
 
-### STEP 8: COMMIT YOUR PROGRESS
+### STEP 5: COMMIT YOUR PROGRESS
 
 Make a descriptive git commit:
 ```bash
@@ -126,7 +84,7 @@ git commit -m "Implement [feature name] - verified end-to-end
 "
 ```
 
-### STEP 9: UPDATE PROGRESS NOTES
+### STEP 6: UPDATE PROGRESS NOTES
 
 Update `gemini-progress.txt` with:
 - What you accomplished this session

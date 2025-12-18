@@ -63,6 +63,35 @@ func (h *WebHandler) HandleCreateCategory(w http.ResponseWriter, r *http.Request
 	http.Redirect(w, r, "/categories", http.StatusSeeOther)
 }
 
+func (h *WebHandler) HandleQuickCreateCategory(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	category := &store.Category{
+		Name:        r.FormValue("name"),
+		Description: r.FormValue("description"),
+	}
+
+	if err := h.categoryStore.CreateCategory(category); err != nil {
+		h.logger.Error("creating category", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	// Return the new option tag
+	// We assume the ID is populated by the store (pointer)
+	// If the store doesn't populate ID on create, we might need to fetch it or ensure the store does.
+	// Checking postgres_category_store.go might be needed.
+	// Assuming Postgres RETURNING id works.
+	
+	// Create a simple template or just write string
+	html := "<option value=\"" + strconv.FormatInt(category.ID, 10) + "\" selected>" + category.Name + "</option>"
+	w.Write([]byte(html))
+}
+
 func (h *WebHandler) HandleEditCategoryView(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUser(r)
 	categoryID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)

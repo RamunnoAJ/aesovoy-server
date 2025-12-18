@@ -3,6 +3,7 @@ package views
 import (
 	"embed"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"html/template"
 	"io"
@@ -20,6 +21,20 @@ type Renderer struct {
 func NewRenderer() *Renderer {
 	return &Renderer{
 		funcMap: template.FuncMap{
+			"dict": func(values ...interface{}) (map[string]interface{}, error) {
+				if len(values)%2 != 0 {
+					return nil, errors.New("invalid dict call")
+				}
+				dict := make(map[string]interface{}, len(values)/2)
+				for i := 0; i < len(values); i += 2 {
+					key, ok := values[i].(string)
+					if !ok {
+						return nil, errors.New("dict keys must be strings")
+					}
+					dict[key] = values[i+1]
+				}
+				return dict, nil
+			},
 			"jsToJson": func(v any) string {
 				b, err := json.Marshal(v)
 				if err != nil {
@@ -104,7 +119,7 @@ func NewRenderer() *Renderer {
 
 func (r *Renderer) Render(w io.Writer, page string, data any) error {
 	// We need to name the template to use ParseFS with Funcs properly
-	tmpl, err := template.New("base.html").Funcs(r.funcMap).ParseFS(fs, "templates/base.html", "templates/user_row.html", "templates/"+page)
+	tmpl, err := template.New("base.html").Funcs(r.funcMap).ParseFS(fs, "templates/base.html", "templates/user_row.html", "templates/quick_category_modal.html", "templates/"+page)
 	if err != nil {
 		return err
 	}
