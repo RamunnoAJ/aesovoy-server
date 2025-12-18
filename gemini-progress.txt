@@ -20,6 +20,7 @@
 - Added category filtering to Providers list.
 - Removed Provider Categories table from list view.
 - Added "Quick Create" category modal to Provider form using "+" button.
+- Refactored Product form to use "Quick Create" category modal (matching Expenses and Providers).
 
 ## Next Steps
 - Continue with other features in `feature_list.json`.
