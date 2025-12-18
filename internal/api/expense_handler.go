@@ -43,7 +43,7 @@ func NewExpenseHandler(expenseStore store.ExpenseStore, logger *slog.Logger) *Ex
 // @Accept       multipart/form-data
 // @Produce      json
 // @Param        amount       formData  string  true  "Amount"
-// @Param        category     formData  string  true  "Category"
+// @Param        category_id  formData  int     true  "Category ID"
 // @Param        type         formData  string  true  "Type (local/production)"
 // @Param        date         formData  string  true  "Date (YYYY-MM-DD)"
 // @Param        provider_id  formData  int     false "Provider ID"
@@ -58,13 +58,13 @@ func (h *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Requ
 	r.ParseMultipartForm(10 << 20)
 
 	amountStr := r.FormValue("amount")
-	category := r.FormValue("category")
+	categoryIDStr := r.FormValue("category_id")
 	typeStr := r.FormValue("type")
 	dateStr := r.FormValue("date")
 	providerIDStr := r.FormValue("provider_id")
 
 	// Validation
-	if amountStr == "" || category == "" || typeStr == "" || dateStr == "" {
+	if amountStr == "" || categoryIDStr == "" || typeStr == "" || dateStr == "" {
 		utils.Error(w, http.StatusBadRequest, "missing required fields")
 		return
 	}
@@ -72,6 +72,12 @@ func (h *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Requ
 	date, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
 		utils.Error(w, http.StatusBadRequest, "invalid date format (YYYY-MM-DD)")
+		return
+	}
+
+	categoryID, err := strconv.ParseInt(categoryIDStr, 10, 64)
+	if err != nil {
+		utils.Error(w, http.StatusBadRequest, "invalid category id")
 		return
 	}
 
@@ -115,7 +121,7 @@ func (h *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Requ
 
 	expense := &store.Expense{
 		Amount:     amountStr,
-		Category:   category,
+		CategoryID: categoryID,
 		Type:       store.ExpenseType(typeStr),
 		Date:       date,
 		ProviderID: providerID,
@@ -136,17 +142,19 @@ func (h *ExpenseHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Requ
 // @Description  Responds with a list of expenses, filtered by type or date
 // @Tags         expenses
 // @Produce      json
-// @Param        type       query     string  false "Type (local/production)"
-// @Param        start_date query     string  false "Start Date (YYYY-MM-DD)"
-// @Param        end_date   query     string  false "End Date (YYYY-MM-DD)"
-// @Param        limit      query     int     false "Limit"
-// @Param        offset     query     int     false "Offset"
-// @Success      200        {object}  []store.Expense
-// @Failure      500        {object}  utils.HTTPError
+// @Param        type         query     string  false "Type (local/production)"
+// @Param        category_id  query     int     false "Category ID"
+// @Param        start_date   query     string  false "Start Date (YYYY-MM-DD)"
+// @Param        end_date     query     string  false "End Date (YYYY-MM-DD)"
+// @Param        limit        query     int     false "Limit"
+// @Param        offset       query     int     false "Offset"
+// @Success      200          {object}  []store.Expense
+// @Failure      500          {object}  utils.HTTPError
 // @Security     BearerAuth
 // @Router       /api/v1/expenses [get]
 func (h *ExpenseHandler) HandleGetExpenses(w http.ResponseWriter, r *http.Request) {
 	typeStr := r.URL.Query().Get("type")
+	categoryIDStr := r.URL.Query().Get("category_id")
 	startDateStr := r.URL.Query().Get("start_date")
 	endDateStr := r.URL.Query().Get("end_date")
 	limit, _ := strconv.Atoi(r.URL.Query().Get("limit"))
@@ -160,6 +168,12 @@ func (h *ExpenseHandler) HandleGetExpenses(w http.ResponseWriter, r *http.Reques
 	if typeStr != "" {
 		t := store.ExpenseType(typeStr)
 		filter.Type = &t
+	}
+	if categoryIDStr != "" {
+		cid, err := strconv.ParseInt(categoryIDStr, 10, 64)
+		if err == nil {
+			filter.CategoryID = &cid
+		}
 	}
 	if startDateStr != "" {
 		if t, err := time.Parse("2006-01-02", startDateStr); err == nil {

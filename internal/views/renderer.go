@@ -113,6 +113,12 @@ func NewRenderer() *Renderer {
 				return fmt.Sprintf("%.2f", val)
 			},
 			"add": func(a, b int) int { return a + b },
+			"eqInt64Ptr": func(a *int64, b int64) bool {
+				if a == nil {
+					return false
+				}
+				return *a == b
+			},
 		},
 	}
 }

@@ -19,6 +19,7 @@ import (
 func (h *WebHandler) HandleListExpenses(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUser(r)
 	typeStr := r.URL.Query().Get("type")
+	categoryIDStr := r.URL.Query().Get("category_id")
 	startDateStr := r.URL.Query().Get("start_date")
 	endDateStr := r.URL.Query().Get("end_date")
 	page, _ := strconv.Atoi(r.URL.Query().Get("page"))
@@ -36,6 +37,12 @@ func (h *WebHandler) HandleListExpenses(w http.ResponseWriter, r *http.Request) 
 	if typeStr != "" {
 		t := store.ExpenseType(typeStr)
 		filter.Type = &t
+	}
+	if categoryIDStr != "" {
+		cid, err := strconv.ParseInt(categoryIDStr, 10, 64)
+		if err == nil {
+			filter.CategoryID = &cid
+		}
 	}
 	if startDateStr != "" {
 		if t, err := time.Parse("2006-01-02", startDateStr); err == nil {
@@ -55,14 +62,33 @@ func (h *WebHandler) HandleListExpenses(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
+	// Fetch categories for filter dropdown
+	categories, err := h.expenseStore.GetAllExpenseCategories()
+	if err != nil {
+		h.logger.Error("fetching expense categories", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	hasNext := false
+	// We could optimize by fetching limit+1 in store, but currently store returns exactly limit.
+	// For pagination to work perfectly we might want to count total or fetch one more.
+	// Current store implementation takes limit/offset.
+	// If expenses len == limit, we *might* have next page. Simple heuristic:
+	if len(expenses) == limit {
+		hasNext = true
+	}
+
 	data := map[string]any{
-		"User":      user,
-		"Expenses":  expenses,
-		"Filter":    filter,
-		"TypeParam": typeStr,
-		"Page":      page,
-		"NextPage":  page + 1,
-		"PrevPage":  page - 1,
+		"User":       user,
+		"Expenses":   expenses,
+		"Categories": categories,
+		"Filter":     filter,
+		"TypeParam":  typeStr,
+		"Page":       page,
+		"HasNext":    hasNext,
+		"NextPage":   page + 1,
+		"PrevPage":   page - 1,
 	}
 
 	if err := h.renderer.Render(w, "expenses_list.html", data); err != nil {
@@ -79,10 +105,18 @@ func (h *WebHandler) HandleCreateExpenseView(w http.ResponseWriter, r *http.Requ
 		return
 	}
 
+	categories, err := h.expenseStore.GetAllExpenseCategories()
+	if err != nil {
+		h.logger.Error("getting categories for expense form", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
 	data := map[string]any{
-		"User":      user,
-		"Providers": providers,
-		"Today":     time.Now().Format("2006-01-02"),
+		"User":       user,
+		"Providers":  providers,
+		"Categories": categories,
+		"Today":      time.Now().Format("2006-01-02"),
 	}
 
 	if err := h.renderer.Render(w, "expense_form.html", data); err != nil {
@@ -95,13 +129,13 @@ func (h *WebHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Request)
 	r.ParseMultipartForm(10 << 20)
 
 	amountStr := r.FormValue("amount")
-	category := r.FormValue("category")
+	categoryIDStr := r.FormValue("category_id")
 	typeStr := r.FormValue("type")
 	dateStr := r.FormValue("date")
 	providerIDStr := r.FormValue("provider_id")
 
 	// Validation
-	if amountStr == "" || category == "" || typeStr == "" || dateStr == "" {
+	if amountStr == "" || categoryIDStr == "" || typeStr == "" || dateStr == "" {
 		http.Error(w, "Missing required fields", http.StatusBadRequest)
 		return
 	}
@@ -109,6 +143,12 @@ func (h *WebHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Request)
 	date, err := time.Parse("2006-01-02", dateStr)
 	if err != nil {
 		http.Error(w, "Invalid date format", http.StatusBadRequest)
+		return
+	}
+
+	categoryID, err := strconv.ParseInt(categoryIDStr, 10, 64)
+	if err != nil {
+		http.Error(w, "Invalid category ID", http.StatusBadRequest)
 		return
 	}
 
@@ -159,7 +199,7 @@ func (h *WebHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Request)
 
 	expense := &store.Expense{
 		Amount:     amountStr,
-		Category:   category,
+		CategoryID: categoryID,
 		Type:       store.ExpenseType(typeStr),
 		Date:       date,
 		ProviderID: providerID,
@@ -211,4 +251,31 @@ func (h *WebHandler) HandleGetExpenseImage(w http.ResponseWriter, r *http.Reques
 	}
 
 	http.ServeFile(w, r, expense.ImagePath)
+}
+
+func (h *WebHandler) HandleQuickCreateExpenseCategory(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	name := r.FormValue("name")
+	if name == "" {
+		http.Error(w, "Name is required", http.StatusBadRequest)
+		return
+	}
+
+	category := &store.ExpenseCategory{
+		Name: name,
+	}
+
+	if err := h.expenseStore.CreateExpenseCategory(category); err != nil {
+		h.logger.Error("creating expense category", "error", err)
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	w.Header().Set("Content-Type", "text/html")
+	html := "<option value=\"" + strconv.FormatInt(category.ID, 10) + "\">" + category.Name + "</option>"
+	w.Write([]byte(html))
 }

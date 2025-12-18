@@ -272,6 +272,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 				r.Post("/new", app.WebHandler.HandleCreateExpense)
 				r.Delete("/{id}", app.WebHandler.HandleDeleteExpense)
 				r.Get("/{id}/image", app.WebHandler.HandleGetExpenseImage)
+				r.Post("/categories/quick", app.WebHandler.HandleQuickCreateExpenseCategory)
 			})
 		})
 

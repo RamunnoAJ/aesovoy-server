@@ -40,7 +40,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 	// We use the migrations FS to migrate
 	require.NoError(t, store.MigrateFS(db, migrations.FS, "."))
 
-	_, err = db.Exec(`TRUNCATE expenses, providers, provider_categories RESTART IDENTITY CASCADE`)
+	_, err = db.Exec(`TRUNCATE expenses, expense_categories, providers, provider_categories RESTART IDENTITY CASCADE`)
 	require.NoError(t, err)
 	return db
 }
@@ -70,6 +70,10 @@ func TestWebHandler_Expenses(t *testing.T) {
 	})
 	require.NoError(t, err)
 
+	// Create an expense category
+	err = expenseStore.CreateExpenseCategory(&store.ExpenseCategory{Name: "Test Category"})
+	require.NoError(t, err)
+
 	testUser := &store.User{
 		Username: "admin",
 		Role:     "administrator",
@@ -81,7 +85,7 @@ func TestWebHandler_Expenses(t *testing.T) {
 		
 		writer.WriteField("date", "2023-12-01")
 		writer.WriteField("type", "local")
-		writer.WriteField("category", "Test Category")
+		writer.WriteField("category_id", "1") // Created above, ID should be 1
 		writer.WriteField("amount", "123.45")
 		writer.WriteField("provider_id", "1")
 		writer.Close()
@@ -102,6 +106,7 @@ func TestWebHandler_Expenses(t *testing.T) {
 		require.Len(t, expenses, 1)
 		require.Equal(t, "123.45", expenses[0].Amount)
 		require.Equal(t, "local", string(expenses[0].Type))
+		require.Equal(t, "Test Category", expenses[0].CategoryName)
 	})
 
 	t.Run("List Expenses", func(t *testing.T) {
