@@ -163,7 +163,7 @@
       "Step 2: Ensure orders are always sorted by date descending (newest first).",
       "Step 3: Update UI inputs to reflect the default 7-day range on initial load."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "enhancement",

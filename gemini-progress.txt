@@ -1,19 +1,20 @@
 Session Date: Friday, December 19, 2025
 
 Accomplished:
-- Added Fullstack Pagination for Invoices.
-- Backend: Verified `billing.ListInvoices` logic with new tests in `internal/billing/billing_test.go`.
-- API: Added `GET /api/v1/invoices` JSON endpoint with pagination metadata.
-- Frontend: Improved `invoices_list.html` pagination controls to preserve `date` filter.
+- Added Fullstack Pagination for Invoices (Backend logic, API endpoint, UI with date filter preservation).
 - Security: Restricted `/invoices` web routes to Administrators only.
-- Fix: Resolved compilation error in `internal/api/invoice_handler.go` (undefined `renderJSON`).
-- Verified all changes with `go test`.
+- Feature: Client & Provider Identity Fields (Dropped UNIQUE constraints on CUIT/Reference, added columns to UI).
+- Feature: Standardized Empty Field Display (Added `defaultNA` helper, applied to all lists).
+- Verified changes with existing tests and added new integration tests for Identity Fields.
 
 Tests Completed:
-- internal/billing: TestListInvoices (New)
+- internal/billing: TestListInvoices
+- internal/store: TestDuplicateIdentityFields, TestDuplicateIdentityFieldsProviders
 
 Next Steps:
-- Continue with other features from `feature_list.json` if any are pending (currently all marked as true, but new requests might come).
-- Maybe add frontend tests (Puppeteer) for the invoice page.
+- **Order List Improvements:** Default 7-day filter and descending sort.
+- Order Payment Management (Paid status, Payment Method).
+- Unified Alert System (Toasts).
+- Dashboard Weekly View.
 
 Status: All tests passing.

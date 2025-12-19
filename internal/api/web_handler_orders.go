@@ -45,11 +45,12 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 			filter.StartDate = &t
 		}
 	} else {
-		// Default to today's start if no start_date is provided
+		// Default to last 7 days if no start_date is provided
 		now := time.Now()
-		todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-		filter.StartDate = &todayStart
-		startDateStr = todayStart.Format("2006-01-02")
+		sevenDaysAgo := now.AddDate(0, 0, -7)
+		defaultStart := time.Date(sevenDaysAgo.Year(), sevenDaysAgo.Month(), sevenDaysAgo.Day(), 0, 0, 0, 0, now.Location())
+		filter.StartDate = &defaultStart
+		startDateStr = defaultStart.Format("2006-01-02")
 	}
 
 	endDateStr := r.URL.Query().Get("end_date")
