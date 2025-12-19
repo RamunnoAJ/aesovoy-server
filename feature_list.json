@@ -123,13 +123,25 @@
   },
   {
     "category": "core_feature",
-    "description": "Cash Management (Cierre de Caja)",
-    "steps": [
-      "Step 1: Create migration for 'shifts' table (start_time, end_time, start_cash, end_cash_declared, user_id, status).",
-      "Step 2: Implement Shift Store and Service.",
-      "Step 3: Add UI for 'Open Shift' (asking for initial cash) and 'Close Shift' (asking for final count).",
-      "Step 4: Generate a 'Shift Report' showing expected cash vs declared cash."
-    ],
-    "passes": true
-  }
-]
+        "description": "Cash Management (Cierre de Caja)",
+        "steps": [
+          "Step 1: Create migration for 'shifts' table (start_time, end_time, start_cash, end_cash_declared, user_id, status).",
+          "Step 2: Implement Shift Store and Service.",
+          "Step 3: Add UI for 'Open Shift' (asking for initial cash) and 'Close Shift' (asking for final count).",
+          "Step 4: Generate a 'Shift Report' showing expected cash vs declared cash."
+        ],
+        "passes": true
+      },
+      {
+        "category": "functional",
+        "description": "Invoice Pagination (Fullstack)",
+        "steps": [
+          "Step 1: Implement pagination logic in billing service (backend).",
+          "Step 2: Update Invoice Handler to support JSON API pagination.",
+          "Step 3: Update Web View to include pagination controls with date filter preservation.",
+          "Step 4: Verify with tests."
+        ],
+        "passes": true
+      }
+    ]
+    

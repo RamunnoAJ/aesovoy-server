@@ -124,6 +124,8 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 				r.Delete("/{id}", app.ExpenseHandler.HandleDeleteExpense)
 			})
 
+			r.Get("/invoices", app.InvoiceHandler.HandleListInvoicesJSON)
+
 			// API Tokens
 			r.Post("/users", app.UserHandler.HandleRegisterUser)
 			r.Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)

@@ -124,3 +124,101 @@ func TestGenerateInvoice(t *testing.T) {
 		})
 	}
 }
+
+func TestListInvoices(t *testing.T) {
+	// 1. Setup temporary directory for invoices
+	tempDir, err := os.MkdirTemp("", "invoices_test")
+	require.NoError(t, err)
+	defer os.RemoveAll(tempDir)
+
+	// 2. Override invoiceDir
+	originalInvoiceDir := invoiceDir
+	invoiceDir = tempDir
+	defer func() { invoiceDir = originalInvoiceDir }()
+
+	// 3. Create dummy invoice files
+	// Create 25 files to test pagination (assuming default limit is 20, or we test with custom limit)
+	baseTime := time.Date(2023, 1, 1, 0, 0, 0, 0, time.UTC)
+	for i := 1; i <= 25; i++ {
+		filename := fmt.Sprintf("invoice_%02d.xlsx", i)
+		filePath := filepath.Join(tempDir, filename)
+		f, err := os.Create(filePath)
+		require.NoError(t, err)
+		f.Close()
+
+		// Set modification time to ensure deterministic order (newest first)
+		// We want invoice_25 to be the newest
+		modTime := baseTime.Add(time.Duration(i) * time.Hour)
+		err = os.Chtimes(filePath, modTime, modTime)
+		require.NoError(t, err)
+	}
+
+	// 4. Test Cases
+	tests := []struct {
+		name           string
+		page           int
+		limit          int
+		dateFilter     string
+		expectedCount  int
+		expectedFirst  string // Name of the first file in the returned list
+		expectedTotal  int
+	}{
+		{
+			name:          "Page 1, Limit 10",
+			page:          1,
+			limit:         10,
+			dateFilter:    "",
+			expectedCount: 10,
+			expectedFirst: "invoice_25.xlsx", // Newest first
+			expectedTotal: 25,
+		},
+		{
+			name:          "Page 2, Limit 10",
+			page:          2,
+			limit:         10,
+			dateFilter:    "",
+			expectedCount: 10,
+			expectedFirst: "invoice_15.xlsx",
+			expectedTotal: 25,
+		},
+		{
+			name:          "Page 3, Limit 10",
+			page:          3,
+			limit:         10,
+			dateFilter:    "",
+			expectedCount: 5,
+			expectedFirst: "invoice_05.xlsx",
+			expectedTotal: 25,
+		},
+		{
+			name:          "Page 1, Limit 50 (More than total)",
+			page:          1,
+			limit:         50,
+			dateFilter:    "",
+			expectedCount: 25,
+			expectedFirst: "invoice_25.xlsx",
+			expectedTotal: 25,
+		},
+		{
+			name:          "Page 10, Limit 10 (Out of range)",
+			page:          10,
+			limit:         10,
+			dateFilter:    "",
+			expectedCount: 0,
+			expectedTotal: 25,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			files, total, err := ListInvoices(tt.page, tt.limit, tt.dateFilter)
+			require.NoError(t, err)
+			require.Equal(t, tt.expectedTotal, total)
+			require.Equal(t, tt.expectedCount, len(files))
+
+			if tt.expectedCount > 0 {
+				require.Equal(t, tt.expectedFirst, files[0].Name)
+			}
+		})
+	}
+}
