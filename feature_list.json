@@ -206,7 +206,7 @@
       "Step 2: Refactor all list templates (clients, providers, products, etc.) to use this function for optional fields.",
       "Step 3: Verify that empty fields display 'N/A' instead of blank space."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "enhancement",

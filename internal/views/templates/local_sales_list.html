@@ -58,7 +58,7 @@
         {{end}}
     </td>
     <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.Date}}</td>
-    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.PaymentMethod}}</td>
+    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{defaultNA .PaymentMethod}}</td>
     <td class="px-6 py-4 whitespace-nowrap text-right text-base font-bold text-gray-900 {{if .IsVoided}}line-through{{end}}">{{formatMoney .Total}}</td>
     <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium relative">
             <div class="relative inline-block text-left" x-data="{ open: false }">
