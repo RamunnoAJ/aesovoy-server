@@ -4,7 +4,7 @@
         <h1 class="text-2xl font-bold text-gray-800">{{if .TargetUser.ID}}Editar Usuario{{else}}Nuevo Usuario{{end}}</h1>
     </div>
     
-    <form action="{{if .TargetUser.ID}}/users/{{.TargetUser.ID}}/edit{{else}}/users/new{{end}}" method="POST" class="p-6 space-y-6">
+    <form action="{{if .TargetUser.ID}}/users/{{.TargetUser.ID}}/edit{{else}}/users/new{{end}}" method="POST" class="p-6 space-y-6" hx-boost="true">
         <div>
             <label for="username" class="block text-base font-medium leading-6 text-gray-900">Usuario</label>
             <div class="mt-2">
