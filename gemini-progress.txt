@@ -10,8 +10,10 @@ Accomplished:
   - Added `utils.TriggerToast` helper for HTMX responses.
   - Integrated toast notifications across ALL web handlers.
   - Fix: Robust event handling for toasts (window listeners, retries, hx-push-url support).
+  - Fix: Resolved CSRF issues caused by duplicate JS code.
 - Feature: Order List Improvements (Default 7-day filter and descending sort).
 - Feature: Order Payment Management (Added 'paid' state and 'payment_method_id', updated UI and Store).
+- Feature: Dashboard Weekly View (Added 'Semanal' view to the dashboard aggregating last 7 days of data).
 - Verified changes with existing tests and build.
 
 Tests Completed:
@@ -19,7 +21,6 @@ Tests Completed:
 - internal/store: TestDuplicateIdentityFields, TestDuplicateIdentityFieldsProviders
 
 Next Steps:
-- Dashboard Weekly View.
 - Refactor User Creation to separate page.
 - Stock Movement History (Audit Log).
 

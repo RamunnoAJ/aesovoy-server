@@ -196,7 +196,7 @@
       "Step 3: Add 'Semanal' option to the dashboard view selector.",
       "Step 4: Verify charts and stats correctly reflect the weekly range."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "enhancement",
