@@ -8,7 +8,10 @@ Accomplished:
 - Feature: Unified Alert System (Toasts).
   - Refactored `showToast` in `base.html` with better styling and icons.
   - Added `utils.TriggerToast` helper for HTMX responses.
-  - Integrated toast notifications across ALL web handlers (Categories, Products, Ingredients, Clients, Expenses, Sales, Payment Methods, Providers, Users, Orders, Shifts, Stock).
+  - Integrated toast notifications across ALL web handlers.
+  - Fix: Show toasts after HTMX redirects/swaps.
+- Feature: Order List Improvements (Default 7-day filter and descending sort).
+- Feature: Order Payment Management (Added 'paid' state and 'payment_method_id', updated UI and Store).
 - Verified changes with existing tests and build.
 
 Tests Completed:
@@ -16,8 +19,8 @@ Tests Completed:
 - internal/store: TestDuplicateIdentityFields, TestDuplicateIdentityFieldsProviders
 
 Next Steps:
-- Order Payment Management (Paid status, Payment Method).
 - Dashboard Weekly View.
 - Refactor User Creation to separate page.
+- Stock Movement History (Audit Log).
 
 Status: All tests passing.

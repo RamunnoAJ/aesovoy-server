@@ -38,14 +38,29 @@
         </div>
 
         <!-- State Selection -->
-        <div>
-            <label for="state" class="block text-base font-medium leading-6 text-gray-900">Estado Inicial</label>
-            <div class="mt-2">
-                <select id="state" name="state" class="block w-full rounded-md border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 text-base sm:leading-6 px-3">
-                    <option value="todo" selected>Pendiente</option>
-                    <option value="done">Lista</option>
-                    <option value="delivered">Entregada</option>
-                </select>
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6" x-data="{ orderState: 'todo' }">
+            <div>
+                <label for="state" class="block text-base font-medium leading-6 text-gray-900">Estado Inicial</label>
+                <div class="mt-2">
+                    <select id="state" name="state" x-model="orderState" class="block w-full rounded-md border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 text-base sm:leading-6 px-3">
+                        <option value="todo">Pendiente</option>
+                        <option value="done">Lista</option>
+                        <option value="delivered">Entregada</option>
+                        <option value="paid">Pagada</option>
+                    </select>
+                </div>
+            </div>
+
+            <div x-show="orderState === 'paid' || orderState === 'delivered'" x-transition>
+                <label for="payment_method_id" class="block text-base font-medium leading-6 text-gray-900">Medio de Pago</label>
+                <div class="mt-2">
+                    <select id="payment_method_id" name="payment_method_id" class="block w-full rounded-md border-0 py-2 text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 focus:ring-2 focus:ring-inset focus:ring-blue-600 text-base sm:leading-6 px-3">
+                        <option value="">Seleccionar...</option>
+                        {{range .PaymentMethods}}
+                        <option value="{{.ID}}">{{.Name}}</option>
+                        {{end}}
+                    </select>
+                </div>
             </div>
         </div>
 

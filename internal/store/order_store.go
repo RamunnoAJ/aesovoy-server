@@ -13,6 +13,7 @@ const (
 	OrderDone      OrderState = "done"
 	OrderCancelled OrderState = "cancelled"
 	OrderDelivered OrderState = "delivered"
+	OrderPaid      OrderState = "paid"
 )
 
 type ProductionRequirement struct {
@@ -24,15 +25,17 @@ type ProductionRequirement struct {
 type Money = string
 
 type Order struct {
-	ID         int64       `json:"id"`
-	ClientID   int64       `json:"client_id"`
-	ClientName string      `json:"client_name,omitempty"`
-	Total      Money       `json:"total"`
-	Date       time.Time   `json:"date"`
-	State      OrderState  `json:"state"`
-	CreatedAt  time.Time   `json:"created_at"`
-	DeletedAt  *time.Time  `json:"deleted_at"`
-	Items      []OrderItem `json:"items,omitempty"`
+	ID                int64       `json:"id"`
+	ClientID          int64       `json:"client_id"`
+	ClientName        string      `json:"client_name,omitempty"`
+	Total             Money       `json:"total"`
+	Date              time.Time   `json:"date"`
+	State             OrderState  `json:"state"`
+	PaymentMethodID   *int64      `json:"payment_method_id,omitempty"`
+	PaymentMethodName string      `json:"payment_method_name,omitempty"`
+	CreatedAt         time.Time   `json:"created_at"`
+	DeletedAt         *time.Time  `json:"deleted_at"`
+	Items             []OrderItem `json:"items,omitempty"`
 }
 
 type OrderItem struct {
@@ -101,10 +104,10 @@ func (s *PostgresOrderStore) CreateOrder(o *Order, items []OrderItem) error {
 
 	// total lo calcula la DB desde items insertados
 	const qOrder = `
-	  INSERT INTO orders (client_id, total, state)
-	  VALUES ($1, 0, $2)
+	  INSERT INTO orders (client_id, total, state, payment_method_id)
+	  VALUES ($1, 0, $2, $3)
 	  RETURNING id, total, date, created_at`
-	if err = tx.QueryRow(qOrder, o.ClientID, o.State).Scan(&o.ID, &o.Total, &o.Date, &o.CreatedAt); err != nil {
+	if err = tx.QueryRow(qOrder, o.ClientID, o.State, o.PaymentMethodID).Scan(&o.ID, &o.Total, &o.Date, &o.CreatedAt); err != nil {
 		return err
 	}
 
@@ -176,12 +179,13 @@ func (s *PostgresOrderStore) DeleteOrder(id int64) error {
 
 func (s *PostgresOrderStore) GetOrderByID(id int64) (*Order, error) {
 	const q = `
-	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.created_at, o.deleted_at
+	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.payment_method_id, COALESCE(pm.name, ''), o.created_at, o.deleted_at
 	FROM orders o
 	JOIN clients c ON c.id = o.client_id
+	LEFT JOIN payment_methods pm ON pm.id = o.payment_method_id
 	WHERE o.id=$1 AND o.deleted_at IS NULL`
 	o := &Order{}
-	if err := s.db.QueryRow(q, id).Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.CreatedAt, &o.DeletedAt); err != nil {
+	if err := s.db.QueryRow(q, id).Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.PaymentMethodID, &o.PaymentMethodName, &o.CreatedAt, &o.DeletedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -217,9 +221,10 @@ func (s *PostgresOrderStore) ListOrders(f OrderFilter) ([]*Order, error) {
 	}
 
 	q := `
-	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.created_at, o.deleted_at
+	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.payment_method_id, COALESCE(pm.name, ''), o.created_at, o.deleted_at
 	FROM orders o
-	JOIN clients c ON c.id = o.client_id`
+	JOIN clients c ON c.id = o.client_id
+	LEFT JOIN payment_methods pm ON pm.id = o.payment_method_id`
 	where := "WHERE o.deleted_at IS NULL"
 	args := []any{}
 
@@ -256,7 +261,7 @@ func (s *PostgresOrderStore) ListOrders(f OrderFilter) ([]*Order, error) {
 	var out []*Order
 	for rows.Next() {
 		o := &Order{}
-		if err := rows.Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.CreatedAt, &o.DeletedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.PaymentMethodID, &o.PaymentMethodName, &o.CreatedAt, &o.DeletedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, o)

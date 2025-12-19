@@ -153,7 +153,7 @@
       "Step 4: Update Order list to display payment status and method.",
       "Step 5: Update and create all necessary tests."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "enhancement",

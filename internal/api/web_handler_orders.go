@@ -146,10 +146,16 @@ func (h *WebHandler) HandleCreateOrderView(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	pMethods, err := h.paymentMethodStore.GetAllPaymentMethods()
+	if err != nil {
+		h.logger.Error("fetching payment methods", "error", err)
+	}
+
 	data := map[string]any{
-		"User":     user,
-		"Clients":  clients,
-		"Products": products,
+		"User":           user,
+		"Clients":        clients,
+		"Products":       products,
+		"PaymentMethods": pMethods,
 	}
 
 	if err := h.renderer.Render(w, "order_form.html", data); err != nil {
@@ -165,6 +171,14 @@ func (h *WebHandler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	clientID, _ := strconv.ParseInt(r.FormValue("client_id"), 10, 64)
 	state := store.OrderState(r.FormValue("state"))
+	pmIDStr := r.FormValue("payment_method_id")
+	var pmID *int64
+	if pmIDStr != "" {
+		id, err := strconv.ParseInt(pmIDStr, 10, 64)
+		if err == nil && id != 0 {
+			pmID = &id
+		}
+	}
 
 	productIDs := r.PostForm["product_ids[]"]
 	quantities := r.PostForm["quantities[]"]
@@ -194,8 +208,9 @@ func (h *WebHandler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	order := &store.Order{
-		ClientID: clientID,
-		State:    state,
+		ClientID:        clientID,
+		State:           state,
+		PaymentMethodID: pmID,
 	}
 
 	if err := h.orderStore.CreateOrder(order, items); err != nil {
