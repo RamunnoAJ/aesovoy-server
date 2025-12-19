@@ -31,11 +31,6 @@ type DailySalesStats struct {
 	ByMethod    map[string]float64
 }
 
-type SalesHistoryRecord struct {
-	Date   string  `json:"date"`
-	Amount float64 `json:"amount"`
-}
-
 type LocalSaleStore interface {
 	CreateInTx(tx *sql.Tx, sale *LocalSale, items []LocalSaleItem) error
 	DeleteInTx(tx *sql.Tx, id int64) error
@@ -43,7 +38,6 @@ type LocalSaleStore interface {
 	ListAll() ([]*LocalSale, error)
 	ListByDate(start, end time.Time) ([]*LocalSale, error)
 	GetStats(start, end time.Time) (*DailySalesStats, error)
-	GetSalesHistory(days int) ([]*SalesHistoryRecord, error)
 }
 
 type PostgresLocalSaleStore struct {
@@ -222,30 +216,3 @@ func (s *PostgresLocalSaleStore) ListAll() ([]*LocalSale, error) {
 	return sales, rows.Err()
 }
 
-func (s *PostgresLocalSaleStore) GetSalesHistory(days int) ([]*SalesHistoryRecord, error) {
-	query := `
-		SELECT DATE(created_at) as sale_date, COALESCE(SUM(total), 0)
-		FROM local_sales
-		WHERE created_at >= NOW() - ($1 || ' days')::INTERVAL
-		  AND deleted_at IS NULL
-		GROUP BY sale_date
-		ORDER BY sale_date ASC`
-
-	rows, err := s.db.Query(query, days)
-	if err != nil {
-		return nil, err
-	}
-	defer rows.Close()
-
-	var history []*SalesHistoryRecord
-	for rows.Next() {
-		var r SalesHistoryRecord
-		var t time.Time
-		if err := rows.Scan(&t, &r.Amount); err != nil {
-			return nil, err
-		}
-		r.Date = t.Format("2006-01-02")
-		history = append(history, &r)
-	}
-	return history, rows.Err()
-}

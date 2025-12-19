@@ -21,7 +21,6 @@ type DashboardView struct {
 	TopProductsDistrib     []*store.TopProduct
 	ProductionRequirements []*store.ProductionRequirement
 	LowStockAlerts         []*store.ProductStock
-	SalesHistory           []*store.SalesHistoryRecord
 }
 
 func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +84,6 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 	var topProductsDistrib []*store.TopProduct = []*store.TopProduct{}
 	var pendingProduction []*store.ProductionRequirement = []*store.ProductionRequirement{}
 	var lowStockAlerts []*store.ProductStock = []*store.ProductStock{}
-	var salesHistory []*store.SalesHistoryRecord = []*store.SalesHistoryRecord{}
 
 	if user.Role == "administrator" {
 		orderStats, err = h.orderStore.GetStats(start, end)
@@ -111,11 +109,6 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		lowStockAlerts, err = h.localStockService.GetLowStockAlerts(10) // Threshold 10
 		if err != nil {
 			h.logger.Error("getting low stock alerts", "error", err)
-		}
-
-		salesHistory, err = h.localSaleService.GetSalesHistory(7)
-		if err != nil {
-			h.logger.Error("getting sales history", "error", err)
 		}
 	}
 
@@ -145,7 +138,6 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		TopProductsDistrib:     topProductsDistrib,
 		ProductionRequirements: pendingProduction,
 		LowStockAlerts:         lowStockAlerts,
-		SalesHistory:           salesHistory,
 	}
 
 	data := map[string]any{

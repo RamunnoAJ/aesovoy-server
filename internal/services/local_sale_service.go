@@ -155,10 +155,6 @@ func (s *LocalSaleService) GetStats(start, end time.Time) (*store.DailySalesStat
 	return s.saleStore.GetStats(start, end)
 }
 
-func (s *LocalSaleService) GetSalesHistory(days int) ([]*store.SalesHistoryRecord, error) {
-	return s.saleStore.GetSalesHistory(days)
-}
-
 func (s *LocalSaleService) RevokeLocalSale(id int64) error {
 	// 1. Get the sale details to know which items to return
 	sale, err := s.saleStore.GetByID(id)

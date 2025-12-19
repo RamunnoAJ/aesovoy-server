@@ -19,11 +19,13 @@ Accomplished:
 - Feature: Order List Improvements (Default 7-day filter and descending sort).
 - Feature: Order Payment Management (Added 'paid' state and 'payment_method_id', updated UI and Store).
 - Feature: Dashboard Weekly View (Added 'Semanal' view to the dashboard aggregating last 7 days of data).
-- Verified changes with existing tests and build.
+- Bug Fix: Removed broken and unused "Sales History" chart logic from Home Dashboard which was causing "unable to encode" errors in logs. Cleaned up dead code in LocalSale Service and Store.
+- Verified changes with existing tests (passed).
 
 Tests Completed:
 - internal/billing: TestListInvoices
 - internal/store: TestDuplicateIdentityFields, TestDuplicateIdentityFieldsProviders
+- internal/api, internal/services, internal/store: All tests passed (using -p 1 to avoid concurrency deadlocks).
 
 Next Steps:
 - Refactor User Creation to separate page.
