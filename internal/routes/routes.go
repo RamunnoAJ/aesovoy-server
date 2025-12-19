@@ -160,18 +160,18 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/time", app.WebHandler.HandleTime)
 		r.Post("/logout", app.WebHandler.HandleLogout)
 
-		// Invoices (Web View)
-		r.Route("/invoices", func(r chi.Router) {
-			r.Get("/", app.InvoiceHandler.List)
-			r.Get("/download/{filename}", app.InvoiceHandler.Download)
-			r.Delete("/{filename}", app.InvoiceHandler.Delete)
-		})
-
 		// Web Users Management (Admin)
 		r.Group(func(r chi.Router) {
 			r.Use(app.Middleware.RequireAdmin)
 			r.Get("/users", app.WebHandler.HandleListUsers)
 			r.Patch("/users/{id}/toggle-status", app.WebHandler.HandleToggleUserStatus)
+
+			// Invoices (Web View - Admin Only)
+			r.Route("/invoices", func(r chi.Router) {
+				r.Get("/", app.InvoiceHandler.List)
+				r.Get("/download/{filename}", app.InvoiceHandler.Download)
+				r.Delete("/{filename}", app.InvoiceHandler.Delete)
+			})
 		})
 
 		// Products
