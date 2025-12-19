@@ -125,6 +125,12 @@ func NewRenderer() *Renderer {
 				}
 				return *f
 			},
+			"defaultNA": func(s string) string {
+				if strings.TrimSpace(s) == "" {
+					return "N/A"
+				}
+				return s
+			},
 		},
 	}
 }

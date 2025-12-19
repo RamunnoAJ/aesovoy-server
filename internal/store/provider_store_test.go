@@ -67,6 +67,40 @@ func TestCreateProvider(t *testing.T) {
 	}
 }
 
+func TestDuplicateIdentityFieldsProviders(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+	db.Exec("INSERT INTO provider_categories (id, name) VALUES (1, 'Sin Categoría') ON CONFLICT (id) DO NOTHING;")
+
+	store := NewPostgresProviderStore(db)
+
+	// Create first provider
+	p1 := &Provider{
+		Name:      "Prov 1",
+		Reference: "REPETIDO",
+		CUIT:      "12345",
+	}
+	require.NoError(t, store.CreateProvider(p1))
+
+	// Create second provider with same CUIT and Reference
+	p2 := &Provider{
+		Name:      "Prov 2",
+		Reference: "REPETIDO",
+		CUIT:      "12345",
+	}
+	err := store.CreateProvider(p2)
+	assert.NoError(t, err, "Should allow duplicate reference and CUIT for providers")
+
+	// Create third provider with empty CUIT and Reference
+	p3 := &Provider{
+		Name:      "Prov 3",
+		Reference: "",
+		CUIT:      "",
+	}
+	err = store.CreateProvider(p3)
+	assert.NoError(t, err, "Should allow empty reference and CUIT for providers")
+}
+
 func TestGetProviderByID(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()
