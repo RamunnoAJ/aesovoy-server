@@ -8,7 +8,7 @@
                 
                 <div class="flex-1 min-w-[150px]">
                     <select name="category_id" id="category_id" class="block w-full py-2 px-3 border border-gray-300 rounded-md bg-white shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                        <option value="" disabled selected>Seleccione categoría</option>
+                        <option value="" disabled>Seleccione categoría</option>
                         <option value="">Todas</option>
                         {{range .Categories}}
                         <option value="{{.ID}}" {{if eqInt64Ptr $.CategoryID .ID}}selected{{end}}>{{.Name}}</option>

@@ -54,16 +54,6 @@
         {{end}}
     </div>
 
-    {{if eq .User.Role "administrator"}}
-    <!-- Sales Chart -->
-    <div class="bg-white p-6 rounded-lg shadow-lg">
-        <h3 class="text-lg font-bold text-gray-800 mb-4">Ventas Últimos 7 Días</h3>
-        <div class="h-64">
-            <canvas id="salesChart"></canvas>
-        </div>
-    </div>
-    {{end}}
-
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <!-- Local Sales Breakdown (Visible for all) -->
         <div class="bg-white rounded-lg shadow-lg overflow-hidden h-full">
@@ -253,45 +243,6 @@
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    {{if eq .User.Role "administrator"}}
-    const salesData = {{jsToJson .Stats.SalesHistory}};
-    if (salesData && salesData.length > 0) {
-        const ctx = document.getElementById('salesChart').getContext('2d');
-        new Chart(ctx, {
-            type: 'line',
-            data: {
-                labels: salesData.map(d => {
-                    const [year, month, day] = d.date.split('-');
-                    return `${day}/${month}`;
-                }),
-                datasets: [{
-                    label: 'Ventas ($)',
-                    data: salesData.map(d => d.amount),
-                    borderColor: 'rgb(59, 130, 246)',
-                    backgroundColor: 'rgba(59, 130, 246, 0.1)',
-                    tension: 0.3,
-                    fill: true
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { display: false }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: value => '$' + value.toLocaleString()
-                        }
-                    }
-                }
-            }
-        });
-    }
-    {{end}}
-
     function updateDateInput() {
         const viewSelect = document.getElementById('view-select');
         const dateInput = document.getElementById('date-input');
