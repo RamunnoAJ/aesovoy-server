@@ -1,0 +1,163 @@
+{{define "content"}}
+<div class="container mx-auto" x-data="{ currentTab: new URLSearchParams(window.location.search).get('type') || 'all' }">
+    <div class="bg-white rounded-lg shadow-lg">
+        <div class="p-6 border-b border-gray-200 flex flex-col md:flex-row justify-between items-center gap-4">
+            <h1 class="text-2xl font-bold text-gray-800">Gastos</h1>
+            
+            <div class="flex-1 w-full md:w-auto flex justify-center md:justify-end gap-2">
+                <form action="/expenses" method="GET" class="w-full max-w-2xl flex gap-2 items-end flex-wrap md:flex-nowrap">
+                    <input type="hidden" name="type" :value="currentTab !== 'all' ? currentTab : ''">
+                    
+                    <div class="flex-1 min-w-[150px]">
+                        <label for="category_id" class="block text-xs font-medium text-gray-500 mb-1">Categoría</label>
+                        <select name="category_id" id="category_id" class="block w-full py-2 px-3 border border-gray-300 rounded-md bg-white shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                            <option value="">Todas</option>
+                            {{range .Categories}}
+                            <option value="{{.ID}}" {{if eqInt64Ptr $.Filter.CategoryID .ID}}selected{{end}}>{{.Name}}</option>
+                            {{end}}
+                        </select>
+                    </div>
+
+                    <div class="w-32">
+                        <label for="start_date" class="block text-xs font-medium text-gray-500 mb-1">Desde</label>
+                        <input type="date" name="start_date" id="start_date" value="{{if .Filter.StartDate}}{{.Filter.StartDate.Format "2006-01-02"}}{{end}}" class="block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+
+                    <div class="w-32">
+                        <label for="end_date" class="block text-xs font-medium text-gray-500 mb-1">Hasta</label>
+                        <input type="date" name="end_date" id="end_date" value="{{if .Filter.EndDate}}{{.Filter.EndDate.Format "2006-01-02"}}{{end}}" class="block w-full py-2 px-3 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                    </div>
+
+                    <button type="submit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md text-sm h-[38px]">Filtrar</button>
+                </form>
+
+                <a href="/expenses/new" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center gap-2 whitespace-nowrap h-[38px] self-end">
+                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                    </svg>
+                    Nuevo
+                </a>
+            </div>
+        </div>
+
+        <div class="bg-gray-50 border-b border-gray-200">
+            <ul class="flex text-sm font-medium text-center text-gray-500">
+                <li class="mr-2">
+                    <a href="/expenses" 
+                       class="inline-block p-4 border-b-2 rounded-t-lg transition duration-150 ease-in-out"
+                       :class="currentTab === 'all' ? 'text-blue-600 border-blue-600' : 'hover:text-gray-600 hover:border-gray-300 border-transparent'">
+                        Todos
+                    </a>
+                </li>
+                <li class="mr-2">
+                    <a href="/expenses?type=local" 
+                       class="inline-block p-4 border-b-2 rounded-t-lg transition duration-150 ease-in-out"
+                       :class="currentTab === 'local' ? 'text-blue-600 border-blue-600' : 'hover:text-gray-600 hover:border-gray-300 border-transparent'">
+                        Local
+                    </a>
+                </li>
+                <li class="mr-2">
+                    <a href="/expenses?type=production" 
+                       class="inline-block p-4 border-b-2 rounded-t-lg transition duration-150 ease-in-out"
+                       :class="currentTab === 'production' ? 'text-blue-600 border-blue-600' : 'hover:text-gray-600 hover:border-gray-300 border-transparent'">
+                        Producción
+                    </a>
+                </li>
+            </ul>
+        </div>
+        
+        <div class="overflow-x-auto md:overflow-visible">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Fecha</th>
+                        <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Proveedor</th>
+                        <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
+                        <th scope="col" class="px-6 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">Tipo</th>
+                        <th scope="col" class="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">Monto</th>
+                        <th scope="col" class="px-6 py-3 text-center text-sm font-medium text-gray-500 uppercase tracking-wider">Comprobante</th>
+                        <th scope="col" class="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
+                    </tr>
+                </thead>
+                <tbody class="bg-white divide-y divide-gray-200">
+                    {{range .Expenses}}
+                    <tr class="hover:bg-gray-50">
+                        <td class="px-6 py-4 whitespace-nowrap text-base text-gray-900">
+                            {{.Date.Format "02/01/2006"}}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">
+                            {{if .ProviderName}}{{.ProviderName}}{{else}}-{{end}}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">
+                            {{.CategoryName}}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
+                                {{if eq .Type "local"}}bg-green-100 text-green-800{{else}}bg-blue-100 text-blue-800{{end}}">
+                                {{if eq .Type "local"}}Local{{else}}Producción{{end}}
+                            </span>
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-base font-bold text-gray-900">
+                            {{formatMoney .Amount}}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-center">
+                            {{if .ImagePath}}
+                            <a href="/expenses/{{.ID}}/image" target="_blank" class="text-blue-600 hover:text-blue-900">
+                                <svg class="w-5 h-5 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                </svg>
+                            </a>
+                            {{else}}
+                            <span class="text-gray-300">-</span>
+                            {{end}}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <button hx-delete="/expenses/{{.ID}}" 
+                                    hx-confirm="¿Estás seguro de eliminar este gasto?"
+                                    hx-target="closest tr"
+                                    hx-swap="outerHTML swap:500ms"
+                                    class="text-red-600 hover:text-red-900 focus:outline-none">
+                                Eliminar
+                            </button>
+                        </td>
+                    </tr>
+                    {{end}}
+                </tbody>
+            </table>
+            {{if not .Expenses}}
+            <div class="p-6 text-center text-gray-500 italic">
+                No hay gastos registrados.
+            </div>
+            {{end}}
+        </div>
+
+        <!-- Pagination -->
+        <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center bg-gray-50 rounded-b-lg">
+            <div>
+                {{if gt .Page 1}}
+                <a href="/expenses?page={{.PrevPage}}{{if .TypeParam}}&type={{.TypeParam}}{{end}}{{if .Filter.CategoryID}}&category_id={{.Filter.CategoryID}}{{end}}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Anterior
+                </a>
+                {{else}}
+                <span class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-300 bg-gray-100 cursor-not-allowed">
+                    Anterior
+                </span>
+                {{end}}
+            </div>
+            <span class="text-sm text-gray-700 font-medium">Página {{.Page}}</span>
+            <div>
+                {{if .HasNext}}
+                <a href="/expenses?page={{.NextPage}}{{if .TypeParam}}&type={{.TypeParam}}{{end}}{{if .Filter.CategoryID}}&category_id={{.Filter.CategoryID}}{{end}}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+                    Siguiente
+                </a>
+                {{else}}
+                <span class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-300 bg-gray-100 cursor-not-allowed">
+                    Siguiente
+                </span>
+                {{end}}
+            </div>
+        </div>
+    </div>
+</div>
+{{end}}

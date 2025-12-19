@@ -17,6 +17,15 @@ func TestPostgresExpenseStore_CRUD(t *testing.T) {
 	pc := &ProviderCategory{Name: "General"}
 	err := providerStore.CreateProviderCategory(pc)
 	require.NoError(t, err)
+	
+	// Ensure expense category exists
+	ec := &ExpenseCategory{Name: "Supplies"}
+	err = store.CreateExpenseCategory(ec)
+	require.NoError(t, err)
+
+	ec2 := &ExpenseCategory{Name: "Cleaning"}
+	err = store.CreateExpenseCategory(ec2)
+	require.NoError(t, err)
 
 	// Setup provider
 	p := &Provider{Name: "Test Provider", CategoryID: pc.ID}
@@ -25,7 +34,7 @@ func TestPostgresExpenseStore_CRUD(t *testing.T) {
 
 	e := &Expense{
 		Amount:     "150.50",
-		Category:   "Supplies",
+		CategoryID: ec.ID,
 		Type:       ExpenseTypeProduction,
 		Date:       time.Now().UTC().Truncate(time.Second),
 		ProviderID: &p.ID,
@@ -45,7 +54,8 @@ func TestPostgresExpenseStore_CRUD(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, got)
 		assert.Equal(t, e.Amount, got.Amount)
-		assert.Equal(t, e.Category, got.Category)
+		assert.Equal(t, e.CategoryID, got.CategoryID)
+		assert.Equal(t, ec.Name, got.CategoryName)
 		assert.Equal(t, e.Type, got.Type)
 		assert.Equal(t, *e.ProviderID, *got.ProviderID)
 		assert.Equal(t, "Test Provider", got.ProviderName)
@@ -55,24 +65,26 @@ func TestPostgresExpenseStore_CRUD(t *testing.T) {
 	// Update
 	t.Run("UpdateExpense", func(t *testing.T) {
 		e.Amount = "200.00"
-		e.Category = "Updated Supplies"
+		// Change category
+		e.CategoryID = ec2.ID
 		err := store.UpdateExpense(e)
 		require.NoError(t, err)
 
 		got, err := store.GetExpenseByID(e.ID)
 		require.NoError(t, err)
 		assert.Equal(t, "200.00", got.Amount)
-		assert.Equal(t, "Updated Supplies", got.Category)
+		assert.Equal(t, ec2.ID, got.CategoryID)
+		assert.Equal(t, ec2.Name, got.CategoryName)
 	})
 
 	// List
 	t.Run("ListExpenses", func(t *testing.T) {
 		// Create another expense
 		e2 := &Expense{
-			Amount:   "50.00",
-			Category: "Cleaning",
-			Type:     ExpenseTypeLocal,
-			Date:     time.Now().Add(-24 * time.Hour),
+			Amount:     "50.00",
+			CategoryID: ec2.ID,
+			Type:       ExpenseTypeLocal,
+			Date:       time.Now().Add(-24 * time.Hour),
 		}
 		err := store.CreateExpense(e2)
 		require.NoError(t, err)
@@ -88,6 +100,15 @@ func TestPostgresExpenseStore_CRUD(t *testing.T) {
 		require.NoError(t, err)
 		assert.GreaterOrEqual(t, len(listLocal), 1)
 		assert.Equal(t, ExpenseTypeLocal, listLocal[0].Type)
+		
+		// Filter by Category
+		catID := ec2.ID
+		listCat, err := store.ListExpenses(ExpenseFilter{CategoryID: &catID})
+		require.NoError(t, err)
+		assert.GreaterOrEqual(t, len(listCat), 1)
+		for _, ex := range listCat {
+			assert.Equal(t, ec2.ID, ex.CategoryID)
+		}
 	})
 
 	// Delete

@@ -26,7 +26,7 @@ func setupTestDB(t *testing.T) *sql.DB {
 	require.NoError(t, err)
 	require.NoError(t, Migrate(db, "../../migrations/"))
 
-	_, err = db.Exec(`TRUNCATE order_products, orders, product_ingredients, products, categories, providers, provider_categories, clients, tokens, users, ingredients, payment_methods, local_stock, local_sales, local_sale_items, expenses RESTART IDENTITY CASCADE`)
+	_, err = db.Exec(`TRUNCATE order_products, orders, product_ingredients, products, categories, providers, provider_categories, clients, tokens, users, ingredients, payment_methods, local_stock, local_sales, local_sale_items, expenses, expense_categories RESTART IDENTITY CASCADE`)
 	require.NoError(t, err)
 	return db
 }

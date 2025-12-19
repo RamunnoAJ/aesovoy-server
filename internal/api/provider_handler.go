@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"log/slog"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
@@ -200,27 +201,34 @@ func (h *ProviderHandler) HandleGetProviderByID(w http.ResponseWriter, r *http.R
 // @Tags         providers
 // @Accept       json
 // @Produce      json
-// @Param        q      query     string        false "Full-text search query"
-// @Param        limit  query     int           false "Results-per-page limit"
-// @Param        offset query     int           false "Page offset for pagination"
-// @Success      200    {object}  ProvidersResponse
-// @Failure      500    {object}  utils.HTTPError
+// @Param        q            query     string        false "Full-text search query"
+// @Param        category_id  query     int           false "Category ID to filter by"
+// @Param        limit        query     int           false "Results-per-page limit"
+// @Param        offset       query     int           false "Page offset for pagination"
+// @Success      200          {object}  ProvidersResponse
+// @Failure      500          {object}  utils.HTTPError
 // @Security     BearerAuth
 // @Router       /api/v1/providers [get]
 func (h *ProviderHandler) HandleGetProviders(w http.ResponseWriter, r *http.Request) {
 	q := strings.TrimSpace(r.URL.Query().Get("q"))
 	limit := parseIntDefault(r.URL.Query().Get("limit"), 50)
 	offset := parseIntDefault(r.URL.Query().Get("offset"), 0)
-
-	var (
-		list []*store.Provider
-		err  error
-	)
-	if q == "" {
-		list, err = h.providerStore.GetAllProviders()
-	} else {
-		list, err = h.providerStore.SearchProvidersFTS(q, limit, offset)
+	
+	var categoryID *int64
+	if cidStr := r.URL.Query().Get("category_id"); cidStr != "" {
+		if cid, err := strconv.ParseInt(cidStr, 10, 64); err == nil {
+			categoryID = &cid
+		}
 	}
+
+	// Always use SearchProvidersFTS to handle pagination and filters consistently,
+	// even if query is empty (store handles empty query optimization).
+	// However, original code used GetAllProviders if q == "".
+	// GetAllProviders doesn't support pagination or filtering by category easily without refactoring.
+	// SearchProvidersFTS in our new implementation handles empty Q and filters.
+	
+	list, err := h.providerStore.SearchProvidersFTS(q, categoryID, limit, offset)
+
 	if err != nil {
 		h.logger.Error("list/search providers", "error", err)
 		utils.Error(w, 500, "internal server error")

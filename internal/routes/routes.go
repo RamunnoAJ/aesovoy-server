@@ -124,6 +124,8 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 				r.Delete("/{id}", app.ExpenseHandler.HandleDeleteExpense)
 			})
 
+			r.Get("/invoices", app.InvoiceHandler.HandleListInvoicesJSON)
+
 			// API Tokens
 			r.Post("/users", app.UserHandler.HandleRegisterUser)
 			r.Post("/tokens/authentication", app.TokenHandler.HandleCreateToken)
@@ -158,18 +160,18 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/time", app.WebHandler.HandleTime)
 		r.Post("/logout", app.WebHandler.HandleLogout)
 
-		// Invoices (Web View)
-		r.Route("/invoices", func(r chi.Router) {
-			r.Get("/", app.InvoiceHandler.List)
-			r.Get("/download/{filename}", app.InvoiceHandler.Download)
-			r.Delete("/{filename}", app.InvoiceHandler.Delete)
-		})
-
 		// Web Users Management (Admin)
 		r.Group(func(r chi.Router) {
 			r.Use(app.Middleware.RequireAdmin)
 			r.Get("/users", app.WebHandler.HandleListUsers)
 			r.Patch("/users/{id}/toggle-status", app.WebHandler.HandleToggleUserStatus)
+
+			// Invoices (Web View - Admin Only)
+			r.Route("/invoices", func(r chi.Router) {
+				r.Get("/", app.InvoiceHandler.List)
+				r.Get("/download/{filename}", app.InvoiceHandler.Download)
+				r.Delete("/{filename}", app.InvoiceHandler.Delete)
+			})
 		})
 
 		// Products
@@ -253,6 +255,12 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Get("/local-sales/{id}", app.WebHandler.HandleGetLocalSaleView)
 		r.Delete("/local-sales/{id}", app.WebHandler.HandleRevokeLocalSale)
 
+		// Shift Management (Admin/Employee)
+		r.Get("/shifts", app.WebHandler.HandleShiftManagement)
+		r.Post("/shifts/open", app.WebHandler.HandleOpenShift)
+		r.Post("/shifts/close", app.WebHandler.HandleCloseShift)
+		r.Post("/shifts/movements", app.WebHandler.HandleRegisterMovement)
+
 		// Production Calculator (Employee and Admin)
 		r.Get("/production-calculator", app.WebHandler.HandleShowProductionCalculator)
 		r.Post("/production-calculator", app.WebHandler.HandleCalculateProduction)
@@ -261,6 +269,19 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Group(func(r chi.Router) {
 			r.Use(app.Middleware.RequireAdmin)
 			r.Get("/pending-production-ingredients", app.WebHandler.HandleShowPendingProductionIngredients)
+		})
+
+		// Expenses (Admin Only)
+		r.Group(func(r chi.Router) {
+			r.Use(app.Middleware.RequireAdmin)
+			r.Route("/expenses", func(r chi.Router) {
+				r.Get("/", app.WebHandler.HandleListExpenses)
+				r.Get("/new", app.WebHandler.HandleCreateExpenseView)
+				r.Post("/new", app.WebHandler.HandleCreateExpense)
+				r.Delete("/{id}", app.WebHandler.HandleDeleteExpense)
+				r.Get("/{id}/image", app.WebHandler.HandleGetExpenseImage)
+				r.Post("/categories/quick", app.WebHandler.HandleQuickCreateExpenseCategory)
+			})
 		})
 
 	})

@@ -4,19 +4,33 @@
         <h1 class="text-2xl font-bold text-gray-800">Proveedores</h1>
         
         <div class="flex-1 w-full md:w-auto flex justify-center md:justify-end gap-2">
-            <form action="/providers" method="GET" class="w-full max-w-md flex gap-2">
-                <div class="relative flex-1">
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                            <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
-                        </svg>
-                    </div>
-                    <input type="text" name="q" value="{{.Query}}" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Buscar proveedores...">
+            <form action="/providers" method="GET" class="w-full max-w-2xl flex gap-2 items-end flex-wrap md:flex-nowrap">
+                
+                <div class="flex-1 min-w-[150px]">
+                    <select name="category_id" id="category_id" class="block w-full py-2 px-3 border border-gray-300 rounded-md bg-white shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                        <option value="" disabled>Seleccione categoría</option>
+                        <option value="">Todas</option>
+                        {{range .Categories}}
+                        <option value="{{.ID}}" {{if eqInt64Ptr $.CategoryID .ID}}selected{{end}}>{{.Name}}</option>
+                        {{end}}
+                    </select>
                 </div>
-                <button type="submit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md text-sm">Buscar</button>
+
+                <div class="flex-1 min-w-[200px]">
+                    <div class="relative">
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+                            </svg>
+                        </div>
+                        <input type="text" name="q" id="q" value="{{.Query}}" class="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm" placeholder="Filtrar proveedores...">
+                    </div>
+                </div>
+
+                <button type="submit" class="bg-gray-100 hover:bg-gray-200 text-gray-700 font-medium py-2 px-4 rounded-md text-sm h-[38px]">Filtrar</button>
             </form>
 
-            <a href="/providers/new" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center gap-2 whitespace-nowrap">
+            <a href="/providers/new" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm flex items-center gap-2 whitespace-nowrap h-[38px] self-end">
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
                 </svg>
@@ -84,7 +98,7 @@
     <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center bg-gray-50 rounded-b-lg">
         <div>
             {{if gt .Page 1}}
-            <a href="/providers?page={{.PrevPage}}&q={{.Query}}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            <a href="/providers?page={{.PrevPage}}&q={{.Query}}{{if .CategoryID}}&category_id={{.CategoryID}}{{end}}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                 Anterior
             </a>
             {{else}}
@@ -96,7 +110,7 @@
         <span class="text-sm text-gray-700 font-medium">Página {{.Page}}</span>
         <div>
             {{if .HasNext}}
-            <a href="/providers?page={{.NextPage}}&q={{.Query}}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
+            <a href="/providers?page={{.NextPage}}&q={{.Query}}{{if .CategoryID}}&category_id={{.CategoryID}}{{end}}" class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
                 Siguiente
             </a>
             {{else}}
@@ -105,68 +119,6 @@
             </span>
             {{end}}
         </div>
-        </div>
     </div>
-
-    <!-- Provider Categories Section -->
-    <div class="bg-white rounded-lg shadow-lg mt-8">
-        <div class="p-6 border-b border-gray-200 flex justify-between items-center">
-            <h2 class="text-2xl font-bold text-gray-800">Categorías de Proveedores</h2>
-        </div>
-        <div class="p-6">
-            <form hx-post="/providers/categories/new" hx-target="#provider-categories-list" hx-swap="beforeend" hx-on::afterrequest="this.reset()" class="flex gap-2 mb-4">
-                <input type="text" name="name" placeholder="Nueva categoría" required class="flex-1 block w-full pl-3 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:placeholder-gray-400 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
-                <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded text-sm">Agregar Categoría</button>
-            </form>
-
-            <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Nombre</th>
-                            <th scope="col" class="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody id="provider-categories-list" class="bg-white divide-y divide-gray-200">
-                        {{range .Categories}}
-                        <tr hx-trigger='editCategory{{.ID}} from:body' hx-get='/providers/categories/{{.ID}}/edit-form' hx-swap='outerHTML'>
-                            <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.Name}}</td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium relative">
-                                <div class="relative inline-block text-left" x-data="{ open: false }">
-                                    <div>
-                                        <button @click="open = !open" @click.away="open = false" type="button" class="flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-6 h-6">
-                                                <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM12.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0ZM18.75 12a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <div x-show="open" style="display: none;" class="origin-top-right absolute right-0 mt-2 w-36 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none z-20">
-                                        <div class="py-1">
-                                            <button hx-get="/providers/categories/{{.ID}}/edit-form" hx-target="closest tr" hx-swap="outerHTML" class="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
-                                                Editar
-                                            </button>
-                                            <button 
-                                                hx-delete="/providers/categories/{{.ID}}/delete"
-                                                hx-confirm="¿Estás seguro de que deseas eliminar esta categoría?"
-                                                hx-target="closest tr"
-                                                hx-swap="outerHTML"
-                                                class="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100">
-                                                Eliminar
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </td>
-                        </tr>
-                        {{else}}
-                        <tr>
-                            <td colspan="3" class="px-6 py-4 text-center text-gray-500">No hay categorías de proveedores registradas.</td>
-                        </tr>
-                        {{end}}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
+</div>
 {{end}}
-    

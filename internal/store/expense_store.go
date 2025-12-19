@@ -13,13 +13,20 @@ const (
 	ExpenseTypeProduction ExpenseType = "production"
 )
 
+type ExpenseCategory struct {
+	ID        int64     `json:"id"`
+	Name      string    `json:"name"`
+	CreatedAt time.Time `json:"created_at"`
+}
+
 type Expense struct {
 	ID           int64       `json:"id"`
 	Amount       string      `json:"amount"` // stored as NUMERIC, transferred as string
 	ImagePath    string      `json:"image_path,omitempty"`
 	ProviderID   *int64      `json:"provider_id,omitempty"`
 	ProviderName string      `json:"provider_name,omitempty"`
-	Category     string      `json:"category"`
+	CategoryID   int64       `json:"category_id"`
+	CategoryName string      `json:"category_name"`
 	Type         ExpenseType `json:"type"`
 	Date         time.Time   `json:"date"`
 	CreatedAt    time.Time   `json:"created_at"`
@@ -32,14 +39,19 @@ type ExpenseStore interface {
 	DeleteExpense(id int64) error
 	GetExpenseByID(id int64) (*Expense, error)
 	ListExpenses(f ExpenseFilter) ([]*Expense, error)
+
+	CreateExpenseCategory(c *ExpenseCategory) error
+	GetAllExpenseCategories() ([]*ExpenseCategory, error)
+	GetExpenseCategoryByID(id int64) (*ExpenseCategory, error)
 }
 
 type ExpenseFilter struct {
-	Type      *ExpenseType
-	StartDate *time.Time
-	EndDate   *time.Time
-	Limit     int
-	Offset    int
+	Type       *ExpenseType
+	CategoryID *int64
+	StartDate  *time.Time
+	EndDate    *time.Time
+	Limit      int
+	Offset     int
 }
 
 type PostgresExpenseStore struct{ db *sql.DB }
@@ -50,22 +62,21 @@ func NewPostgresExpenseStore(db *sql.DB) *PostgresExpenseStore {
 
 func (s *PostgresExpenseStore) CreateExpense(e *Expense) error {
 	const q = `
-	INSERT INTO expenses (amount, image_path, provider_id, category, type, date)
+	INSERT INTO expenses (amount, image_path, provider_id, category_id, type, date)
 	VALUES ($1, $2, $3, $4, $5, $6)
 	RETURNING id, created_at`
 	
-	// Ensure Type is valid if not already checked (DB checks too)
-	return s.db.QueryRow(q, e.Amount, e.ImagePath, e.ProviderID, e.Category, e.Type, e.Date).
+	return s.db.QueryRow(q, e.Amount, e.ImagePath, e.ProviderID, e.CategoryID, e.Type, e.Date).
 		Scan(&e.ID, &e.CreatedAt)
 }
 
 func (s *PostgresExpenseStore) UpdateExpense(e *Expense) error {
 	const q = `
 	UPDATE expenses
-	SET amount=$1, image_path=$2, provider_id=$3, category=$4, type=$5, date=$6
+	SET amount=$1, image_path=$2, provider_id=$3, category_id=$4, type=$5, date=$6
 	WHERE id=$7 AND deleted_at IS NULL`
 	
-	res, err := s.db.Exec(q, e.Amount, e.ImagePath, e.ProviderID, e.Category, e.Type, e.Date, e.ID)
+	res, err := s.db.Exec(q, e.Amount, e.ImagePath, e.ProviderID, e.CategoryID, e.Type, e.Date, e.ID)
 	if err != nil {
 		return err
 	}
@@ -97,16 +108,17 @@ func (s *PostgresExpenseStore) DeleteExpense(id int64) error {
 
 func (s *PostgresExpenseStore) GetExpenseByID(id int64) (*Expense, error) {
 	const q = `
-	SELECT e.id, e.amount::text, COALESCE(e.image_path, ''), e.provider_id, p.name, e.category, e.type, e.date, e.created_at, e.deleted_at
+	SELECT e.id, e.amount::text, COALESCE(e.image_path, ''), e.provider_id, p.name, e.category_id, ec.name, e.type, e.date, e.created_at, e.deleted_at
 	FROM expenses e
 	LEFT JOIN providers p ON p.id = e.provider_id
+	LEFT JOIN expense_categories ec ON ec.id = e.category_id
 	WHERE e.id=$1 AND e.deleted_at IS NULL`
 	
 	e := &Expense{}
 	var providerName sql.NullString
 	
 	err := s.db.QueryRow(q, id).Scan(
-		&e.ID, &e.Amount, &e.ImagePath, &e.ProviderID, &providerName, &e.Category, &e.Type, &e.Date, &e.CreatedAt, &e.DeletedAt,
+		&e.ID, &e.Amount, &e.ImagePath, &e.ProviderID, &providerName, &e.CategoryID, &e.CategoryName, &e.Type, &e.Date, &e.CreatedAt, &e.DeletedAt,
 	)
 	if err == sql.ErrNoRows {
 		return nil, nil
@@ -129,15 +141,20 @@ func (s *PostgresExpenseStore) ListExpenses(f ExpenseFilter) ([]*Expense, error)
 	}
 
 	q := `
-	SELECT e.id, e.amount::text, COALESCE(e.image_path, ''), e.provider_id, p.name, e.category, e.type, e.date, e.created_at, e.deleted_at
+	SELECT e.id, e.amount::text, COALESCE(e.image_path, ''), e.provider_id, p.name, e.category_id, ec.name, e.type, e.date, e.created_at, e.deleted_at
 	FROM expenses e
-	LEFT JOIN providers p ON p.id = e.provider_id`
+	LEFT JOIN providers p ON p.id = e.provider_id
+	LEFT JOIN expense_categories ec ON ec.id = e.category_id`
 	where := "WHERE e.deleted_at IS NULL"
 	args := []any{}
 
 	if f.Type != nil {
 		where += fmt.Sprintf(" AND e.type=$%d", len(args)+1)
 		args = append(args, *f.Type)
+	}
+	if f.CategoryID != nil {
+		where += fmt.Sprintf(" AND e.category_id=$%d", len(args)+1)
+		args = append(args, *f.CategoryID)
 	}
 	if f.StartDate != nil {
 		where += fmt.Sprintf(" AND e.date >= $%d", len(args)+1)
@@ -162,7 +179,7 @@ func (s *PostgresExpenseStore) ListExpenses(f ExpenseFilter) ([]*Expense, error)
 		e := &Expense{}
 		var providerName sql.NullString
 		if err := rows.Scan(
-			&e.ID, &e.Amount, &e.ImagePath, &e.ProviderID, &providerName, &e.Category, &e.Type, &e.Date, &e.CreatedAt, &e.DeletedAt,
+			&e.ID, &e.Amount, &e.ImagePath, &e.ProviderID, &providerName, &e.CategoryID, &e.CategoryName, &e.Type, &e.Date, &e.CreatedAt, &e.DeletedAt,
 		); err != nil {
 			return nil, err
 		}
@@ -172,4 +189,40 @@ func (s *PostgresExpenseStore) ListExpenses(f ExpenseFilter) ([]*Expense, error)
 		out = append(out, e)
 	}
 	return out, rows.Err()
+}
+
+func (s *PostgresExpenseStore) CreateExpenseCategory(c *ExpenseCategory) error {
+	const q = `INSERT INTO expense_categories (name) VALUES ($1) RETURNING id, created_at`
+	return s.db.QueryRow(q, c.Name).Scan(&c.ID, &c.CreatedAt)
+}
+
+func (s *PostgresExpenseStore) GetAllExpenseCategories() ([]*ExpenseCategory, error) {
+	const q = `SELECT id, name, created_at FROM expense_categories ORDER BY name`
+	rows, err := s.db.Query(q)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	var out []*ExpenseCategory
+	for rows.Next() {
+		var c ExpenseCategory
+		if err := rows.Scan(&c.ID, &c.Name, &c.CreatedAt); err != nil {
+			return nil, err
+		}
+		out = append(out, &c)
+	}
+	return out, rows.Err()
+}
+
+func (s *PostgresExpenseStore) GetExpenseCategoryByID(id int64) (*ExpenseCategory, error) {
+	const q = `SELECT id, name, created_at FROM expense_categories WHERE id=$1`
+	var c ExpenseCategory
+	err := s.db.QueryRow(q, id).Scan(&c.ID, &c.Name, &c.CreatedAt)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
+	if err != nil {
+		return nil, err
+	}
+	return &c, nil
 }

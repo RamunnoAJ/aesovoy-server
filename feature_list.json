@@ -97,6 +97,126 @@
       "Step 3: Implement the 'Add Expense' form with file upload support.",
       "Step 4: Implement the list view for expenses showing details and image thumbnails."
     ],
+    "passes": true
+  },
+  {
+    "category": "core_feature",
+    "description": "Business Dashboard",
+    "steps": [
+      "Step 1: Create a Dashboard View (replacing or enhancing the current Home).",
+      "Step 2: Implement widgets for 'Sales Today', 'Pending Production', 'Low Stock Alerts'.",
+      "Step 3: Create backend queries to aggregate this data efficiently.",
+      "Step 4: Add a chart (using Chart.js or similar light lib) for 'Sales last 7 days'."
+    ],
+    "passes": true
+  },
+  {
+    "category": "core_feature",
+    "description": "Stock Movement History (Audit Log)",
+    "steps": [
+      "Step 1: Create migration for 'stock_movements' table (product_id, change_amount, reason, user_id, created_at).",
+      "Step 2: Create StockMovementStore, tests and methods.",
+      "Step 3: Update LocalStockService to record a movement whenever stock is created, adjusted, or sold. Also update it's tests.",
+      "Step 4: Create a view to list stock history for a specific product (accessible via Product details)."
+    ],
+    "passes": false
+  },
+  {
+    "category": "core_feature",
+    "description": "Cash Management (Cierre de Caja)",
+    "steps": [
+      "Step 1: Create migration for 'shifts' table (start_time, end_time, start_cash, end_cash_declared, user_id, status).",
+      "Step 2: Implement Shift Store and Service.",
+      "Step 3: Add UI for 'Open Shift' (asking for initial cash) and 'Close Shift' (asking for final count).",
+      "Step 4: Generate a 'Shift Report' showing expected cash vs declared cash."
+    ],
+    "passes": true
+  },
+  {
+    "category": "functional",
+    "description": "Invoice Pagination (Fullstack)",
+    "steps": [
+      "Step 1: Implement pagination logic in billing service (backend).",
+      "Step 2: Update Invoice Handler to support JSON API pagination.",
+      "Step 3: Update Web View to include pagination controls with date filter preservation.",
+      "Step 4: Verify with tests."
+    ],
+    "passes": true
+  },
+  {
+    "category": "feature",
+    "description": "Order Payment Management",
+    "steps": [
+      "Step 1: Create migration to add 'paid' to order_state ENUM and 'payment_method_id' column to 'orders' table.",
+      "Step 2: Update 'Order' struct and Store methods to include payment information.",
+      "Step 3: Update Order creation/edit UI to allow selecting a payment method and setting paid status.",
+      "Step 4: Update Order list to display payment status and method.",
+      "Step 5: Update and create all necessary tests."
+    ],
+    "passes": false
+  },
+  {
+    "category": "enhancement",
+    "description": "Order List Improvements",
+    "steps": [
+      "Step 1: Modify 'HandleListOrders' to default date filter to the last 7 days if no filter is provided.",
+      "Step 2: Ensure orders are always sorted by date descending (newest first).",
+      "Step 3: Update UI inputs to reflect the default 7-day range on initial load."
+    ],
+    "passes": false
+  },
+  {
+    "category": "enhancement",
+    "description": "Unified Alert System (Toasts)",
+    "steps": [
+      "Step 1: Refactor 'base.html' to include a robust toast notification controller.",
+      "Step 2: Standardize backend response format for HTMX to trigger toasts via 'HX-Trigger' headers.",
+      "Step 3: Update redirects to use URL parameters or flash messages for toasts.",
+      "Step 4: Verify clear visual distinction between Success (Green) and Error (Red) messages."
+    ],
+    "passes": false
+  },
+  {
+    "category": "enhancement",
+    "description": "Client & Provider Identity Fields",
+    "steps": [
+      "Step 1: Create migration to drop UNIQUE constraints on 'cuit' and 'reference' in 'clients' and 'providers' tables.",
+      "Step 2: Update 'clients_list.html' and 'providers_list.html' to display CUIT and Reference columns.",
+      "Step 3: Update form validation to allow empty or duplicate references.",
+      "Step 4: Update and create all necessary tests."
+    ],
+    "passes": false
+  },
+  {
+    "category": "feature",
+    "description": "Dashboard Weekly View",
+    "steps": [
+      "Step 1: Update 'HandleHome' to support a 'view=week' parameter.",
+      "Step 2: Implement logic to calculate start/end dates for the last 7 days.",
+      "Step 3: Add 'Semanal' option to the dashboard view selector.",
+      "Step 4: Verify charts and stats correctly reflect the weekly range."
+    ],
+    "passes": false
+  },
+  {
+    "category": "enhancement",
+    "description": "Standarized Empty Field Display",
+    "steps": [
+      "Step 1: Add a 'defaultNA' template function to 'internal/views/renderer.go'.",
+      "Step 2: Refactor all list templates (clients, providers, products, etc.) to use this function for optional fields.",
+      "Step 3: Verify that empty fields display 'N/A' instead of blank space."
+    ],
+    "passes": false
+  },
+  {
+    "category": "enhancement",
+    "description": "Refactor User Creation to separate page",
+    "steps": [
+      "Step 1: Create 'user_form.html' template for user creation/editing.",
+      "Step 2: Implement 'HandleCreateUserView' and 'HandleEditUserView' in WebHandler.",
+      "Step 3: Update 'HandleRegisterUser' to support form submission redirects instead of just JSON.",
+      "Step 4: Remove modal logic from 'users_list.html' and replace with a standard 'New User' button linking to the new page."
+    ],
     "passes": false
   }
 ]

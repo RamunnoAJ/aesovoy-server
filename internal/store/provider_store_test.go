@@ -219,12 +219,16 @@ func TestSearchProvidersFTS(t *testing.T) {
 
 	store := NewPostgresProviderStore(db)
 
+	cat1 := &ProviderCategory{Name: "Cat 1"}
+	require.NoError(t, store.CreateProviderCategory(cat1))
+
 	p1 := &Provider{
 		Name:      "Lacteos S.A.",
 		Address:   "Calle Falsa 123",
 		Reference: "ref-fts-1",
 		CUIT:      "cuit-fts-1",
 		Email:     "email-fts-1",
+		CategoryID: cat1.ID,
 	}
 	require.NoError(t, store.CreateProvider(p1))
 	p2 := &Provider{
@@ -233,25 +237,30 @@ func TestSearchProvidersFTS(t *testing.T) {
 		Reference: "ref-fts-2",
 		CUIT:      "cuit-fts-2",
 		Email:     "email-fts-2",
+		CategoryID: 1, // Default
 	}
 	require.NoError(t, store.CreateProvider(p2))
 
 	tests := []struct {
-		name      string
-		query     string
-		wantCount int
-		wantErr   bool
+		name       string
+		query      string
+		categoryID *int64
+		wantCount  int
+		wantErr    bool
 	}{
 		{name: "search by name", query: "Lacteos", wantCount: 1, wantErr: false},
 		{name: "search by address", query: "falsa", wantCount: 1, wantErr: false},
 		{name: "search by phone", query: "987654321", wantCount: 1, wantErr: false},
 		{name: "no results", query: "inexistente", wantCount: 0, wantErr: false},
 		{name: "empty query returns all", query: "", wantCount: 2, wantErr: false},
+		{name: "filter by category", query: "", categoryID: &cat1.ID, wantCount: 1, wantErr: false},
+		{name: "filter by category with query", query: "Lacteos", categoryID: &cat1.ID, wantCount: 1, wantErr: false},
+		{name: "filter by category with query mismatch", query: "Carnes", categoryID: &cat1.ID, wantCount: 0, wantErr: false},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			results, err := store.SearchProvidersFTS(tt.query, 10, 0)
+			results, err := store.SearchProvidersFTS(tt.query, tt.categoryID, 10, 0)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

@@ -15,6 +15,7 @@ func (h *WebHandler) HandleListProviders(w http.ResponseWriter, r *http.Request)
 	user := middleware.GetUser(r)
 
 	q := r.URL.Query().Get("q")
+	categoryIDStr := r.URL.Query().Get("category_id")
 	pageStr := r.URL.Query().Get("page")
 	page, _ := strconv.Atoi(pageStr)
 	if page < 1 {
@@ -23,7 +24,15 @@ func (h *WebHandler) HandleListProviders(w http.ResponseWriter, r *http.Request)
 	limit := 10
 	offset := (page - 1) * limit
 
-	providers, err := h.providerStore.SearchProvidersFTS(q, limit+1, offset)
+	var categoryID *int64
+	if categoryIDStr != "" {
+		cid, err := strconv.ParseInt(categoryIDStr, 10, 64)
+		if err == nil {
+			categoryID = &cid
+		}
+	}
+
+	providers, err := h.providerStore.SearchProvidersFTS(q, categoryID, limit+1, offset)
 	if err != nil {
 		h.logger.Error("listing providers", "error", err)
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -46,7 +55,8 @@ func (h *WebHandler) HandleListProviders(w http.ResponseWriter, r *http.Request)
 	data := map[string]any{
 		"User":       user,
 		"Providers":  providers,
-		"Categories": categories, // Add categories to the data
+		"Categories": categories,
+		"CategoryID": categoryID, // Add current category filter
 		"Query":      q,
 		"Page":       page,
 		"HasNext":    hasNext,
