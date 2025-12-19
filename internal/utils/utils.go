@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http"
+	"net/url"
 	"os"
 	"strconv"
 	"strings"
@@ -126,9 +127,11 @@ func Getenv(key, def string) string {
 // TriggerToast sets the HX-Trigger header to trigger a client-side toast notification.
 // type can be "success", "error", "info", "warning".
 func TriggerToast(w http.ResponseWriter, message string, typeStr string) {
+	// PathEscape ensures the message is ASCII-safe for HTTP headers and prevents encoding issues (e.g. tildes)
+	encodedMsg := url.PathEscape(message)
 	payload := map[string]map[string]string{
 		"showMessage": {
-			"message": message,
+			"message": encodedMsg,
 			"type":    typeStr,
 		},
 	}

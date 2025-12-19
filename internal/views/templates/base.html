@@ -241,8 +241,19 @@
 
         window.addEventListener("showMessage", function(evt){
             const data = evt.detail.value || evt.detail;
-            const msg = data.message || data;
+            let msg = data.message || data;
             const type = data.type || 'info';
+
+            // Decode URI encoded messages (fixing issues with tildes/special chars from headers)
+            try {
+                if (typeof msg === 'string') {
+                     msg = decodeURIComponent(msg.replace(/\+/g, ' '));
+                }
+            } catch (e) {
+                // If decoding fails, use original message
+                console.error("Failed to decode toast message:", msg, e);
+            }
+
             showToast(msg, type);
         });
 
@@ -270,6 +281,13 @@
         });
 
         document.addEventListener('htmx:afterRequest', function(evt) {
+            // If the server triggered a toast via header, don't show the generic error
+            // This prevents duplicate toasts when the server returns an error status AND a specific toast message
+            const hxTrigger = evt.detail.xhr.getResponseHeader('HX-Trigger');
+            if (hxTrigger && hxTrigger.includes('showMessage')) {
+                return;
+            }
+
             if (evt.detail.failed) {
                 const xhr = evt.detail.xhr;
                 let msg = "Ha ocurrido un error inesperado";
