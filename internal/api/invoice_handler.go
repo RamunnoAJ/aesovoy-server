@@ -1,6 +1,7 @@
 package api
 
 import (
+	"encoding/json"
 	"math"
 	"net/http"
 	"strconv"
@@ -115,7 +116,8 @@ func (h *InvoiceHandler) HandleListInvoicesJSON(w http.ResponseWriter, r *http.R
 	response.Meta.ItemsPerPage = limit
 	response.Meta.DateFilter = dateFilter
 
-	renderJSON(w, http.StatusOK, response)
+	w.Header().Set("Content-Type", "application/json")
+	json.NewEncoder(w).Encode(response)
 }
 
 func (h *InvoiceHandler) Delete(w http.ResponseWriter, r *http.Request) {

@@ -5,6 +5,8 @@ Accomplished:
 - Backend: Verified `billing.ListInvoices` logic with new tests in `internal/billing/billing_test.go`.
 - API: Added `GET /api/v1/invoices` JSON endpoint with pagination metadata.
 - Frontend: Improved `invoices_list.html` pagination controls to preserve `date` filter.
+- Security: Restricted `/invoices` web routes to Administrators only.
+- Fix: Resolved compilation error in `internal/api/invoice_handler.go` (undefined `renderJSON`).
 - Verified all changes with `go test`.
 
 Tests Completed:
