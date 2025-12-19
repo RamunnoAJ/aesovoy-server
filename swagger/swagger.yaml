@@ -59,6 +59,28 @@ definitions:
           $ref: '#/definitions/store.Ingredient'
         type: array
     type: object
+  api.InvoicesMeta:
+    properties:
+      current_page:
+        type: integer
+      date_filter:
+        type: string
+      items_per_page:
+        type: integer
+      total_items:
+        type: integer
+      total_pages:
+        type: integer
+    type: object
+  api.InvoicesResponse:
+    properties:
+      data:
+        items:
+          $ref: '#/definitions/billing.InvoiceFile'
+        type: array
+      meta:
+        $ref: '#/definitions/api.InvoicesMeta'
+    type: object
   api.LocalSaleResponse:
     properties:
       local_sale:
@@ -246,6 +268,8 @@ definitions:
     properties:
       address:
         type: string
+      category_id:
+        type: integer
       cuit:
         type: string
       email:
@@ -267,6 +291,18 @@ definitions:
         type: string
       username:
         type: string
+    type: object
+  billing.InvoiceFile:
+    properties:
+      modTime:
+        type: string
+      name:
+        type: string
+      rawTime:
+        type: string
+      size:
+        format: int64
+        type: integer
     type: object
   services.CreateLocalSaleItem:
     properties:
@@ -319,6 +355,40 @@ definitions:
     x-enum-varnames:
     - ClientTypeDistributer
     - ClientTypeIndividual
+  store.Expense:
+    properties:
+      amount:
+        description: stored as NUMERIC, transferred as string
+        type: string
+      category_id:
+        type: integer
+      category_name:
+        type: string
+      created_at:
+        type: string
+      date:
+        type: string
+      deleted_at:
+        type: string
+      id:
+        type: integer
+      image_path:
+        type: string
+      provider_id:
+        type: integer
+      provider_name:
+        type: string
+      type:
+        $ref: '#/definitions/store.ExpenseType'
+    type: object
+  store.ExpenseType:
+    enum:
+    - local
+    - production
+    type: string
+    x-enum-varnames:
+    - ExpenseTypeLocal
+    - ExpenseTypeProduction
   store.Ingredient:
     properties:
       created_at:
@@ -399,6 +469,10 @@ definitions:
         items:
           $ref: '#/definitions/store.OrderItem'
         type: array
+      payment_method_id:
+        type: integer
+      payment_method_name:
+        type: string
       state:
         $ref: '#/definitions/store.OrderState'
       total:
@@ -427,12 +501,14 @@ definitions:
     - done
     - cancelled
     - delivered
+    - paid
     type: string
     x-enum-varnames:
     - OrderTodo
     - OrderDone
     - OrderCancelled
     - OrderDelivered
+    - OrderPaid
   store.PaymentMethod:
     properties:
       created_at:
@@ -496,6 +572,10 @@ definitions:
     properties:
       address:
         type: string
+      category:
+        type: string
+      category_id:
+        type: integer
       created_at:
         type: string
       cuit:
@@ -870,6 +950,166 @@ paths:
       summary: Updates a client
       tags:
       - clients
+  /api/v1/expenses:
+    get:
+      description: Responds with a list of expenses, filtered by type or date
+      parameters:
+      - description: Type (local/production)
+        in: query
+        name: type
+        type: string
+      - description: Category ID
+        in: query
+        name: category_id
+        type: integer
+      - description: Start Date (YYYY-MM-DD)
+        in: query
+        name: start_date
+        type: string
+      - description: End Date (YYYY-MM-DD)
+        in: query
+        name: end_date
+        type: string
+      - description: Limit
+        in: query
+        name: limit
+        type: integer
+      - description: Offset
+        in: query
+        name: offset
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/store.Expense'
+            type: array
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets expenses
+      tags:
+      - expenses
+    post:
+      consumes:
+      - multipart/form-data
+      description: Creates a new expense with optional receipt image
+      parameters:
+      - description: Amount
+        in: formData
+        name: amount
+        required: true
+        type: string
+      - description: Category ID
+        in: formData
+        name: category_id
+        required: true
+        type: integer
+      - description: Type (local/production)
+        in: formData
+        name: type
+        required: true
+        type: string
+      - description: Date (YYYY-MM-DD)
+        in: formData
+        name: date
+        required: true
+        type: string
+      - description: Provider ID
+        in: formData
+        name: provider_id
+        type: integer
+      - description: Receipt Image
+        in: formData
+        name: image
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/store.Expense'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Creates an expense
+      tags:
+      - expenses
+  /api/v1/expenses/{id}:
+    delete:
+      description: Soft deletes an expense
+      parameters:
+      - description: Expense ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      responses:
+        "204":
+          description: No Content
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Deletes an expense
+      tags:
+      - expenses
+    get:
+      description: Responds with a single expense
+      parameters:
+      - description: Expense ID
+        in: path
+        name: id
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/store.Expense'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Gets an expense
+      tags:
+      - expenses
   /api/v1/ingredients:
     get:
       description: Responds with a list of all ingredients
@@ -1021,6 +1261,39 @@ paths:
       summary: Updates an ingredient
       tags:
       - ingredients
+  /api/v1/invoices:
+    get:
+      description: Responds with a list of generated invoices (Excel files), with
+        pagination and date filter
+      parameters:
+      - description: Page number (default 1)
+        in: query
+        name: page
+        type: integer
+      - description: Items per page (default 20)
+        in: query
+        name: limit
+        type: integer
+      - description: Filter by date string
+        in: query
+        name: date
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/api.InvoicesResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/utils.HTTPError'
+      security:
+      - BearerAuth: []
+      summary: Lists invoices
+      tags:
+      - invoices
   /api/v1/local_sales:
     get:
       description: Responds with a list of all local sales.
@@ -1771,6 +2044,10 @@ paths:
         in: query
         name: q
         type: string
+      - description: Category ID to filter by
+        in: query
+        name: category_id
+        type: integer
       - description: Results-per-page limit
         in: query
         name: limit

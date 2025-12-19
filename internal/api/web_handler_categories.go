@@ -2,16 +2,19 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 	chi "github.com/go-chi/chi/v5"
 )
 
 // --- Categories ---
 
 func (h *WebHandler) HandleListCategories(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 	categories, err := h.categoryStore.GetAllCategories()
 	if err != nil {
@@ -60,7 +63,7 @@ func (h *WebHandler) HandleCreateCategory(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	http.Redirect(w, r, "/categories?success="+url.QueryEscape("Categoría creada exitosamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleQuickCreateCategory(w http.ResponseWriter, r *http.Request) {
@@ -76,10 +79,12 @@ func (h *WebHandler) HandleQuickCreateCategory(w http.ResponseWriter, r *http.Re
 
 	if err := h.categoryStore.CreateCategory(category); err != nil {
 		h.logger.Error("creating category", "error", err)
+		utils.TriggerToast(w, "Error al crear categoría", "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	utils.TriggerToast(w, "Categoría creada correctamente", "success")
 	w.Header().Set("Content-Type", "text/html")
 	// Return the new option tag
 	// We assume the ID is populated by the store (pointer)
@@ -145,21 +150,24 @@ func (h *WebHandler) HandleUpdateCategory(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	http.Redirect(w, r, "/categories", http.StatusSeeOther)
+	http.Redirect(w, r, "/categories?success="+url.QueryEscape("Categoría actualizada correctamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleDeleteCategory(w http.ResponseWriter, r *http.Request) {
 	categoryID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID de categoría inválido", "error")
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.categoryStore.DeleteCategory(categoryID); err != nil {
 		h.logger.Error("deleting category", "error", err)
+		utils.TriggerToast(w, "Error al eliminar categoría", "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	utils.TriggerToast(w, "Categoría eliminada", "success")
 	w.WriteHeader(http.StatusOK)
 }

@@ -9,10 +9,12 @@ import (
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/services"
+	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 	chi "github.com/go-chi/chi/v5"
 )
 
 func (h *WebHandler) HandleListLocalSales(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 	// Employee or Admin
 	if user.Role != "administrator" && user.Role != "employee" {
@@ -140,7 +142,7 @@ func (h *WebHandler) HandleCreateLocalSale(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
-	http.Redirect(w, r, "/local-sales", http.StatusSeeOther)
+	http.Redirect(w, r, "/local-sales?success="+url.QueryEscape("Venta registrada correctamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleGetLocalSaleView(w http.ResponseWriter, r *http.Request) {
@@ -247,6 +249,7 @@ func (h *WebHandler) HandleRevokeLocalSale(w http.ResponseWriter, r *http.Reques
 
 	id, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID de venta inválido", "error")
 		w.WriteHeader(http.StatusBadRequest)
 		w.Write([]byte(`{"error": "ID inválido"}`))
 		return
@@ -256,17 +259,20 @@ func (h *WebHandler) HandleRevokeLocalSale(w http.ResponseWriter, r *http.Reques
 	if user.Role == "employee" {
 		sale, err := h.localSaleService.GetSale(id)
 		if err != nil {
+			utils.TriggerToast(w, "Error al verificar la venta", "error")
 			w.WriteHeader(http.StatusInternalServerError)
 			w.Write([]byte(`{"error": "Error al verificar la venta"}`))
 			return
 		}
 		if sale == nil {
+			utils.TriggerToast(w, "Venta no encontrada", "error")
 			w.WriteHeader(http.StatusNotFound)
 			w.Write([]byte(`{"error": "Venta no encontrada"}`))
 			return
 		}
 
 		if time.Since(sale.CreatedAt) > 1*time.Hour {
+			utils.TriggerToast(w, "Solo se pueden anular ventas dentro de la primera hora.", "error")
 			w.WriteHeader(http.StatusForbidden)
 			w.Write([]byte(`{"error": "Solo se pueden anular ventas dentro de la primera hora."}`))
 			return
@@ -275,10 +281,13 @@ func (h *WebHandler) HandleRevokeLocalSale(w http.ResponseWriter, r *http.Reques
 
 	if err := h.localSaleService.RevokeLocalSale(id); err != nil {
 		h.logger.Error("revoking local sale", "error", err)
+		utils.TriggerToast(w, "Error al anular venta: "+err.Error(), "error")
 		w.WriteHeader(http.StatusInternalServerError)
 		w.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
 		return
 	}
+
+	utils.TriggerToast(w, "Venta anulada correctamente", "success")
 
 	// Fetch updated sale to render the row
 	updatedSale, err := h.localSaleService.GetSale(id)

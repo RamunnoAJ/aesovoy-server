@@ -75,6 +75,18 @@ func (h *InvoiceHandler) Download(w http.ResponseWriter, r *http.Request) {
 	http.ServeFile(w, r, path)
 }
 
+// HandleListInvoicesJSON godoc
+// @Summary      Lists invoices
+// @Description  Responds with a list of generated invoices (Excel files), with pagination and date filter
+// @Tags         invoices
+// @Produce      json
+// @Param        page   query     int     false "Page number (default 1)"
+// @Param        limit  query     int     false "Items per page (default 20)"
+// @Param        date   query     string  false "Filter by date string"
+// @Success      200    {object}  InvoicesResponse
+// @Failure      500    {object}  utils.HTTPError
+// @Security     BearerAuth
+// @Router       /api/v1/invoices [get]
 func (h *InvoiceHandler) HandleListInvoicesJSON(w http.ResponseWriter, r *http.Request) {
 	pageStr := r.URL.Query().Get("page")
 	limitStr := r.URL.Query().Get("limit")
@@ -98,28 +110,20 @@ func (h *InvoiceHandler) HandleListInvoicesJSON(w http.ResponseWriter, r *http.R
 
 	totalPages := int(math.Ceil(float64(total) / float64(limit)))
 
-	response := struct {
-		Data       []billing.InvoiceFile `json:"data"`
-		Meta       struct {
-			CurrentPage int    `json:"current_page"`
-			TotalPages  int    `json:"total_pages"`
-			TotalItems  int    `json:"total_items"`
-			ItemsPerPage int   `json:"items_per_page"`
-			DateFilter  string `json:"date_filter,omitempty"`
-		} `json:"meta"`
-	}{
+	response := InvoicesResponse{
 		Data: files,
+		Meta: InvoicesMeta{
+			CurrentPage:  page,
+			TotalPages:   totalPages,
+			TotalItems:   total,
+			ItemsPerPage: limit,
+			DateFilter:   dateFilter,
+		},
 	}
-	response.Meta.CurrentPage = page
-	response.Meta.TotalPages = totalPages
-	response.Meta.TotalItems = total
-	response.Meta.ItemsPerPage = limit
-	response.Meta.DateFilter = dateFilter
 
 	w.Header().Set("Content-Type", "application/json")
 	json.NewEncoder(w).Encode(response)
 }
-
 func (h *InvoiceHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	filename := chi.URLParam(r, "filename")
 	if err := billing.DeleteInvoice(filename); err != nil {

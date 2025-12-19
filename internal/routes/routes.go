@@ -164,6 +164,10 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Group(func(r chi.Router) {
 			r.Use(app.Middleware.RequireAdmin)
 			r.Get("/users", app.WebHandler.HandleListUsers)
+			r.Get("/users/new", app.WebHandler.HandleCreateUserView)
+			r.Post("/users/new", app.WebHandler.HandleCreateUser)
+			r.Get("/users/{id}/edit", app.WebHandler.HandleEditUserView)
+			r.Post("/users/{id}/edit", app.WebHandler.HandleUpdateUser)
 			r.Patch("/users/{id}/toggle-status", app.WebHandler.HandleToggleUserStatus)
 
 			// Invoices (Web View - Admin Only)
@@ -244,6 +248,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Post("/orders/new", app.WebHandler.HandleCreateOrder)
 		r.Get("/orders/{id}", app.WebHandler.HandleGetOrderView)
 		r.Patch("/orders/{id}/state", app.WebHandler.HandleUpdateOrderState)
+		r.Post("/orders/mark-paid", app.WebHandler.HandleMarkOrderPaid)
 
 		// Local Stock (Admin only checked in handler)
 		r.Post("/local-stock/update", app.WebHandler.HandleUpdateLocalStock)

@@ -2,18 +2,21 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/billing"
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 	chi "github.com/go-chi/chi/v5"
 )
 
 // --- Orders ---
 
 func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 
 	pageStr := r.URL.Query().Get("page")
@@ -45,11 +48,12 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 			filter.StartDate = &t
 		}
 	} else {
-		// Default to today's start if no start_date is provided
+		// Default to last 7 days if no start_date is provided
 		now := time.Now()
-		todayStart := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, now.Location())
-		filter.StartDate = &todayStart
-		startDateStr = todayStart.Format("2006-01-02")
+		sevenDaysAgo := now.AddDate(0, 0, -7)
+		defaultStart := time.Date(sevenDaysAgo.Year(), sevenDaysAgo.Month(), sevenDaysAgo.Day(), 0, 0, 0, 0, now.Location())
+		filter.StartDate = &defaultStart
+		startDateStr = defaultStart.Format("2006-01-02")
 	}
 
 	endDateStr := r.URL.Query().Get("end_date")
@@ -74,6 +78,11 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pMethods, err := h.paymentMethodStore.GetAllPaymentMethods()
+	if err != nil {
+		h.logger.Error("fetching payment methods", "error", err)
+	}
+
 	hasNext := false
 	if len(orders) > limit {
 		hasNext = true
@@ -81,16 +90,17 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]any{
-		"User":      user,
-		"Orders":    orders,
-		"Page":      page,
-		"HasNext":   hasNext,
-		"PrevPage":  page - 1,
-		"NextPage":  page + 1,
-		"State":     stateStr,
-		"Q":         q,
-		"StartDate": startDateStr,
-		"EndDate":   endDateStr,
+		"User":           user,
+		"Orders":         orders,
+		"Page":           page,
+		"HasNext":        hasNext,
+		"PrevPage":       page - 1,
+		"NextPage":       page + 1,
+		"State":          stateStr,
+		"Q":              q,
+		"StartDate":      startDateStr,
+		"EndDate":        endDateStr,
+		"PaymentMethods": pMethods,
 	}
 
 	if err := h.renderer.Render(w, "orders_list.html", data); err != nil {
@@ -101,22 +111,54 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 func (h *WebHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Request) {
 	orderID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID de orden inválido", "error")
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
 	state := store.OrderState(r.URL.Query().Get("state"))
 	if state == "" {
+		utils.TriggerToast(w, "Falta el estado de la orden", "error")
 		http.Error(w, "Missing state", http.StatusBadRequest)
 		return
 	}
 
-	if err := h.orderStore.UpdateOrderState(orderID, state); err != nil {
+	if err := h.orderStore.UpdateOrderState(orderID, state, nil); err != nil {
 		h.logger.Error("updating order state", "error", err)
+		utils.TriggerToast(w, "Error al actualizar estado: "+err.Error(), "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	// Trigger a success toast
+	utils.TriggerToast(w, "Estado de orden actualizado correctamente", "success")
+	w.Header().Set("HX-Refresh", "true")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *WebHandler) HandleMarkOrderPaid(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	orderID, _ := strconv.ParseInt(r.FormValue("order_id"), 10, 64)
+	pmIDStr := r.FormValue("payment_method_id")
+	pmID, _ := strconv.ParseInt(pmIDStr, 10, 64)
+
+	var pmIDPtr *int64
+	if pmID > 0 {
+		pmIDPtr = &pmID
+	}
+
+	if err := h.orderStore.UpdateOrderState(orderID, store.OrderPaid, pmIDPtr); err != nil {
+		h.logger.Error("marking order paid", "error", err)
+		utils.TriggerToast(w, "Error al marcar como pagada", "error")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	utils.TriggerToast(w, "Orden marcada como pagada", "success")
 	w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusOK)
 }
@@ -138,10 +180,16 @@ func (h *WebHandler) HandleCreateOrderView(w http.ResponseWriter, r *http.Reques
 		return
 	}
 
+	pMethods, err := h.paymentMethodStore.GetAllPaymentMethods()
+	if err != nil {
+		h.logger.Error("fetching payment methods", "error", err)
+	}
+
 	data := map[string]any{
-		"User":     user,
-		"Clients":  clients,
-		"Products": products,
+		"User":           user,
+		"Clients":        clients,
+		"Products":       products,
+		"PaymentMethods": pMethods,
 	}
 
 	if err := h.renderer.Render(w, "order_form.html", data); err != nil {
@@ -157,6 +205,14 @@ func (h *WebHandler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 
 	clientID, _ := strconv.ParseInt(r.FormValue("client_id"), 10, 64)
 	state := store.OrderState(r.FormValue("state"))
+	pmIDStr := r.FormValue("payment_method_id")
+	var pmID *int64
+	if pmIDStr != "" {
+		id, err := strconv.ParseInt(pmIDStr, 10, 64)
+		if err == nil && id != 0 {
+			pmID = &id
+		}
+	}
 
 	productIDs := r.PostForm["product_ids[]"]
 	quantities := r.PostForm["quantities[]"]
@@ -186,8 +242,9 @@ func (h *WebHandler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	order := &store.Order{
-		ClientID: clientID,
-		State:    state,
+		ClientID:        clientID,
+		State:           state,
+		PaymentMethodID: pmID,
 	}
 
 	if err := h.orderStore.CreateOrder(order, items); err != nil {
@@ -214,7 +271,7 @@ func (h *WebHandler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	http.Redirect(w, r, "/orders", http.StatusSeeOther)
+	http.Redirect(w, r, "/orders?success="+url.QueryEscape("Orden creada exitosamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleGetOrderView(w http.ResponseWriter, r *http.Request) {

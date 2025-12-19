@@ -15,7 +15,7 @@
             window.productsData,
             (product) => product.unit_price // Local sales use unitPrice
         )"
-        hx-post="/local-sales/new" hx-target="body" hx-swap="outerHTML">
+        hx-post="/local-sales/new" hx-target="body" hx-swap="outerHTML" hx-push-url="true">
         
         <!-- Payment Method Selection -->
         <div>

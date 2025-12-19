@@ -47,6 +47,7 @@
                     <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Categoría</th>
                     <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Email</th>
                     <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">CUIT</th>
+                    <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Referencia</th>
                     <th scope="col" class="px-6 py-3 text-left text-sm font-medium text-gray-500 uppercase tracking-wider">Teléfono</th>
                     <th scope="col" class="px-6 py-3 text-right text-sm font-medium text-gray-500 uppercase tracking-wider">Acciones</th>
                 </tr>
@@ -56,9 +57,10 @@
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{.Name}}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.Category}}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.Email}}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.CUIT}}</td>
-                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.Phone}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{defaultNA .Email}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{defaultNA .CUIT}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{defaultNA .Reference}}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{defaultNA .Phone}}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium relative">
                          <div class="relative inline-block text-left" x-data="{ open: false }">
                             <div>

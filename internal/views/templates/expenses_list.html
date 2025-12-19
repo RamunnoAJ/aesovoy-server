@@ -86,7 +86,7 @@
                             {{.Date.Format "02/01/2006"}}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">
-                            {{if .ProviderName}}{{.ProviderName}}{{else}}-{{end}}
+                            {{defaultNA .ProviderName}}
                         </td>
                         <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">
                             {{.CategoryName}}

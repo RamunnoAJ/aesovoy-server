@@ -153,7 +153,7 @@
       "Step 4: Update Order list to display payment status and method.",
       "Step 5: Update and create all necessary tests."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "enhancement",
@@ -163,7 +163,7 @@
       "Step 2: Ensure orders are always sorted by date descending (newest first).",
       "Step 3: Update UI inputs to reflect the default 7-day range on initial load."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "enhancement",
@@ -174,7 +174,7 @@
       "Step 3: Update redirects to use URL parameters or flash messages for toasts.",
       "Step 4: Verify clear visual distinction between Success (Green) and Error (Red) messages."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "enhancement",
@@ -185,7 +185,7 @@
       "Step 3: Update form validation to allow empty or duplicate references.",
       "Step 4: Update and create all necessary tests."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "feature",
@@ -196,7 +196,7 @@
       "Step 3: Add 'Semanal' option to the dashboard view selector.",
       "Step 4: Verify charts and stats correctly reflect the weekly range."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "enhancement",
@@ -206,7 +206,7 @@
       "Step 2: Refactor all list templates (clients, providers, products, etc.) to use this function for optional fields.",
       "Step 3: Verify that empty fields display 'N/A' instead of blank space."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "enhancement",
@@ -217,6 +217,6 @@
       "Step 3: Update 'HandleRegisterUser' to support form submission redirects instead of just JSON.",
       "Step 4: Remove modal logic from 'users_list.html' and replace with a standard 'New User' button linking to the new page."
     ],
-    "passes": false
+    "passes": true
   }
 ]

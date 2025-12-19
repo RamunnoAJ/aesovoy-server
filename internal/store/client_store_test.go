@@ -56,6 +56,43 @@ func TestCreateClient(t *testing.T) {
 	}
 }
 
+func TestDuplicateIdentityFields(t *testing.T) {
+	db := setupTestDB(t)
+	defer db.Close()
+
+	store := NewPostgresClientStore(db)
+
+	// Create first client
+	c1 := &Client{
+		Name:      "Cliente 1",
+		Type:      ClientTypeIndividual,
+		Reference: "REPETIDO",
+		CUIT:      "12345",
+	}
+	require.NoError(t, store.CreateClient(c1))
+
+	// Create second client with same CUIT and Reference
+	c2 := &Client{
+		Name:      "Cliente 2",
+		Type:      ClientTypeIndividual,
+		Reference: "REPETIDO",
+		CUIT:      "12345",
+	}
+	// This should NO LONGER fail after migration 00032
+	err := store.CreateClient(c2)
+	assert.NoError(t, err, "Should allow duplicate reference and CUIT")
+
+	// Create third client with empty CUIT and Reference
+	c3 := &Client{
+		Name:      "Cliente 3",
+		Type:      ClientTypeIndividual,
+		Reference: "",
+		CUIT:      "",
+	}
+	err = store.CreateClient(c3)
+	assert.NoError(t, err, "Should allow empty reference and CUIT")
+}
+
 func TestGetClientByID(t *testing.T) {
 	db := setupTestDB(t)
 	defer db.Close()

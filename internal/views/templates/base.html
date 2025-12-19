@@ -56,7 +56,7 @@
                     <h2 class="text-xs uppercase text-gray-400 font-semibold">Menu</h2>
                     <button @click="mobileMenuOpen = false" class="text-gray-400 hover:text-white focus:outline-none">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
@@ -110,9 +110,6 @@
                     <a href="/local-sales" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Ventas Local
                     </a>
-					<!-- <a href="/shifts" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
-							   Caja
-					</a> -->
                     {{end}}
                 </nav>
             </div>
@@ -154,7 +151,7 @@
 
     <script>
         // CSRF Token for HTMX
-        document.body.addEventListener('htmx:configRequest', function(evt) {
+        document.addEventListener('htmx:configRequest', function(evt) {
             const cookies = document.cookie.split(';');
             let csrfToken = null;
             for (let cookie of cookies) {
@@ -171,10 +168,7 @@
 
         // Confirmation Modal Logic
         document.addEventListener("htmx:confirm", function(evt) {
-            // If the event was not triggered by hx-confirm, or if standard confirm wasn't requested
             if (!evt.detail.question) return;
-
-            // Prevent the default confirmation
             evt.preventDefault();
 
             const modal = document.getElementById('confirmation-modal');
@@ -186,7 +180,7 @@
             modal.classList.remove('hidden');
 
             const handleConfirm = function() {
-                evt.detail.issueRequest(true); // issueRequest(true) skips the confirm check
+                evt.detail.issueRequest(true);
                 cleanup();
             };
 
@@ -206,21 +200,37 @@
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
+            if (!container) {
+                setTimeout(() => showToast(message, type), 100);
+                return;
+            }
+
+            // Deduplication: Check if a toast with the same message already exists
+            const existingToasts = container.querySelectorAll('.toast-message');
+            for (let t of existingToasts) {
+                if (t.textContent === message) {
+                    return; // Do not show duplicate toast
+                }
+            }
+
             const toast = document.createElement('div');
             
             const colors = {
-                'error': 'bg-red-500',
-                'success': 'bg-green-500',
-                'info': 'bg-blue-500'
+                'error': 'bg-red-600',
+                'success': 'bg-green-600',
+                'info': 'bg-blue-600',
+                'warning': 'bg-yellow-500'
             };
+            // Icons removed as per request
+
             const color = colors[type] || colors['info'];
 
-            toast.className = `${color} text-white px-6 py-4 rounded shadow-lg transition-all duration-300 opacity-0 transform translate-y-2`;
-            toast.textContent = message;
+            toast.className = `${color} text-white px-4 py-3 rounded shadow-lg transition-all duration-300 opacity-0 transform translate-y-2 flex items-center min-w-[300px] z-50 mb-2`;
+            // Added class 'toast-message' to span for deduplication check
+            toast.innerHTML = `<span class="toast-message">${message}</span>`;
 
             container.appendChild(toast);
 
-            // Trigger animation
             requestAnimationFrame(() => {
                 toast.classList.remove('opacity-0', 'translate-y-2');
             });
@@ -233,51 +243,70 @@
             }, 5000);
         }
 
-        document.body.addEventListener("showToast", function(evt){
-            showToast(evt.detail.message, evt.detail.type);
+        window.addEventListener("showMessage", function(evt){
+            const data = evt.detail.value || evt.detail;
+            let msg = data.message || data;
+            const type = data.type || 'info';
+
+            // Decode URI encoded messages (fixing issues with tildes/special chars from headers)
+            try {
+                if (typeof msg === 'string') {
+                     msg = decodeURIComponent(msg.replace(/\+/g, ' '));
+                }
+            } catch (e) {
+                // If decoding fails, use original message
+                console.error("Failed to decode toast message:", msg, e);
+            }
+
+            showToast(msg, type);
         });
 
-        // Check URL parameters for messages
-        const urlParams = new URLSearchParams(window.location.search);
-        const errorMsg = urlParams.get('error');
-        const successMsg = urlParams.get('success');
+        function checkUrlMessages() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorMsg = urlParams.get('error');
+            const successMsg = urlParams.get('success');
 
-        if (errorMsg) {
-            showToast(errorMsg, 'error');
-            // Clean URL
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
-        }
-        if (successMsg) {
-            showToast(successMsg, 'success');
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
+            if (errorMsg) {
+                showToast(errorMsg, 'error');
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+            if (successMsg) {
+                showToast(successMsg, 'success');
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
         }
 
-        // HTMX Error Handling
-        document.body.addEventListener('htmx:afterRequest', function(evt) {
+        checkUrlMessages();
+
+        document.addEventListener('htmx:afterOnLoad', function(evt) {
+            checkUrlMessages();
+        });
+
+        document.addEventListener('htmx:afterRequest', function(evt) {
+            // If the server triggered a toast via header, don't show the generic error
+            // This prevents duplicate toasts when the server returns an error status AND a specific toast message
+            const hxTrigger = evt.detail.xhr.getResponseHeader('HX-Trigger');
+            if (hxTrigger && hxTrigger.includes('showMessage')) {
+                return;
+            }
+
             if (evt.detail.failed) {
                 const xhr = evt.detail.xhr;
                 let msg = "Ha ocurrido un error inesperado";
                 try {
                     const resp = JSON.parse(xhr.responseText);
-                    if (resp.message) {
-                        msg = resp.message;
-                    } else if (resp.error && typeof resp.error === 'string') {
-                        msg = resp.error;
-                    }
+                    if (resp.message) msg = resp.message;
+                    else if (resp.error && typeof resp.error === 'string') msg = resp.error;
                 } catch (e) {
-                    if (xhr.responseText && xhr.responseText.length < 200) {
-                        msg = xhr.responseText;
-                    }
+                    if (xhr.responseText && xhr.responseText.length < 200) msg = xhr.responseText;
                 }
                 showToast(msg, 'error');
             }
         });
 
-        // Reusable Alpine.js function for product item management with search
         function createProductItemManager(allProductsData, pricingFunction) {
-            // Create a lookup map for quick access
             const productsLookup = allProductsData.reduce((acc, p) => {
                 acc[p.id] = p;
                 return acc;
@@ -285,72 +314,42 @@
 
             return {
                 items: [{ product_id: '', quantity: 1, searchTerm: '', isOpen: false }],
-                
                 getFilteredProducts(index) {
                     const term = this.items[index].searchTerm;
-                    if (!term) {
-                        return allProductsData;
-                    }
+                    if (!term) return allProductsData;
                     const lowerSearchTerm = term.toLowerCase();
                     return allProductsData.filter(p => p.name.toLowerCase().includes(lowerSearchTerm));
                 },
-
                 selectProduct(index, product) {
-                    // Check for duplicates
                     const isDuplicate = this.items.some((item, i) => i !== index && item.product_id === product.id);
                     if (isDuplicate) {
                         showToast('Este producto ya ha sido agregado.', 'error');
                         this.items[index].isOpen = false;
                         return;
                     }
-
                     this.items[index].product_id = product.id;
                     this.items[index].searchTerm = product.name;
                     this.items[index].isOpen = false;
                 },
-
-                openDropdown(index) {
-                    this.items[index].isOpen = true;
-                },
-
-                closeDropdown(index) {
-                    // Delay closing to allow click event on option to fire
-                    setTimeout(() => {
-                        this.items[index].isOpen = false;
-                    }, 200);
-                },
-
-                addItem() {
-                    this.items.push({ product_id: '', quantity: 1, searchTerm: '', isOpen: false });
-                },
-                
-                removeItem(index) {
-                    if (this.items.length > 1) { // Ensure at least one item remains
-                        this.items.splice(index, 1);
-                    }
-                },
-
+                openDropdown(index) { this.items[index].isOpen = true; },
+                closeDropdown(index) { setTimeout(() => { this.items[index].isOpen = false; }, 200); },
+                addItem() { this.items.push({ product_id: '', quantity: 1, searchTerm: '', isOpen: false }); },
+                removeItem(index) { if (this.items.length > 1) this.items.splice(index, 1); },
                 getPrice(productId, priceType = 'unit') {
                     if (!productId || !productsLookup[productId]) return '';
                     return pricingFunction(productsLookup[productId], priceType);
                 },
-
                 getSubtotal(index, priceType = 'unit') {
                     const item = this.items[index];
                     const price = parseFloat(this.getPrice(item.product_id, priceType));
-                    if (!isNaN(price) && item.quantity) {
-                        return (price * item.quantity).toFixed(2);
-                    }
+                    if (!isNaN(price) && item.quantity) return (price * item.quantity).toFixed(2);
                     return '0.00';
                 },
-
                 getTotal(priceType = 'unit') {
                     let total = 0;
                     this.items.forEach((item, index) => {
                         const sub = parseFloat(this.getSubtotal(index, priceType));
-                        if (!isNaN(sub)) {
-                            total += sub;
-                        }
+                        if (!isNaN(sub)) total += sub;
                     });
                     return total.toFixed(2);
                 }

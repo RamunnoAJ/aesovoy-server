@@ -23,7 +23,7 @@
                 {{range .Categories}}
                 <tr class="hover:bg-gray-50">
                     <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{.Name}}</td>
-                    <td class="px-6 py-4 text-base text-gray-500">{{.Description}}</td>
+                    <td class="px-6 py-4 text-base text-gray-500">{{defaultNA .Description}}</td>
                     <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium relative">
                          <div class="relative inline-block text-left" x-data="{ open: false }">
                             <div>

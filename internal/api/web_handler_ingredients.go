@@ -2,16 +2,19 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 	chi "github.com/go-chi/chi/v5"
 )
 
 // --- Ingredients ---
 
 func (h *WebHandler) HandleListIngredients(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 	ingredients, err := h.ingredientStore.GetAllIngredients()
 	if err != nil {
@@ -59,7 +62,7 @@ func (h *WebHandler) HandleCreateIngredient(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	http.Redirect(w, r, "/ingredients", http.StatusSeeOther)
+	http.Redirect(w, r, "/ingredients?success="+url.QueryEscape("Ingrediente creado exitosamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleEditIngredientView(w http.ResponseWriter, r *http.Request) {
@@ -114,21 +117,24 @@ func (h *WebHandler) HandleUpdateIngredient(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	http.Redirect(w, r, "/ingredients", http.StatusSeeOther)
+	http.Redirect(w, r, "/ingredients?success="+url.QueryEscape("Ingrediente actualizado correctamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleDeleteIngredient(w http.ResponseWriter, r *http.Request) {
 	ingredientID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID de ingrediente inválido", "error")
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.ingredientStore.DeleteIngredient(ingredientID); err != nil {
 		h.logger.Error("deleting ingredient", "error", err)
+		utils.TriggerToast(w, "Error al eliminar ingrediente", "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	utils.TriggerToast(w, "Ingrediente eliminado", "success")
 	w.WriteHeader(http.StatusOK)
 }

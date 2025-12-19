@@ -21,14 +21,13 @@ type DashboardView struct {
 	TopProductsDistrib     []*store.TopProduct
 	ProductionRequirements []*store.ProductionRequirement
 	LowStockAlerts         []*store.ProductStock
-	SalesHistory           []*store.SalesHistoryRecord
 }
 
 func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUser(r)
 
 	viewType := r.URL.Query().Get("view")
-	if viewType != "month" {
+	if viewType != "month" && viewType != "week" {
 		viewType = "day"
 	}
 
@@ -49,6 +48,18 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		end = start.AddDate(0, 1, 0) // First day of next month
 		// Re-format dateStr for the input
 		dateStr = start.Format("2006-01")
+	} else if viewType == "week" {
+		// Default to last 7 days including targetDate
+		targetDate := now
+		if dateStr != "" {
+			if d, err := time.Parse("2006-01-02", dateStr); err == nil {
+				targetDate = d
+			}
+		}
+		// Start is 6 days before targetDate (total 7 days)
+		start = time.Date(targetDate.Year(), targetDate.Month(), targetDate.Day(), 0, 0, 0, 0, targetDate.Location()).AddDate(0, 0, -6)
+		end = time.Date(targetDate.Year(), targetDate.Month(), targetDate.Day(), 0, 0, 0, 0, targetDate.Location()).AddDate(0, 0, 1)
+		dateStr = targetDate.Format("2006-01-02")
 	} else {
 		// Default to today
 		targetDate := now
@@ -73,7 +84,6 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 	var topProductsDistrib []*store.TopProduct = []*store.TopProduct{}
 	var pendingProduction []*store.ProductionRequirement = []*store.ProductionRequirement{}
 	var lowStockAlerts []*store.ProductStock = []*store.ProductStock{}
-	var salesHistory []*store.SalesHistoryRecord = []*store.SalesHistoryRecord{}
 
 	if user.Role == "administrator" {
 		orderStats, err = h.orderStore.GetStats(start, end)
@@ -99,11 +109,6 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		lowStockAlerts, err = h.localStockService.GetLowStockAlerts(10) // Threshold 10
 		if err != nil {
 			h.logger.Error("getting low stock alerts", "error", err)
-		}
-
-		salesHistory, err = h.localSaleService.GetSalesHistory(7)
-		if err != nil {
-			h.logger.Error("getting sales history", "error", err)
 		}
 	}
 
@@ -133,7 +138,6 @@ func (h *WebHandler) HandleHome(w http.ResponseWriter, r *http.Request) {
 		TopProductsDistrib:     topProductsDistrib,
 		ProductionRequirements: pendingProduction,
 		LowStockAlerts:         lowStockAlerts,
-		SalesHistory:           salesHistory,
 	}
 
 	data := map[string]any{

@@ -2,16 +2,19 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 	chi "github.com/go-chi/chi/v5"
 )
 
 // --- Providers ---
 
 func (h *WebHandler) HandleListProviders(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 
 	q := r.URL.Query().Get("q")
@@ -114,7 +117,7 @@ func (h *WebHandler) HandleCreateProvider(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	http.Redirect(w, r, "/providers", http.StatusSeeOther)
+	http.Redirect(w, r, "/providers?success="+url.QueryEscape("Proveedor creado exitosamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleEditProviderView(w http.ResponseWriter, r *http.Request) {
@@ -185,21 +188,24 @@ func (h *WebHandler) HandleUpdateProvider(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	http.Redirect(w, r, "/providers", http.StatusSeeOther)
+	http.Redirect(w, r, "/providers?success="+url.QueryEscape("Proveedor actualizado correctamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleDeleteProvider(w http.ResponseWriter, r *http.Request) {
 	providerID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID de proveedor inválido", "error")
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.providerStore.DeleteProvider(providerID); err != nil {
 		h.logger.Error("deleting provider", "error", err)
+		utils.TriggerToast(w, "Error al eliminar proveedor", "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	utils.TriggerToast(w, "Proveedor eliminado", "success")
 	w.WriteHeader(http.StatusOK)
 }

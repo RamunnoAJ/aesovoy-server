@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
@@ -55,62 +56,121 @@ func (h *WebHandler) HandleShiftManagement(w http.ResponseWriter, r *http.Reques
 }
 
 func (h *WebHandler) HandleOpenShift(w http.ResponseWriter, r *http.Request) {
+
 	user := middleware.GetUser(r)
+
 	if err := r.ParseForm(); err != nil {
+
 		http.Error(w, "Bad Request", http.StatusBadRequest)
+
 		return
+
 	}
+
+
 
 	startCash, _ := strconv.ParseFloat(r.FormValue("start_cash"), 64)
+
 	notes := r.FormValue("notes")
+
+
 
 	_, err := h.shiftService.OpenShift(user.ID, startCash, notes)
+
 	if err != nil {
+
 		h.logger.Error("opening shift", "error", err)
-		http.Redirect(w, r, "/shifts?error="+err.Error(), http.StatusSeeOther)
+
+		http.Redirect(w, r, "/shifts?error="+url.QueryEscape(err.Error()), http.StatusSeeOther)
+
 		return
+
 	}
 
-	http.Redirect(w, r, "/shifts", http.StatusSeeOther)
+
+
+	http.Redirect(w, r, "/shifts?success="+url.QueryEscape("Caja abierta correctamente"), http.StatusSeeOther)
+
 }
+
+
 
 func (h *WebHandler) HandleCloseShift(w http.ResponseWriter, r *http.Request) {
+
 	user := middleware.GetUser(r)
+
 	if err := r.ParseForm(); err != nil {
+
 		http.Error(w, "Bad Request", http.StatusBadRequest)
+
 		return
+
 	}
+
+
 
 	declaredCash, _ := strconv.ParseFloat(r.FormValue("end_cash_declared"), 64)
+
 	notes := r.FormValue("notes")
 
+
+
 	_, err := h.shiftService.CloseShift(user.ID, declaredCash, notes)
+
 	if err != nil {
+
 		h.logger.Error("closing shift", "error", err)
-		http.Redirect(w, r, "/shifts?error="+err.Error(), http.StatusSeeOther)
+
+		http.Redirect(w, r, "/shifts?error="+url.QueryEscape(err.Error()), http.StatusSeeOther)
+
 		return
+
 	}
 
-	http.Redirect(w, r, "/shifts", http.StatusSeeOther)
+
+
+	http.Redirect(w, r, "/shifts?success="+url.QueryEscape("Caja cerrada correctamente"), http.StatusSeeOther)
+
 }
 
+
+
 func (h *WebHandler) HandleRegisterMovement(w http.ResponseWriter, r *http.Request) {
+
 	user := middleware.GetUser(r)
+
 	if err := r.ParseForm(); err != nil {
+
 		http.Error(w, "Bad Request", http.StatusBadRequest)
+
 		return
+
 	}
+
+
 
 	amount, _ := strconv.ParseFloat(r.FormValue("amount"), 64)
+
 	typeStr := r.FormValue("type")
+
 	reason := r.FormValue("reason")
 
+
+
 	_, err := h.shiftService.RegisterMovement(user.ID, amount, typeStr, reason)
+
 	if err != nil {
+
 		h.logger.Error("registering movement", "error", err)
-		http.Redirect(w, r, "/shifts?error="+err.Error(), http.StatusSeeOther)
+
+		http.Redirect(w, r, "/shifts?error="+url.QueryEscape(err.Error()), http.StatusSeeOther)
+
 		return
+
 	}
 
-	http.Redirect(w, r, "/shifts", http.StatusSeeOther)
+
+
+	http.Redirect(w, r, "/shifts?success="+url.QueryEscape("Movimiento registrado"), http.StatusSeeOther)
+
 }

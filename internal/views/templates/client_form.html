@@ -4,7 +4,7 @@
         <h1 class="text-2xl font-bold text-gray-800">{{if .Client.ID}}Editar Cliente{{else}}Nuevo Cliente{{end}}</h1>
     </div>
     
-    <form action="{{if .Client.ID}}/clients/{{.Client.ID}}/edit{{else}}/clients/new{{end}}" method="POST" class="p-6 space-y-6" hx-post="{{if .Client.ID}}/clients/{{.Client.ID}}/edit{{else}}/clients/new{{end}}" hx-target="body" hx-swap="outerHTML">
+    <form action="{{if .Client.ID}}/clients/{{.Client.ID}}/edit{{else}}/clients/new{{end}}" method="POST" class="p-6 space-y-6" hx-post="{{if .Client.ID}}/clients/{{.Client.ID}}/edit{{else}}/clients/new{{end}}" hx-target="body" hx-swap="outerHTML" hx-push-url="true">
         
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div class="col-span-2 md:col-span-1">

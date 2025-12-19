@@ -13,6 +13,7 @@ const (
 	OrderDone      OrderState = "done"
 	OrderCancelled OrderState = "cancelled"
 	OrderDelivered OrderState = "delivered"
+	OrderPaid      OrderState = "paid"
 )
 
 type ProductionRequirement struct {
@@ -24,15 +25,17 @@ type ProductionRequirement struct {
 type Money = string
 
 type Order struct {
-	ID         int64       `json:"id"`
-	ClientID   int64       `json:"client_id"`
-	ClientName string      `json:"client_name,omitempty"`
-	Total      Money       `json:"total"`
-	Date       time.Time   `json:"date"`
-	State      OrderState  `json:"state"`
-	CreatedAt  time.Time   `json:"created_at"`
-	DeletedAt  *time.Time  `json:"deleted_at"`
-	Items      []OrderItem `json:"items,omitempty"`
+	ID                int64       `json:"id"`
+	ClientID          int64       `json:"client_id"`
+	ClientName        string      `json:"client_name,omitempty"`
+	Total             Money       `json:"total"`
+	Date              time.Time   `json:"date"`
+	State             OrderState  `json:"state"`
+	PaymentMethodID   *int64      `json:"payment_method_id,omitempty"`
+	PaymentMethodName string      `json:"payment_method_name,omitempty"`
+	CreatedAt         time.Time   `json:"created_at"`
+	DeletedAt         *time.Time  `json:"deleted_at"`
+	Items             []OrderItem `json:"items,omitempty"`
 }
 
 type OrderItem struct {
@@ -47,7 +50,7 @@ type OrderItem struct {
 
 type OrderStore interface {
 	CreateOrder(o *Order, items []OrderItem) error
-	UpdateOrderState(id int64, state OrderState) error
+	UpdateOrderState(id int64, state OrderState, paymentMethodID *int64) error
 	DeleteOrder(id int64) error
 	GetOrderByID(id int64) (*Order, error)
 	ListOrders(f OrderFilter) ([]*Order, error)
@@ -58,6 +61,7 @@ type OrderStore interface {
 type DailyOrderStats struct {
 	TotalAmount float64
 	TotalCount  int
+	ByMethod    map[string]float64
 }
 
 type OrderFilter struct {
@@ -75,7 +79,9 @@ type PostgresOrderStore struct{ db *sql.DB }
 func NewPostgresOrderStore(db *sql.DB) *PostgresOrderStore { return &PostgresOrderStore{db: db} }
 
 func (s *PostgresOrderStore) GetStats(start, end time.Time) (*DailyOrderStats, error) {
-	stats := &DailyOrderStats{}
+	stats := &DailyOrderStats{
+		ByMethod: make(map[string]float64),
+	}
 	query := `
 		SELECT COALESCE(SUM(total), 0), COUNT(*)
 		FROM orders
@@ -85,6 +91,29 @@ func (s *PostgresOrderStore) GetStats(start, end time.Time) (*DailyOrderStats, e
 	if err != nil {
 		return nil, err
 	}
+
+	qMethods := `
+        SELECT COALESCE(pm.name, 'Sin asignar'), SUM(o.total)
+        FROM orders o
+        LEFT JOIN payment_methods pm ON o.payment_method_id = pm.id
+        WHERE o.date >= $1 AND o.date < $2 AND o.state = 'paid' AND o.deleted_at IS NULL
+        GROUP BY pm.name`
+
+	rows, err := s.db.Query(qMethods, start, end)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		var amount float64
+		if err := rows.Scan(&name, &amount); err != nil {
+			return nil, err
+		}
+		stats.ByMethod[name] = amount
+	}
+
 	return stats, nil
 }
 
@@ -101,10 +130,10 @@ func (s *PostgresOrderStore) CreateOrder(o *Order, items []OrderItem) error {
 
 	// total lo calcula la DB desde items insertados
 	const qOrder = `
-	  INSERT INTO orders (client_id, total, state)
-	  VALUES ($1, 0, $2)
+	  INSERT INTO orders (client_id, total, state, payment_method_id)
+	  VALUES ($1, 0, $2, $3)
 	  RETURNING id, total, date, created_at`
-	if err = tx.QueryRow(qOrder, o.ClientID, o.State).Scan(&o.ID, &o.Total, &o.Date, &o.CreatedAt); err != nil {
+	if err = tx.QueryRow(qOrder, o.ClientID, o.State, o.PaymentMethodID).Scan(&o.ID, &o.Total, &o.Date, &o.CreatedAt); err != nil {
 		return err
 	}
 
@@ -142,9 +171,18 @@ func (s *PostgresOrderStore) CreateOrder(o *Order, items []OrderItem) error {
 	return nil
 }
 
-func (s *PostgresOrderStore) UpdateOrderState(id int64, state OrderState) error {
-	const q = `UPDATE orders SET state=$1 WHERE id=$2 AND deleted_at IS NULL`
-	res, err := s.db.Exec(q, state, id)
+func (s *PostgresOrderStore) UpdateOrderState(id int64, state OrderState, paymentMethodID *int64) error {
+	var res sql.Result
+	var err error
+
+	if paymentMethodID != nil {
+		const q = `UPDATE orders SET state=$1, payment_method_id=$3 WHERE id=$2 AND deleted_at IS NULL`
+		res, err = s.db.Exec(q, state, id, *paymentMethodID)
+	} else {
+		const q = `UPDATE orders SET state=$1 WHERE id=$2 AND deleted_at IS NULL`
+		res, err = s.db.Exec(q, state, id)
+	}
+
 	if err != nil {
 		return err
 	}
@@ -176,12 +214,13 @@ func (s *PostgresOrderStore) DeleteOrder(id int64) error {
 
 func (s *PostgresOrderStore) GetOrderByID(id int64) (*Order, error) {
 	const q = `
-	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.created_at, o.deleted_at
+	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.payment_method_id, COALESCE(pm.name, ''), o.created_at, o.deleted_at
 	FROM orders o
 	JOIN clients c ON c.id = o.client_id
+	LEFT JOIN payment_methods pm ON pm.id = o.payment_method_id
 	WHERE o.id=$1 AND o.deleted_at IS NULL`
 	o := &Order{}
-	if err := s.db.QueryRow(q, id).Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.CreatedAt, &o.DeletedAt); err != nil {
+	if err := s.db.QueryRow(q, id).Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.PaymentMethodID, &o.PaymentMethodName, &o.CreatedAt, &o.DeletedAt); err != nil {
 		if err == sql.ErrNoRows {
 			return nil, nil
 		}
@@ -217,9 +256,10 @@ func (s *PostgresOrderStore) ListOrders(f OrderFilter) ([]*Order, error) {
 	}
 
 	q := `
-	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.created_at, o.deleted_at
+	SELECT o.id, o.client_id, c.name, o.total::text, o.date, o.state, o.payment_method_id, COALESCE(pm.name, ''), o.created_at, o.deleted_at
 	FROM orders o
-	JOIN clients c ON c.id = o.client_id`
+	JOIN clients c ON c.id = o.client_id
+	LEFT JOIN payment_methods pm ON pm.id = o.payment_method_id`
 	where := "WHERE o.deleted_at IS NULL"
 	args := []any{}
 
@@ -256,7 +296,7 @@ func (s *PostgresOrderStore) ListOrders(f OrderFilter) ([]*Order, error) {
 	var out []*Order
 	for rows.Next() {
 		o := &Order{}
-		if err := rows.Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.CreatedAt, &o.DeletedAt); err != nil {
+		if err := rows.Scan(&o.ID, &o.ClientID, &o.ClientName, &o.Total, &o.Date, &o.State, &o.PaymentMethodID, &o.PaymentMethodName, &o.CreatedAt, &o.DeletedAt); err != nil {
 			return nil, err
 		}
 		out = append(out, o)

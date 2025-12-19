@@ -3,17 +3,20 @@ package api
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 	chi "github.com/go-chi/chi/v5"
 )
 
 // --- Products ---
 
 func (h *WebHandler) HandleListProducts(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 
 	q := r.URL.Query().Get("q")
@@ -98,7 +101,7 @@ func (h *WebHandler) HandleCreateProduct(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	http.Redirect(w, r, "/products", http.StatusSeeOther)
+	http.Redirect(w, r, "/products?success="+url.QueryEscape("Producto creado exitosamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleEditProductView(w http.ResponseWriter, r *http.Request) {
@@ -169,22 +172,25 @@ func (h *WebHandler) HandleUpdateProduct(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	http.Redirect(w, r, "/products", http.StatusSeeOther)
+	http.Redirect(w, r, "/products?success="+url.QueryEscape("Producto actualizado correctamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleDeleteProduct(w http.ResponseWriter, r *http.Request) {
 	productID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID de producto inválido", "error")
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.productStore.DeleteProduct(productID); err != nil {
 		h.logger.Error("deleting product", "error", err)
+		utils.TriggerToast(w, "Error al eliminar producto", "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	utils.TriggerToast(w, "Producto eliminado", "success")
 	w.WriteHeader(http.StatusOK) // HTMX will remove the element
 }
 
@@ -223,7 +229,10 @@ func (h *WebHandler) HandleManageRecipeView(w http.ResponseWriter, r *http.Reque
 	}
 
 	if errMsg := r.URL.Query().Get("error"); errMsg != "" {
-		w.Header().Set("HX-Trigger", fmt.Sprintf(`{"showToast": {"message": "%s", "type": "error"}}`, errMsg))
+		// Use TriggerToast instead of manual HX-Trigger construction for consistency
+		// But wait, this is a GET request rendering a full page view (or partial).
+		// utils.TriggerToast sets a header.
+		utils.TriggerToast(w, errMsg, "error")
 	}
 
 	if err := h.renderer.Render(w, "product_recipe.html", data); err != nil {
@@ -250,7 +259,7 @@ func (h *WebHandler) HandleAddIngredientToRecipe(w http.ResponseWriter, r *http.
 	_, err = h.productStore.AddIngredientToProduct(productID, ingredientID, quantity, unit)
 	if err != nil {
 		if strings.Contains(err.Error(), "duplicate key value") {
-			http.Redirect(w, r, "/products/"+strconv.FormatInt(productID, 10)+"/recipe?error=El ingrediente ya existe en la receta", http.StatusSeeOther)
+			http.Redirect(w, r, "/products/"+strconv.FormatInt(productID, 10)+"/recipe?error="+url.QueryEscape("El ingrediente ya existe en la receta"), http.StatusSeeOther)
 			return
 		}
 		h.logger.Error("adding ingredient to recipe", "error", err)
@@ -258,18 +267,20 @@ func (h *WebHandler) HandleAddIngredientToRecipe(w http.ResponseWriter, r *http.
 		return
 	}
 
-	http.Redirect(w, r, "/products/"+strconv.FormatInt(productID, 10)+"/recipe", http.StatusSeeOther)
+	http.Redirect(w, r, "/products/"+strconv.FormatInt(productID, 10)+"/recipe?success="+url.QueryEscape("Ingrediente agregado"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleRemoveIngredientFromRecipe(w http.ResponseWriter, r *http.Request) {
 	productID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID de producto inválido", "error")
 		http.Error(w, "Invalid Product ID", http.StatusBadRequest)
 		return
 	}
 
 	ingredientID, err := strconv.ParseInt(chi.URLParam(r, "ingredient_id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID de ingrediente inválido", "error")
 		http.Error(w, "Invalid Ingredient ID", http.StatusBadRequest)
 		return
 	}
@@ -277,10 +288,12 @@ func (h *WebHandler) HandleRemoveIngredientFromRecipe(w http.ResponseWriter, r *
 	err = h.productStore.RemoveIngredientFromProduct(productID, ingredientID)
 	if err != nil {
 		h.logger.Error("removing ingredient from recipe", "error", err)
+		utils.TriggerToast(w, "Error al eliminar ingrediente", "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	utils.TriggerToast(w, "Ingrediente eliminado", "success")
 	w.WriteHeader(http.StatusOK)
 }
 

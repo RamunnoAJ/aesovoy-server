@@ -1,6 +1,6 @@
 <tr class="hover:bg-gray-50">
     <td class="px-6 py-4 whitespace-nowrap text-base font-medium text-gray-900">{{.Username}}</td>
-    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{.Email}}</td>
+    <td class="px-6 py-4 whitespace-nowrap text-base text-gray-500">{{defaultNA .Email}}</td>
     <td class="px-6 py-4 whitespace-nowrap text-base">
         <span class="inline-flex items-center rounded-md bg-blue-50 px-2 py-1 text-xs font-medium text-blue-700 ring-1 ring-inset ring-blue-700/10 uppercase">{{.Role}}</span>
     </td>
@@ -12,12 +12,7 @@
         {{end}}
     </td>
     <td class="px-6 py-4 whitespace-nowrap text-right text-base font-medium">
-        <!-- We need a way to know if it's the current user to disable the button. 
-             The partial only receives the User object. 
-             We might need to pass a struct {User, CurrentUserID}.
-             For now, let's assume the backend prevents self-disable error, 
-             so the button is clickable but returns error if it's self.
-        -->
+        <a href="/users/{{.ID}}/edit" class="text-indigo-600 hover:text-indigo-900 mr-4">Editar</a>
         <button hx-patch="/users/{{.ID}}/toggle-status" hx-target="closest tr" hx-swap="outerHTML" 
                 class="{{if .IsActive}}text-red-600 hover:text-red-900{{else}}text-green-600 hover:text-green-900{{end}} font-semibold">
             {{if .IsActive}}Deshabilitar{{else}}Habilitar{{end}}

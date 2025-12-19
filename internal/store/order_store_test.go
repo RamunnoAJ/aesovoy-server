@@ -135,7 +135,7 @@ func TestUpdateOrderState(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := orderStore.UpdateOrderState(order.ID, tt.newState)
+			err := orderStore.UpdateOrderState(order.ID, tt.newState, nil)
 			if tt.wantErr {
 				assert.Error(t, err)
 				return

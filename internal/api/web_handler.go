@@ -8,6 +8,7 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/mailer"
 	"github.com/RamunnoAJ/aesovoy-server/internal/services"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 	"github.com/RamunnoAJ/aesovoy-server/internal/views"
 	chi "github.com/go-chi/chi/v5"
 )
@@ -107,10 +108,12 @@ func (h *WebHandler) HandleQuickCreateProviderCategory(w http.ResponseWriter, r 
 
 	if err := h.providerStore.CreateProviderCategory(category); err != nil {
 		h.logger.Error("creating provider category", "error", err)
+		utils.TriggerToast(w, "Error al crear categoría de proveedor", "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	utils.TriggerToast(w, "Categoría de proveedor creada", "success")
 	w.Header().Set("Content-Type", "text/html")
 	html := "<option value=\"" + strconv.FormatInt(category.ID, 10) + "\" selected>" + category.Name + "</option>"
 	w.Write([]byte(html))
@@ -191,3 +194,11 @@ func (h *WebHandler) HandleGetProviderCategoryEditForm(w http.ResponseWriter, r 
 	}
 }
 
+func (h *WebHandler) triggerMessages(w http.ResponseWriter, r *http.Request) {
+	if success := r.URL.Query().Get("success"); success != "" {
+		utils.TriggerToast(w, success, "success")
+	}
+	if errMsg := r.URL.Query().Get("error"); errMsg != "" {
+		utils.TriggerToast(w, errMsg, "error")
+	}
+}
