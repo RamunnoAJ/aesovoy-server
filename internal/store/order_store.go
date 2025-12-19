@@ -50,7 +50,7 @@ type OrderItem struct {
 
 type OrderStore interface {
 	CreateOrder(o *Order, items []OrderItem) error
-	UpdateOrderState(id int64, state OrderState) error
+	UpdateOrderState(id int64, state OrderState, paymentMethodID *int64) error
 	DeleteOrder(id int64) error
 	GetOrderByID(id int64) (*Order, error)
 	ListOrders(f OrderFilter) ([]*Order, error)
@@ -61,6 +61,7 @@ type OrderStore interface {
 type DailyOrderStats struct {
 	TotalAmount float64
 	TotalCount  int
+	ByMethod    map[string]float64
 }
 
 type OrderFilter struct {
@@ -78,7 +79,9 @@ type PostgresOrderStore struct{ db *sql.DB }
 func NewPostgresOrderStore(db *sql.DB) *PostgresOrderStore { return &PostgresOrderStore{db: db} }
 
 func (s *PostgresOrderStore) GetStats(start, end time.Time) (*DailyOrderStats, error) {
-	stats := &DailyOrderStats{}
+	stats := &DailyOrderStats{
+		ByMethod: make(map[string]float64),
+	}
 	query := `
 		SELECT COALESCE(SUM(total), 0), COUNT(*)
 		FROM orders
@@ -88,6 +91,29 @@ func (s *PostgresOrderStore) GetStats(start, end time.Time) (*DailyOrderStats, e
 	if err != nil {
 		return nil, err
 	}
+
+	qMethods := `
+        SELECT COALESCE(pm.name, 'Sin asignar'), SUM(o.total)
+        FROM orders o
+        LEFT JOIN payment_methods pm ON o.payment_method_id = pm.id
+        WHERE o.date >= $1 AND o.date < $2 AND o.state = 'paid' AND o.deleted_at IS NULL
+        GROUP BY pm.name`
+
+	rows, err := s.db.Query(qMethods, start, end)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var name string
+		var amount float64
+		if err := rows.Scan(&name, &amount); err != nil {
+			return nil, err
+		}
+		stats.ByMethod[name] = amount
+	}
+
 	return stats, nil
 }
 
@@ -145,9 +171,18 @@ func (s *PostgresOrderStore) CreateOrder(o *Order, items []OrderItem) error {
 	return nil
 }
 
-func (s *PostgresOrderStore) UpdateOrderState(id int64, state OrderState) error {
-	const q = `UPDATE orders SET state=$1 WHERE id=$2 AND deleted_at IS NULL`
-	res, err := s.db.Exec(q, state, id)
+func (s *PostgresOrderStore) UpdateOrderState(id int64, state OrderState, paymentMethodID *int64) error {
+	var res sql.Result
+	var err error
+
+	if paymentMethodID != nil {
+		const q = `UPDATE orders SET state=$1, payment_method_id=$3 WHERE id=$2 AND deleted_at IS NULL`
+		res, err = s.db.Exec(q, state, id, *paymentMethodID)
+	} else {
+		const q = `UPDATE orders SET state=$1 WHERE id=$2 AND deleted_at IS NULL`
+		res, err = s.db.Exec(q, state, id)
+	}
+
 	if err != nil {
 		return err
 	}

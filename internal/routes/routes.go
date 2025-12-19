@@ -244,6 +244,7 @@ func SetupRoutes(app *app.Application) *chi.Mux {
 		r.Post("/orders/new", app.WebHandler.HandleCreateOrder)
 		r.Get("/orders/{id}", app.WebHandler.HandleGetOrderView)
 		r.Patch("/orders/{id}/state", app.WebHandler.HandleUpdateOrderState)
+		r.Post("/orders/mark-paid", app.WebHandler.HandleMarkOrderPaid)
 
 		// Local Stock (Admin only checked in handler)
 		r.Post("/local-stock/update", app.WebHandler.HandleUpdateLocalStock)

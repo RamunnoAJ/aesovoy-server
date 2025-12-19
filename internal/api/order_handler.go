@@ -160,7 +160,7 @@ func (h *OrderHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Req
 		utils.Fail(w, http.StatusBadRequest, "validation failed", []utils.FieldError{{Field: "state", Message: "required"}})
 		return
 	}
-	if err := h.orders.UpdateOrderState(id, req.State); err != nil {
+	if err := h.orders.UpdateOrderState(id, req.State, nil); err != nil {
 		if err == sql.ErrNoRows {
 			utils.Error(w, http.StatusNotFound, "order not found")
 			return

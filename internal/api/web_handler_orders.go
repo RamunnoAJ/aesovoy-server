@@ -78,6 +78,11 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	pMethods, err := h.paymentMethodStore.GetAllPaymentMethods()
+	if err != nil {
+		h.logger.Error("fetching payment methods", "error", err)
+	}
+
 	hasNext := false
 	if len(orders) > limit {
 		hasNext = true
@@ -85,16 +90,17 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 	}
 
 	data := map[string]any{
-		"User":      user,
-		"Orders":    orders,
-		"Page":      page,
-		"HasNext":   hasNext,
-		"PrevPage":  page - 1,
-		"NextPage":  page + 1,
-		"State":     stateStr,
-		"Q":         q,
-		"StartDate": startDateStr,
-		"EndDate":   endDateStr,
+		"User":           user,
+		"Orders":         orders,
+		"Page":           page,
+		"HasNext":        hasNext,
+		"PrevPage":       page - 1,
+		"NextPage":       page + 1,
+		"State":          stateStr,
+		"Q":              q,
+		"StartDate":      startDateStr,
+		"EndDate":        endDateStr,
+		"PaymentMethods": pMethods,
 	}
 
 	if err := h.renderer.Render(w, "orders_list.html", data); err != nil {
@@ -117,7 +123,7 @@ func (h *WebHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
-	if err := h.orderStore.UpdateOrderState(orderID, state); err != nil {
+	if err := h.orderStore.UpdateOrderState(orderID, state, nil); err != nil {
 		h.logger.Error("updating order state", "error", err)
 		utils.TriggerToast(w, "Error al actualizar estado: "+err.Error(), "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
@@ -126,6 +132,33 @@ func (h *WebHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Reque
 
 	// Trigger a success toast
 	utils.TriggerToast(w, "Estado de orden actualizado correctamente", "success")
+	w.Header().Set("HX-Refresh", "true")
+	w.WriteHeader(http.StatusOK)
+}
+
+func (h *WebHandler) HandleMarkOrderPaid(w http.ResponseWriter, r *http.Request) {
+	if err := r.ParseForm(); err != nil {
+		http.Error(w, "Bad Request", http.StatusBadRequest)
+		return
+	}
+
+	orderID, _ := strconv.ParseInt(r.FormValue("order_id"), 10, 64)
+	pmIDStr := r.FormValue("payment_method_id")
+	pmID, _ := strconv.ParseInt(pmIDStr, 10, 64)
+
+	var pmIDPtr *int64
+	if pmID > 0 {
+		pmIDPtr = &pmID
+	}
+
+	if err := h.orderStore.UpdateOrderState(orderID, store.OrderPaid, pmIDPtr); err != nil {
+		h.logger.Error("marking order paid", "error", err)
+		utils.TriggerToast(w, "Error al marcar como pagada", "error")
+		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+		return
+	}
+
+	utils.TriggerToast(w, "Orden marcada como pagada", "success")
 	w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusOK)
 }

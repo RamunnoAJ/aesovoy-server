@@ -1,34 +1,5 @@
-Session Date: Friday, December 19, 2025
-
-Accomplished:
-- Fixed Toast Notification Bugs:
-  - Resolved duplication issue where error toasts appeared twice (generic handler + specific trigger).
-  - Fixed encoding issue for special characters (tildes) by URL-encoding headers and decoding in frontend.
-  - Removed icons from toasts as per user request.
-  - Added client-side deduplication to prevent stacking identical messages (fixes 'deleted successfully' double alert).
-- Added Fullstack Pagination for Invoices (Backend logic, API endpoint, UI with date filter preservation).
-- Security: Restricted `/invoices` web routes to Administrators only.
-- Feature: Client & Provider Identity Fields (Dropped UNIQUE constraints on CUIT/Reference, added columns to UI).
-- Feature: Standardized Empty Field Display (Added `defaultNA` helper, applied to all lists).
-- Feature: Unified Alert System (Toasts).
-  - Refactored `showToast` in `base.html` with better styling and icons.
-  - Added `utils.TriggerToast` helper for HTMX responses.
-  - Integrated toast notifications across ALL web handlers.
-  - Fix: Robust event handling for toasts (window listeners, retries, hx-push-url support).
-  - Fix: Resolved CSRF issues caused by duplicate JS code.
-- Feature: Order List Improvements (Default 7-day filter and descending sort).
-- Feature: Order Payment Management (Added 'paid' state and 'payment_method_id', updated UI and Store).
-- Feature: Dashboard Weekly View (Added 'Semanal' view to the dashboard aggregating last 7 days of data).
-- Bug Fix: Removed broken and unused "Sales History" chart logic from Home Dashboard which was causing "unable to encode" errors in logs. Cleaned up dead code in LocalSale Service and Store.
-- Verified changes with existing tests (passed).
-
-Tests Completed:
-- internal/billing: TestListInvoices
-- internal/store: TestDuplicateIdentityFields, TestDuplicateIdentityFieldsProviders
-- internal/api, internal/services, internal/store: All tests passed (using -p 1 to avoid concurrency deadlocks).
-
-Next Steps:
-- Refactor User Creation to separate page.
-- Stock Movement History (Audit Log).
-
-Status: All tests passing.
+- Feature: Order Payment Enhancements (Modal for Mark Paid & Dashboard Summary).
+- Completed: Backend store/handler updates, Frontend modal and dashboard widget.
+- Tests: Updated unit tests for OrderStore. Verified functionality.
+- Next: Address failing features in feature_list.json (Stock History, User Form Refactor).
+- Status: 2 failing features remaining.
