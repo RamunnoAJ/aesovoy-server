@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -72,7 +73,7 @@ func (h *WebHandler) HandleCreatePaymentMethod(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	http.Redirect(w, r, "/payment_methods", http.StatusSeeOther)
+	http.Redirect(w, r, "/payment_methods?success="+url.QueryEscape("Método de pago creado exitosamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleEditPaymentMethodView(w http.ResponseWriter, r *http.Request) {
@@ -139,31 +140,36 @@ func (h *WebHandler) HandleUpdatePaymentMethod(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	http.Redirect(w, r, "/payment_methods", http.StatusSeeOther)
+	http.Redirect(w, r, "/payment_methods?success="+url.QueryEscape("Método de pago actualizado correctamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleDeletePaymentMethod(w http.ResponseWriter, r *http.Request) {
 	user := middleware.GetUser(r)
 	if user.Role != "administrator" {
+		utils.TriggerToast(w, "No tienes permiso para realizar esta acción", "error")
 		utils.Error(w, http.StatusForbidden, "Forbidden")
 		return
 	}
 
 	pmID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID inválido", "error")
 		utils.Error(w, http.StatusBadRequest, "Invalid ID")
 		return
 	}
 
 	if err := h.paymentMethodStore.DeletePaymentMethod(pmID); err != nil {
 		if strings.Contains(err.Error(), "violates foreign key constraint") {
+			utils.TriggerToast(w, "No se puede eliminar: el método de pago tiene ventas asociadas.", "error")
 			utils.Error(w, http.StatusConflict, "No se puede eliminar: el método de pago tiene ventas asociadas.")
 			return
 		}
 		h.logger.Error("deleting payment method", "error", err)
+		utils.TriggerToast(w, "Error interno del servidor", "error")
 		utils.Error(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
 
+	utils.TriggerToast(w, "Método de pago eliminado", "success")
 	w.WriteHeader(http.StatusOK)
 }

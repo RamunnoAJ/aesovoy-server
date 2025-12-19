@@ -5,16 +5,19 @@ Accomplished:
 - Security: Restricted `/invoices` web routes to Administrators only.
 - Feature: Client & Provider Identity Fields (Dropped UNIQUE constraints on CUIT/Reference, added columns to UI).
 - Feature: Standardized Empty Field Display (Added `defaultNA` helper, applied to all lists).
-- Verified changes with existing tests and added new integration tests for Identity Fields.
+- Feature: Unified Alert System (Toasts).
+  - Refactored `showToast` in `base.html` with better styling and icons.
+  - Added `utils.TriggerToast` helper for HTMX responses.
+  - Integrated toast notifications across ALL web handlers (Categories, Products, Ingredients, Clients, Expenses, Sales, Payment Methods, Providers, Users, Orders, Shifts, Stock).
+- Verified changes with existing tests and build.
 
 Tests Completed:
 - internal/billing: TestListInvoices
 - internal/store: TestDuplicateIdentityFields, TestDuplicateIdentityFieldsProviders
 
 Next Steps:
-- **Order List Improvements:** Default 7-day filter and descending sort.
 - Order Payment Management (Paid status, Payment Method).
-- Unified Alert System (Toasts).
 - Dashboard Weekly View.
+- Refactor User Creation to separate page.
 
 Status: All tests passing.

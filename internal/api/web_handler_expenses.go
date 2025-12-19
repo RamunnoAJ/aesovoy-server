@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -213,22 +214,25 @@ func (h *WebHandler) HandleCreateExpense(w http.ResponseWriter, r *http.Request)
 	}
 
 	// Redirect back to expenses list (preserving the type filter if possible)
-	http.Redirect(w, r, fmt.Sprintf("/expenses?type=%s", typeStr), http.StatusSeeOther)
+	http.Redirect(w, r, fmt.Sprintf("/expenses?type=%s&success=%s", typeStr, url.QueryEscape("Gasto registrado exitosamente")), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleDeleteExpense(w http.ResponseWriter, r *http.Request) {
 	id, err := utils.ReadIDParam(r)
 	if err != nil {
+		utils.TriggerToast(w, "ID de gasto inválido", "error")
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.expenseStore.DeleteExpense(id); err != nil {
 		h.logger.Error("deleting expense", "error", err)
+		utils.TriggerToast(w, "Error al eliminar gasto", "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	utils.TriggerToast(w, "Gasto eliminado", "success")
 	w.WriteHeader(http.StatusOK) // HTMX will remove the element
 }
 

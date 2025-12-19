@@ -2,6 +2,7 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 	"time"
 
@@ -103,18 +104,21 @@ func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
 func (h *WebHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Request) {
 	orderID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID de orden inválido", "error")
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
 	state := store.OrderState(r.URL.Query().Get("state"))
 	if state == "" {
+		utils.TriggerToast(w, "Falta el estado de la orden", "error")
 		http.Error(w, "Missing state", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.orderStore.UpdateOrderState(orderID, state); err != nil {
 		h.logger.Error("updating order state", "error", err)
+		utils.TriggerToast(w, "Error al actualizar estado: "+err.Error(), "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
@@ -218,7 +222,7 @@ func (h *WebHandler) HandleCreateOrder(w http.ResponseWriter, r *http.Request) {
 		}
 	}()
 
-	http.Redirect(w, r, "/orders", http.StatusSeeOther)
+	http.Redirect(w, r, "/orders?success="+url.QueryEscape("Orden creada exitosamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleGetOrderView(w http.ResponseWriter, r *http.Request) {

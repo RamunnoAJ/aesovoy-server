@@ -2,10 +2,12 @@ package api
 
 import (
 	"net/http"
+	"net/url"
 	"strconv"
 
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 	chi "github.com/go-chi/chi/v5"
 )
 
@@ -87,7 +89,7 @@ func (h *WebHandler) HandleCreateClient(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	http.Redirect(w, r, "/clients", http.StatusSeeOther)
+	http.Redirect(w, r, "/clients?success="+url.QueryEscape("Cliente creado exitosamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleEditClientView(w http.ResponseWriter, r *http.Request) {
@@ -148,21 +150,24 @@ func (h *WebHandler) HandleUpdateClient(w http.ResponseWriter, r *http.Request) 
 		return
 	}
 
-	http.Redirect(w, r, "/clients", http.StatusSeeOther)
+	http.Redirect(w, r, "/clients?success="+url.QueryEscape("Cliente actualizado correctamente"), http.StatusSeeOther)
 }
 
 func (h *WebHandler) HandleDeleteClient(w http.ResponseWriter, r *http.Request) {
 	clientID, err := strconv.ParseInt(chi.URLParam(r, "id"), 10, 64)
 	if err != nil {
+		utils.TriggerToast(w, "ID de cliente inválido", "error")
 		http.Error(w, "Invalid ID", http.StatusBadRequest)
 		return
 	}
 
 	if err := h.clientStore.DeleteClient(clientID); err != nil {
 		h.logger.Error("deleting client", "error", err)
+		utils.TriggerToast(w, "Error al eliminar cliente", "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	utils.TriggerToast(w, "Cliente eliminado", "success")
 	w.WriteHeader(http.StatusOK)
 }
