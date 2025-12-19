@@ -18,6 +18,7 @@ import (
 )
 
 func (h *WebHandler) HandleListExpenses(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 	typeStr := r.URL.Query().Get("type")
 	categoryIDStr := r.URL.Query().Get("category_id")

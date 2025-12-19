@@ -12,6 +12,7 @@ import (
 // --- Users Management (Admin) ---
 
 func (h *WebHandler) HandleListUsers(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	currentUser := middleware.GetUser(r)
 
 	users, err := h.userStore.GetAllUsers()

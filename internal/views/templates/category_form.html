@@ -4,7 +4,7 @@
         <h1 class="text-2xl font-bold text-gray-800">{{if .Category.ID}}Editar Categoría{{else}}Nueva Categoría{{end}}</h1>
     </div>
     
-    <form action="{{if .Category.ID}}/categories/{{.Category.ID}}/edit{{else}}/categories/new{{end}}" method="POST" class="p-6 space-y-6" hx-post="{{if .Category.ID}}/categories/{{.Category.ID}}/edit{{else}}/categories/new{{end}}" hx-target="body" hx-swap="outerHTML">
+    <form action="{{if .Category.ID}}/categories/{{.Category.ID}}/edit{{else}}/categories/new{{end}}" method="POST" class="p-6 space-y-6" hx-post="{{if .Category.ID}}/categories/{{.Category.ID}}/edit{{else}}/categories/new{{end}}" hx-target="body" hx-swap="outerHTML" hx-push-url="true">
         <div>
             <label for="name" class="block text-base font-medium leading-6 text-gray-900">Nombre</label>
             <div class="mt-2">

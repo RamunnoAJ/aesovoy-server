@@ -16,6 +16,7 @@ import (
 // --- Orders ---
 
 func (h *WebHandler) HandleListOrders(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 
 	pageStr := r.URL.Query().Get("page")

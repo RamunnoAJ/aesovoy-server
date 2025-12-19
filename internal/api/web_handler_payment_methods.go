@@ -15,6 +15,7 @@ import (
 // --- Payment Methods ---
 
 func (h *WebHandler) HandleListPaymentMethods(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 	paymentMethods, err := h.paymentMethodStore.GetAllPaymentMethods()
 	if err != nil {

@@ -14,6 +14,7 @@ import (
 // --- Clients ---
 
 func (h *WebHandler) HandleListClients(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 
 	q := r.URL.Query().Get("q")

@@ -14,6 +14,7 @@ import (
 // --- Categories ---
 
 func (h *WebHandler) HandleListCategories(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 	categories, err := h.categoryStore.GetAllCategories()
 	if err != nil {
@@ -78,10 +79,12 @@ func (h *WebHandler) HandleQuickCreateCategory(w http.ResponseWriter, r *http.Re
 
 	if err := h.categoryStore.CreateCategory(category); err != nil {
 		h.logger.Error("creating category", "error", err)
+		utils.TriggerToast(w, "Error al crear categoría", "error")
 		http.Error(w, "Internal Server Error", http.StatusInternalServerError)
 		return
 	}
 
+	utils.TriggerToast(w, "Categoría creada correctamente", "success")
 	w.Header().Set("Content-Type", "text/html")
 	// Return the new option tag
 	// We assume the ID is populated by the store (pointer)

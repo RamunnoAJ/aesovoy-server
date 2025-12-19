@@ -16,6 +16,7 @@ import (
 // --- Products ---
 
 func (h *WebHandler) HandleListProducts(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 
 	q := r.URL.Query().Get("q")

@@ -9,7 +9,7 @@ Accomplished:
   - Refactored `showToast` in `base.html` with better styling and icons.
   - Added `utils.TriggerToast` helper for HTMX responses.
   - Integrated toast notifications across ALL web handlers.
-  - Fix: Show toasts after HTMX redirects/swaps.
+  - Fix: Robust event handling for toasts (window listeners, retries, hx-push-url support).
 - Feature: Order List Improvements (Default 7-day filter and descending sort).
 - Feature: Order Payment Management (Added 'paid' state and 'payment_method_id', updated UI and Store).
 - Verified changes with existing tests and build.

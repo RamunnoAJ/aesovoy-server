@@ -14,6 +14,7 @@ import (
 )
 
 func (h *WebHandler) HandleListLocalSales(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 	// Employee or Admin
 	if user.Role != "administrator" && user.Role != "employee" {

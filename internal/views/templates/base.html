@@ -154,7 +154,7 @@
 
     <script>
         // CSRF Token for HTMX
-        document.body.addEventListener('htmx:configRequest', function(evt) {
+        document.addEventListener('htmx:configRequest', function(evt) {
             const cookies = document.cookie.split(';');
             let csrfToken = null;
             for (let cookie of cookies) {
@@ -206,6 +206,11 @@
 
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
+            if (!container) {
+                // If container not found, try again in a bit (might be swapping)
+                setTimeout(() => showToast(message, type), 100);
+                return;
+            }
             const toast = document.createElement('div');
             
             const colors = {
@@ -224,7 +229,7 @@
             const color = colors[type] || colors['info'];
             const icon = icons[type] || icons['info'];
 
-            toast.className = `${color} text-white px-4 py-3 rounded shadow-lg transition-all duration-300 opacity-0 transform translate-y-2 flex items-center min-w-[300px] z-50`;
+            toast.className = `${color} text-white px-4 py-3 rounded shadow-lg transition-all duration-300 opacity-0 transform translate-y-2 flex items-center min-w-[300px] z-50 mb-2`;
             toast.innerHTML = `${icon}<span>${message}</span>`;
 
             container.appendChild(toast);
@@ -243,13 +248,19 @@
         }
 
         // Listen for standardized 'showMessage' event (triggered via HX-Trigger)
-        document.body.addEventListener("showMessage", function(evt){
-            showToast(evt.detail.message, evt.detail.type);
+        window.addEventListener("showMessage", function(evt){
+            const data = evt.detail.value || evt.detail;
+            const msg = data.message || data;
+            const type = data.type || 'info';
+            showToast(msg, type);
         });
 
         // Legacy support (if needed)
-        document.body.addEventListener("showToast", function(evt){
-            showToast(evt.detail.message, evt.detail.type);
+        window.addEventListener("showToast", function(evt){
+            const data = evt.detail.value || evt.detail;
+            const msg = data.message || data;
+            const type = data.type || 'info';
+            showToast(msg, type);
         });
 
         // Check URL parameters for messages
@@ -275,12 +286,30 @@
         checkUrlMessages();
 
         // Run after HTMX swaps content (to catch messages in the new URL)
-        document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+        window.addEventListener('htmx:afterOnLoad', function(evt) {
             checkUrlMessages();
         });
 
         // HTMX Error Handling
-        document.body.addEventListener('htmx:afterRequest', function(evt) {
+        document.addEventListener('htmx:afterRequest', function(evt) {
+            if (evt.detail.failed) {
+                const xhr = evt.detail.xhr;
+                let msg = "Ha ocurrido un error inesperado";
+                try {
+                    const resp = JSON.parse(xhr.responseText);
+                    if (resp.message) {
+                        msg = resp.message;
+                    } else if (resp.error && typeof resp.error === 'string') {
+                        msg = resp.error;
+                    }
+                } catch (e) {
+                    if (xhr.responseText && xhr.responseText.length < 200) {
+                        msg = xhr.responseText;
+                    }
+                }
+                showToast(msg, 'error');
+            }
+        });
             if (evt.detail.failed) {
                 const xhr = evt.detail.xhr;
                 let msg = "Ha ocurrido un error inesperado";

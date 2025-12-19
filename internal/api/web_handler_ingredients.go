@@ -14,6 +14,7 @@ import (
 // --- Ingredients ---
 
 func (h *WebHandler) HandleListIngredients(w http.ResponseWriter, r *http.Request) {
+	h.triggerMessages(w, r)
 	user := middleware.GetUser(r)
 	ingredients, err := h.ingredientStore.GetAllIngredients()
 	if err != nil {
