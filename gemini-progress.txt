@@ -1,6 +1,11 @@
 Session Date: Friday, December 19, 2025
 
 Accomplished:
+- Fixed Toast Notification Bugs:
+  - Resolved duplication issue where error toasts appeared twice (generic handler + specific trigger).
+  - Fixed encoding issue for special characters (tildes) by URL-encoding headers and decoding in frontend.
+  - Removed icons from toasts as per user request.
+  - Added client-side deduplication to prevent stacking identical messages (fixes 'deleted successfully' double alert).
 - Added Fullstack Pagination for Invoices (Backend logic, API endpoint, UI with date filter preservation).
 - Security: Restricted `/invoices` web routes to Administrators only.
 - Feature: Client & Provider Identity Fields (Dropped UNIQUE constraints on CUIT/Reference, added columns to UI).
