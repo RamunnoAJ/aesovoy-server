@@ -115,8 +115,8 @@
     "description": "Stock Movement History (Audit Log)",
     "steps": [
       "Step 1: Create migration for 'stock_movements' table (product_id, change_amount, reason, user_id, created_at).",
-      "Step 2: Create StockMovementStore and methods.",
-      "Step 3: Update LocalStockService to record a movement whenever stock is created, adjusted, or sold.",
+      "Step 2: Create StockMovementStore, tests and methods.",
+      "Step 3: Update LocalStockService to record a movement whenever stock is created, adjusted, or sold. Also update it's tests.",
       "Step 4: Create a view to list stock history for a specific product (accessible via Product details)."
     ],
     "passes": false
@@ -150,7 +150,8 @@
       "Step 1: Create migration to add 'paid' to order_state ENUM and 'payment_method_id' column to 'orders' table.",
       "Step 2: Update 'Order' struct and Store methods to include payment information.",
       "Step 3: Update Order creation/edit UI to allow selecting a payment method and setting paid status.",
-      "Step 4: Update Order list to display payment status and method."
+      "Step 4: Update Order list to display payment status and method.",
+      "Step 5: Update and create all necessary tests."
     ],
     "passes": false
   },
@@ -181,7 +182,8 @@
     "steps": [
       "Step 1: Create migration to drop UNIQUE constraints on 'cuit' and 'reference' in 'clients' and 'providers' tables.",
       "Step 2: Update 'clients_list.html' and 'providers_list.html' to display CUIT and Reference columns.",
-      "Step 3: Update form validation to allow empty or duplicate references."
+      "Step 3: Update form validation to allow empty or duplicate references.",
+      "Step 4: Update and create all necessary tests."
     ],
     "passes": false
   },
