@@ -253,21 +253,31 @@
         });
 
         // Check URL parameters for messages
-        const urlParams = new URLSearchParams(window.location.search);
-        const errorMsg = urlParams.get('error');
-        const successMsg = urlParams.get('success');
+        function checkUrlMessages() {
+            const urlParams = new URLSearchParams(window.location.search);
+            const errorMsg = urlParams.get('error');
+            const successMsg = urlParams.get('success');
 
-        if (errorMsg) {
-            showToast(errorMsg, 'error');
-            // Clean URL
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
+            if (errorMsg) {
+                showToast(errorMsg, 'error');
+                // Clean URL
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
+            if (successMsg) {
+                showToast(successMsg, 'success');
+                const newUrl = window.location.pathname;
+                window.history.replaceState({}, document.title, newUrl);
+            }
         }
-        if (successMsg) {
-            showToast(successMsg, 'success');
-            const newUrl = window.location.pathname;
-            window.history.replaceState({}, document.title, newUrl);
-        }
+
+        // Run on initial load
+        checkUrlMessages();
+
+        // Run after HTMX swaps content (to catch messages in the new URL)
+        document.body.addEventListener('htmx:afterOnLoad', function(evt) {
+            checkUrlMessages();
+        });
 
         // HTMX Error Handling
         document.body.addEventListener('htmx:afterRequest', function(evt) {
