@@ -8,6 +8,7 @@ import (
 	"github.com/RamunnoAJ/aesovoy-server/internal/billing"
 	"github.com/RamunnoAJ/aesovoy-server/internal/middleware"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
+	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 	chi "github.com/go-chi/chi/v5"
 )
 
@@ -118,6 +119,8 @@ func (h *WebHandler) HandleUpdateOrderState(w http.ResponseWriter, r *http.Reque
 		return
 	}
 
+	// Trigger a success toast
+	utils.TriggerToast(w, "Estado de orden actualizado correctamente", "success")
 	w.Header().Set("HX-Refresh", "true")
 	w.WriteHeader(http.StatusOK)
 }

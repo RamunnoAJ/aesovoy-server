@@ -122,3 +122,18 @@ func Getenv(key, def string) string {
 	}
 	return def
 }
+
+// TriggerToast sets the HX-Trigger header to trigger a client-side toast notification.
+// type can be "success", "error", "info", "warning".
+func TriggerToast(w http.ResponseWriter, message string, typeStr string) {
+	payload := map[string]map[string]string{
+		"showMessage": {
+			"message": message,
+			"type":    typeStr,
+		},
+	}
+	jsonPayload, err := json.Marshal(payload)
+	if err == nil {
+		w.Header().Set("HX-Trigger", string(jsonPayload))
+	}
+}

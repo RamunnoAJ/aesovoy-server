@@ -174,7 +174,7 @@
       "Step 3: Update redirects to use URL parameters or flash messages for toasts.",
       "Step 4: Verify clear visual distinction between Success (Green) and Error (Red) messages."
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "enhancement",
