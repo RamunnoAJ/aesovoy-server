@@ -1,11 +1,25 @@
 package api
 
 import (
+	"github.com/RamunnoAJ/aesovoy-server/internal/billing"
 	"github.com/RamunnoAJ/aesovoy-server/internal/store"
 	"github.com/RamunnoAJ/aesovoy-server/internal/utils"
 )
 
 // acá tengo todos los tipados para el swagger
+
+type InvoicesResponse struct {
+	Data []billing.InvoiceFile `json:"data"`
+	Meta InvoicesMeta          `json:"meta"`
+}
+
+type InvoicesMeta struct {
+	CurrentPage  int    `json:"current_page"`
+	TotalPages   int    `json:"total_pages"`
+	TotalItems   int    `json:"total_items"`
+	ItemsPerPage int    `json:"items_per_page"`
+	DateFilter   string `json:"date_filter,omitempty"`
+}
 
 type ClientResponse struct {
 	Client store.Client `json:"client"`
