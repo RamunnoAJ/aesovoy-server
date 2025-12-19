@@ -56,7 +56,7 @@
                     <h2 class="text-xs uppercase text-gray-400 font-semibold">Menu</h2>
                     <button @click="mobileMenuOpen = false" class="text-gray-400 hover:text-white focus:outline-none">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
@@ -110,9 +110,6 @@
                     <a href="/local-sales" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
                         Ventas Local
                     </a>
-					<!-- <a href="/shifts" class="block py-2 px-4 rounded hover:bg-gray-700 transition-colors">
-							   Caja
-					</a> -->
                     {{end}}
                 </nav>
             </div>
@@ -171,10 +168,7 @@
 
         // Confirmation Modal Logic
         document.addEventListener("htmx:confirm", function(evt) {
-            // If the event was not triggered by hx-confirm, or if standard confirm wasn't requested
             if (!evt.detail.question) return;
-
-            // Prevent the default confirmation
             evt.preventDefault();
 
             const modal = document.getElementById('confirmation-modal');
@@ -186,7 +180,7 @@
             modal.classList.remove('hidden');
 
             const handleConfirm = function() {
-                evt.detail.issueRequest(true); // issueRequest(true) skips the confirm check
+                evt.detail.issueRequest(true);
                 cleanup();
             };
 
@@ -207,7 +201,6 @@
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');
             if (!container) {
-                // If container not found, try again in a bit (might be swapping)
                 setTimeout(() => showToast(message, type), 100);
                 return;
             }
@@ -234,7 +227,6 @@
 
             container.appendChild(toast);
 
-            // Trigger animation
             requestAnimationFrame(() => {
                 toast.classList.remove('opacity-0', 'translate-y-2');
             });
@@ -247,7 +239,6 @@
             }, 5000);
         }
 
-        // Listen for standardized 'showMessage' event (triggered via HX-Trigger)
         window.addEventListener("showMessage", function(evt){
             const data = evt.detail.value || evt.detail;
             const msg = data.message || data;
@@ -255,15 +246,6 @@
             showToast(msg, type);
         });
 
-        // Legacy support (if needed)
-        window.addEventListener("showToast", function(evt){
-            const data = evt.detail.value || evt.detail;
-            const msg = data.message || data;
-            const type = data.type || 'info';
-            showToast(msg, type);
-        });
-
-        // Check URL parameters for messages
         function checkUrlMessages() {
             const urlParams = new URLSearchParams(window.location.search);
             const errorMsg = urlParams.get('error');
@@ -271,7 +253,6 @@
 
             if (errorMsg) {
                 showToast(errorMsg, 'error');
-                // Clean URL
                 const newUrl = window.location.pathname;
                 window.history.replaceState({}, document.title, newUrl);
             }
@@ -282,56 +263,28 @@
             }
         }
 
-        // Run on initial load
         checkUrlMessages();
 
-        // Run after HTMX swaps content (to catch messages in the new URL)
-        window.addEventListener('htmx:afterOnLoad', function(evt) {
+        document.addEventListener('htmx:afterOnLoad', function(evt) {
             checkUrlMessages();
         });
 
-        // HTMX Error Handling
         document.addEventListener('htmx:afterRequest', function(evt) {
             if (evt.detail.failed) {
                 const xhr = evt.detail.xhr;
                 let msg = "Ha ocurrido un error inesperado";
                 try {
                     const resp = JSON.parse(xhr.responseText);
-                    if (resp.message) {
-                        msg = resp.message;
-                    } else if (resp.error && typeof resp.error === 'string') {
-                        msg = resp.error;
-                    }
+                    if (resp.message) msg = resp.message;
+                    else if (resp.error && typeof resp.error === 'string') msg = resp.error;
                 } catch (e) {
-                    if (xhr.responseText && xhr.responseText.length < 200) {
-                        msg = xhr.responseText;
-                    }
-                }
-                showToast(msg, 'error');
-            }
-        });
-            if (evt.detail.failed) {
-                const xhr = evt.detail.xhr;
-                let msg = "Ha ocurrido un error inesperado";
-                try {
-                    const resp = JSON.parse(xhr.responseText);
-                    if (resp.message) {
-                        msg = resp.message;
-                    } else if (resp.error && typeof resp.error === 'string') {
-                        msg = resp.error;
-                    }
-                } catch (e) {
-                    if (xhr.responseText && xhr.responseText.length < 200) {
-                        msg = xhr.responseText;
-                    }
+                    if (xhr.responseText && xhr.responseText.length < 200) msg = xhr.responseText;
                 }
                 showToast(msg, 'error');
             }
         });
 
-        // Reusable Alpine.js function for product item management with search
         function createProductItemManager(allProductsData, pricingFunction) {
-            // Create a lookup map for quick access
             const productsLookup = allProductsData.reduce((acc, p) => {
                 acc[p.id] = p;
                 return acc;
@@ -339,72 +292,42 @@
 
             return {
                 items: [{ product_id: '', quantity: 1, searchTerm: '', isOpen: false }],
-                
                 getFilteredProducts(index) {
                     const term = this.items[index].searchTerm;
-                    if (!term) {
-                        return allProductsData;
-                    }
+                    if (!term) return allProductsData;
                     const lowerSearchTerm = term.toLowerCase();
                     return allProductsData.filter(p => p.name.toLowerCase().includes(lowerSearchTerm));
                 },
-
                 selectProduct(index, product) {
-                    // Check for duplicates
                     const isDuplicate = this.items.some((item, i) => i !== index && item.product_id === product.id);
                     if (isDuplicate) {
                         showToast('Este producto ya ha sido agregado.', 'error');
                         this.items[index].isOpen = false;
                         return;
                     }
-
                     this.items[index].product_id = product.id;
                     this.items[index].searchTerm = product.name;
                     this.items[index].isOpen = false;
                 },
-
-                openDropdown(index) {
-                    this.items[index].isOpen = true;
-                },
-
-                closeDropdown(index) {
-                    // Delay closing to allow click event on option to fire
-                    setTimeout(() => {
-                        this.items[index].isOpen = false;
-                    }, 200);
-                },
-
-                addItem() {
-                    this.items.push({ product_id: '', quantity: 1, searchTerm: '', isOpen: false });
-                },
-                
-                removeItem(index) {
-                    if (this.items.length > 1) { // Ensure at least one item remains
-                        this.items.splice(index, 1);
-                    }
-                },
-
+                openDropdown(index) { this.items[index].isOpen = true; },
+                closeDropdown(index) { setTimeout(() => { this.items[index].isOpen = false; }, 200); },
+                addItem() { this.items.push({ product_id: '', quantity: 1, searchTerm: '', isOpen: false }); },
+                removeItem(index) { if (this.items.length > 1) this.items.splice(index, 1); },
                 getPrice(productId, priceType = 'unit') {
                     if (!productId || !productsLookup[productId]) return '';
                     return pricingFunction(productsLookup[productId], priceType);
                 },
-
                 getSubtotal(index, priceType = 'unit') {
                     const item = this.items[index];
                     const price = parseFloat(this.getPrice(item.product_id, priceType));
-                    if (!isNaN(price) && item.quantity) {
-                        return (price * item.quantity).toFixed(2);
-                    }
+                    if (!isNaN(price) && item.quantity) return (price * item.quantity).toFixed(2);
                     return '0.00';
                 },
-
                 getTotal(priceType = 'unit') {
                     let total = 0;
                     this.items.forEach((item, index) => {
                         const sub = parseFloat(this.getSubtotal(index, priceType));
-                        if (!isNaN(sub)) {
-                            total += sub;
-                        }
+                        if (!isNaN(sub)) total += sub;
                     });
                     return total.toFixed(2);
                 }
